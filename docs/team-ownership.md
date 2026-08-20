@@ -38,8 +38,8 @@ The repository is structured to enable 6 developers to work simultaneously witho
 - **Definition of Done**: Credential issuer signs claims, verifier validates Ed25519 signatures, mock AA returns normalized financial transactions.
 
 ## Member 6 — Surbhi
-- **Primary**: Web & Application Integration (React, Deployment, Government Scheme Logic)
-- **Owns**: `apps/verifier-web/`
-- **Interfaces Consumed**: Credential verification logic, `/api/v1/credentials/verify`, `/api/v1/schemes/match`.
-- **Interfaces Provided**: Verifier Portal React Web Application and scheme matching preview UI.
-- **Definition of Done**: Clean responsive web app to paste/upload credentials, check signature status, render claims, and showcase government schemes.
+- **Primary**: AI-Powered Government Scheme Recommendation & Web Integration (React, Scheme Data Engineering, Structured Eligibility Logic, Nemotron Ultra 3 Integration, API Integration)
+- **Owns**: `apps/verifier-web/`, `apps/backend/src/controllers/schemeController.ts`
+- **Interfaces Consumed**: Credential verification logic, `/api/v1/credentials/verify`, `/api/v1/schemes/recommend`, verified profile claims.
+- **Interfaces Provided**: Standalone Verifier React Web Application and Nemotron-powered government scheme recommendation engine with deterministic fallback.
+- **Definition of Done**: Standalone web app pastes/uploads credentials to verify Ed25519 signatures client-side, and scheme recommendation engine returns ranked recommendations with natural-language explanations.

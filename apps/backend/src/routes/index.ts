@@ -4,7 +4,7 @@ import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceCont
 import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
-import { getSchemes, matchSchemes } from '../controllers/schemeController';
+import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
 
 const router = Router();
@@ -38,6 +38,7 @@ router.post('/credentials/verify', handleVerifyCredential);
 // Government Schemes
 router.get('/schemes', getSchemes);
 router.post('/schemes/match', matchSchemes);
+router.post('/schemes/recommend', recommendSchemes);
 
 // Account Aggregator Consent
 router.post('/consent/request', requestConsent);

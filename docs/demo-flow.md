@@ -54,11 +54,11 @@ This document details the deterministic demo flow for the pitch presentation usi
 ## Alternative Demo Scenario 2: UNEXPLAINED DIFFERENCE
 
 1. **Inputs**:
-   - Declared expected: ₹30,500
-   - Bank settlement: ₹29,900
+   - Declared expected payout: ₹30,100
+   - Actual bank settlement: ₹29,500
    - Known deductions: ₹0
-   - Unexplained difference: ₹600
+   - Unexplained difference / shortfall: ₹600
 
 2. **Reconciliation Status**: **UNEXPLAINED_DIFFERENCE**
-3. **Verification Level**: **OBSERVED** (Financially uncorroborated due to discrepancy).
-4. **Takeaway**: Demonstrates that OnShift transparently highlights discrepancies rather than hiding unverified amounts.
+3. **Verification Level**: **CORROBORATED** (Confidence score decreases to 0.72 due to settlement discrepancy; explanation notes unmapped ₹600 shortfall).
+4. **Takeaway**: Demonstrates that OnShift transparently highlights discrepancies rather than hiding unverified amounts or blindly marking unverified credits as financially corroborated.

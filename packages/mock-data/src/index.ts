@@ -99,9 +99,9 @@ export const DEMO_FINANCIAL_EVIDENCE_SCENARIO_2: FinancialEvidence = {
   platform: 'HDFC Bank',
   bankName: 'HDFC Bank',
   accountMask: 'XX4821',
-  transactionRef: 'NEFT-GIGPAY-29900-20260808',
+  transactionRef: 'NEFT-GIGPAY-29500-20260808',
   timestamp: '2026-08-08T06:00:00.000Z',
-  amount: 29900,
+  amount: 29500,
   currency: 'INR',
   reference: 'TXN-HDFC-994822',
   metadata: {
@@ -140,13 +140,13 @@ export const DEMO_RECONCILIATION_SCENARIO_1: ReconciliationResult = {
 };
 
 export const DEMO_RECONCILIATION_SCENARIO_2: ReconciliationResult = {
-  expectedAmount: 30500,
+  expectedAmount: 30100,
   knownDeductions: 0,
-  expectedSettlement: 30500,
-  actualSettlement: 29900,
+  expectedSettlement: 30100,
+  actualSettlement: 29500,
   difference: 600,
   status: 'UNEXPLAINED_DIFFERENCE',
-  explanation: 'Bank deposit of INR 29,900 is lower than observed earnings of INR 30,500 by INR 600 with no documented platform deduction record.',
+  explanation: 'Actual bank deposit of INR 29,500 is lower than expected payout of INR 30,100 by INR 600 with no documented platform deduction record.',
   supportingEvidenceIds: [
     'ev-decl-001',
     'ev-obs-zomato-001',
@@ -156,8 +156,8 @@ export const DEMO_RECONCILIATION_SCENARIO_2: ReconciliationResult = {
   discrepancyDetails: [
     {
       category: 'Unmapped Settlement Shortfall',
-      expectedAmount: 30500,
-      actualAmount: 29900,
+      expectedAmount: 30100,
+      actualAmount: 29500,
       difference: 600,
       isExplained: false,
       explanationNote: 'Discrepancy detected between observed notifications and bank credit',

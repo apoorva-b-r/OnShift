@@ -30,6 +30,8 @@ def test_reconciliation_unexplained_difference():
     )
     res = run_reconciliation_logic(req)
     assert res.status == ReconciliationStatusEnum.UNEXPLAINED_DIFFERENCE
+    assert res.expectedSettlement == 30100.0
+    assert res.actualSettlement == 29500.0
     assert res.difference == 600.0
 
 def test_verification_financially_corroborated():

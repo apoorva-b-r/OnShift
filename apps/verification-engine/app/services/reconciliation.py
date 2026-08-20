@@ -13,19 +13,19 @@ def run_reconciliation_logic(req: ReconciliationRequestSchema) -> Reconciliation
     """
     if req.scenarioMode == "SCENARIO_2" or "ev-fin-hdfc-002" in req.evidenceIds:
         return ReconciliationResultSchema(
-            expectedAmount=30500.0,
+            expectedAmount=30100.0,
             knownDeductions=0.0,
-            expectedSettlement=30500.0,
-            actualSettlement=29900.0,
+            expectedSettlement=30100.0,
+            actualSettlement=29500.0,
             difference=600.0,
             status=ReconciliationStatusEnum.UNEXPLAINED_DIFFERENCE,
-            explanation="Bank deposit of INR 29,900 is lower than observed earnings of INR 30,500 by INR 600 with no documented platform deduction record.",
+            explanation="Actual bank deposit of INR 29,500 is lower than expected payout of INR 30,100 by INR 600 with no documented platform deduction record.",
             supportingEvidenceIds=req.evidenceIds,
             discrepancyDetails=[
                 DiscrepancySchema(
                     category="Unmapped Settlement Shortfall",
-                    expectedAmount=30500.0,
-                    actualAmount=29900.0,
+                    expectedAmount=30100.0,
+                    actualAmount=29500.0,
                     difference=600.0,
                     isExplained=False,
                     explanationNote="Discrepancy detected between observed notifications and bank credit"
