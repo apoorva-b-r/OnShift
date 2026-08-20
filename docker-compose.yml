@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6-jammy
+    container_name: onshift-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.runCommand({ping: 1})' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  verification-engine:
+    build:
+      context: ./apps/verification-engine
+      dockerfile: Dockerfile
+    container_name: onshift-verification-engine
+    ports:
+      - "8000:8000"
+    environment:
+      - ENGINE_PORT=8000
+      - ENGINE_HOST=0.0.0.0
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: onshift-backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://mongodb:27017/onshift_db
+      - VERIFICATION_ENGINE_URL=http://verification-engine:8000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      verification-engine:
+        condition: service_started
+    restart: unless-stopped
+
+  verifier-web:
+    build:
+      context: ./apps/verifier-web
+      dockerfile: Dockerfile
+    container_name: onshift-verifier-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

@@ -1,0 +1,16 @@
+{
+  "name": "@onshift/mock-data",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No tests for mock-data\""
+  },
+  "dependencies": {
+    "@onshift/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

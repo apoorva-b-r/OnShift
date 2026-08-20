@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+venv/
+__pycache__/
+.pytest_cache/
+
+# Builds & Outputs
+dist/
+build/
+.next/
+out/
+*.egg-info/
+.gradle/
+app/build/
+
+# Environment & Credentials
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+*.key
+
+# IDE & System
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Database / SQLite / Local storage
+*.sqlite
+*.sqlite-journal
+prisma/dev.db

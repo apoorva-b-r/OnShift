@@ -1,0 +1,16 @@
+{
+  "name": "@onshift/credential-schema",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No standalone test for credential-schema\""
+  },
+  "dependencies": {
+    "@onshift/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
