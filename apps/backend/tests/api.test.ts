@@ -70,10 +70,6 @@ describe('GET /api/v1/health', () => {
 
 // =============================================================================
 // 2. Workers round-trip
-// NOTE: workerController currently never touches Mongoose so:
-//   - POST /workers always returns 201 (no persistence, no duplicate check).
-//   - GET /workers/:id returns mock data for OS-DEMO-001 or a generic stub.
-//   - Duplicate POST does NOT return 409 -- this is a KNOWN BUG reported below.
 // =============================================================================
 describe('Workers', () => {
   const testId = `OS-TEST-${Date.now()}`;
@@ -92,22 +88,12 @@ describe('Workers', () => {
     expect(res.body.id).toBe(testId);
   });
 
-  /**
-   * KNOWN BUG -- reported, not silently patched.
-   * workerController.createWorker() never writes to Mongoose, so sending the
-   * same id a second time returns 201 again instead of 409.
-   *
-   * Fix required in workerController.ts:
-   *   const existing = await Worker.findOne({ id });
-   *   if (existing) return res.status(409).json({ error: 'Worker already exists.' });
-   *   const saved = await Worker.create({ id, name, ... });
-   *   return res.status(201).json(saved);
-   */
-  it.skip('[BUG] POST /api/v1/workers with duplicate id returns 409', async () => {
-    await Worker.create({ id: testId, name: 'Pre-seeded Worker' });
+  it('POST /api/v1/workers with duplicate id returns 409', async () => {
+    const duplicateId = `OS-DUPLICATE-${Date.now()}`;
+    await Worker.create({ id: duplicateId, name: 'Pre-seeded Worker' });
     const res = await request(app)
       .post('/api/v1/workers')
-      .send({ id: testId, name: 'Duplicate Worker' });
+      .send({ id: duplicateId, name: 'Duplicate Worker' });
     expect(res.status).toBe(409);
   });
 });
