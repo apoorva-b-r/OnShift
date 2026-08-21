@@ -23,7 +23,7 @@ export default function App() {
   const handleVerify = () => {
     try {
       const parsed: Credential = JSON.parse(jsonInput);
-      const res = verifyCredentialSignature(parsed);
+      const res = verifyCredentialSignature(parsed as any);
       setResult(res);
     } catch (e) {
       setResult({
@@ -56,18 +56,18 @@ export default function App() {
         <section className="card">
           <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Paste Signed Credential</h2>
           <textarea
-            className="textarea"
+            className="json-input"
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
-            placeholder="Paste OnShift signed credential JSON here..."
+            style={{ width: '100%', minHeight: '180px', fontFamily: 'monospace', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155', background: '#0F172A', color: '#E2E8F0' }}
           />
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button className="btn" onClick={handleVerify}>
+            <button className="btn" onClick={handleVerify} style={{ padding: '0.6rem 1.2rem', background: '#0EA5E9', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
               Verify Credential
             </button>
             <button
               className="btn"
-              style={{ background: 'rgba(255,255,255,0.08)', color: '#F1F5F9' }}
+              style={{ padding: '0.6rem 1.2rem', background: 'rgba(255,255,255,0.08)', color: '#F1F5F9', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
               onClick={handleLoadSample}
             >
               <RefreshCw size={16} style={{ display: 'inline', marginRight: '6px' }} />
@@ -77,15 +77,15 @@ export default function App() {
         </section>
 
         {result && (
-          <section className="card">
+          <section className="card" style={{ marginTop: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.2rem' }}>Verification Summary</h2>
               {result.valid ? (
-                <span className="status-badge valid">
+                <span className="status-badge valid" style={{ color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
                   <ShieldCheck size={18} /> Valid Signature & Issuer
                 </span>
               ) : (
-                <span className="status-badge invalid">
+                <span className="status-badge invalid" style={{ color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
                   <ShieldAlert size={18} /> Verification Failed
                 </span>
               )}
@@ -98,18 +98,18 @@ export default function App() {
                 <h3 style={{ fontSize: '0.95rem', color: '#0EA5E9', marginBottom: '0.75rem' }}>
                   Disclosed Claims Only
                 </h3>
-                <div className="claims-grid">
-                  <div className="claim-box">
-                    <div className="claim-label">Verified Weekly Income</div>
-                    <div className="claim-value">₹{result.claims.verifiedIncome.toLocaleString('en-IN')}</div>
+                <div className="claims-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                  <div className="claim-box" style={{ background: '#0F172A', padding: '1rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <div className="claim-label" style={{ fontSize: '0.8rem', color: '#64748B' }}>Verified Weekly Income</div>
+                    <div className="claim-value" style={{ fontSize: '1.2rem', fontWeight: 700, marginTop: '0.25rem' }}>₹{(result.claims.verifiedIncome || 0).toLocaleString('en-IN')}</div>
                   </div>
-                  <div className="claim-box">
-                    <div className="claim-label">Payout Period</div>
-                    <div className="claim-value" style={{ fontSize: '1.05rem' }}>{result.claims.period}</div>
+                  <div className="claim-box" style={{ background: '#0F172A', padding: '1rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <div className="claim-label" style={{ fontSize: '0.8rem', color: '#64748B' }}>Payout Period</div>
+                    <div className="claim-value" style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.25rem' }}>{result.claims.period}</div>
                   </div>
-                  <div className="claim-box">
-                    <div className="claim-label">Verification Level</div>
-                    <div className="claim-value" style={{ fontSize: '1rem', color: '#10B981' }}>
+                  <div className="claim-box" style={{ background: '#0F172A', padding: '1rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                    <div className="claim-label" style={{ fontSize: '0.8rem', color: '#64748B' }}>Verification Level</div>
+                    <div className="claim-value" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#10B981', marginTop: '0.25rem' }}>
                       {result.claims.verificationLevel}
                     </div>
                   </div>

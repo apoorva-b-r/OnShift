@@ -1,100 +1,23 @@
 package com.onshift.app.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.onshift.app.R
 
 @Composable
-fun SelectiveDisclosureScreen(
-    onGenerate: (List<String>) -> Unit
-) {
-    val claims = listOf(
-        stringResource(R.string.claim_identity_verified),
-        stringResource(R.string.claim_verified_income),
-        stringResource(R.string.claim_verification_level),
-        stringResource(R.string.claim_reconciliation_status),
-        stringResource(R.string.claim_individual_orders),
-        stringResource(R.string.claim_timestamps),
-        stringResource(R.string.claim_location)
-    )
-    
-    val defaultChecked = setOf(
-        stringResource(R.string.claim_identity_verified),
-        stringResource(R.string.claim_verified_income),
-        stringResource(R.string.claim_verification_level),
-        stringResource(R.string.claim_reconciliation_status)
-    )
-
-    var selectedClaims by remember { mutableStateOf(defaultChecked) }
-
+fun SelectiveDisclosureScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.selective_disclosure),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.disclosure_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = com.onshift.app.ui.theme.TextSecondary
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(claims) { claim ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = com.onshift.app.ui.theme.Surface)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 56.dp)
-                            .padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selectedClaims.contains(claim),
-                            onCheckedChange = { checked ->
-                                selectedClaims = if (checked) {
-                                    selectedClaims + claim
-                                } else {
-                                    selectedClaims - claim
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = claim, style = MaterialTheme.typography.bodyLarge)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = { onGenerate(selectedClaims.toList()) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = selectedClaims.isNotEmpty(),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
-        ) {
-            Text(text = stringResource(R.string.generate_credential))
-        }
+        Text(text = "Selective Disclosure Claims", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(text = "[X] Verified Income (₹30,100)")
+        Text(text = "[X] Verification Level (FINANCIALLY CORROBORATED)")
+        Text(text = "[ ] Platform Detailed Breakdown (Unchecked)")
+        Text(text = "[ ] Raw Bank Statement Transactions (Unchecked)")
     }
 }

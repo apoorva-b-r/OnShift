@@ -6,6 +6,8 @@ import {
 import { config } from '../config';
 import { VerificationRecord } from '../models';
 
+import { validateAndNormalizeEvidence, CanonicalEvidenceInput } from './evidenceAdapter';
+
 async function persistRecord(
   workerId: string,
   payoutPeriod: PayoutPeriod,
@@ -35,10 +37,16 @@ async function persistRecord(
 export async function calculateVerificationLevel(
   workerId: string,
   payoutPeriod: PayoutPeriod,
-  evidenceIds: string[]
+  evidenceIds: string[],
+  evidences?: any[]
 ): Promise<VerificationResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  let normalizedEvidences: CanonicalEvidenceInput[] | undefined = undefined;
+  if (evidences && Array.isArray(evidences)) {
+    normalizedEvidences = evidences.map(validateAndNormalizeEvidence);
+  }
 
   let result: VerificationResult | null = null;
   let engineSource = 'MOCK_FALLBACK';
@@ -47,7 +55,12 @@ export async function calculateVerificationLevel(
     const res = await fetch(`${config.verificationEngineUrl}/verification/level`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workerId, payoutPeriod, evidenceIds }),
+      body: JSON.stringify({
+        workerId,
+        payoutPeriod,
+        evidenceIds,
+        evidences: normalizedEvidences,
+      }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

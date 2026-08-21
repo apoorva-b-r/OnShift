@@ -25,10 +25,9 @@ export function issueCredential(workerId: string, claims: CredentialClaim): OnSh
 }
 
 /**
- * Verify the Ed25519 signature of an OnShiftIncomeCredential.
- * Accepts the credential-schema's native type to avoid field-name
- * mapping errors at the TypeScript level.
+ * Verify the Ed25519 signature of an OnShiftIncomeCredential (or any generic credential object).
+ * Accepts OnShiftIncomeCredential or any object with signature fields.
  */
-export function verifyCredential(credential: OnShiftIncomeCredential): CredentialVerificationResult {
-  return verifyCredentialSignature(credential);
+export function verifyCredential(credential: OnShiftIncomeCredential | any): CredentialVerificationResult {
+  return verifyCredentialSignature(credential as any);
 }

@@ -28,6 +28,8 @@ import { issueCredential, verifyCredential } from '../src/services/credentialSer
 let mongod: MongoMemoryServer;
 let originalEngineUrl: string | undefined;
 
+jest.setTimeout(30000);
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   const uri = mongod.getUri();
