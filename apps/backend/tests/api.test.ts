@@ -366,7 +366,7 @@ describe('Account Aggregator Consent Flow', () => {
     expect(res.body.authorizationUrl).toContain(res.body.consentId);
   });
 
-  it('GET /api/v1/consent/status/:consentId returns linked accounts and status', async () => {
+  it('GET /api/v1/consent/status/:consentId returns 200 for stored consent and 404 for nonexistent ID', async () => {
     const requestRes = await request(app)
       .post('/api/v1/consent/request')
       .send({ workerId: 'OS-AA-TEST-2', aaProvider: 'Setu Mock AA' });
@@ -376,10 +376,12 @@ describe('Account Aggregator Consent Flow', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.consentId).toBe(consentId);
-    expect(res.body.status).toBe('APPROVED');
+    expect(res.body.status).toBe('PENDING');
     expect(res.body.isMock).toBe(true);
-    expect(res.body.linkedAccounts).toHaveLength(1);
-    expect(res.body.linkedAccounts[0].bankName).toBe('HDFC Bank');
+
+    const res404 = await request(app).get('/api/v1/consent/status/nonexistent-id-12345');
+    expect(res404.status).toBe(404);
+    expect(res404.body.error).toBe('Consent request not found.');
   });
 });
 

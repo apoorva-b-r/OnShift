@@ -33,29 +33,13 @@ export const requestConsent = async (req: Request, res: Response) => {
 
 export const getConsentStatus = async (req: Request, res: Response) => {
   const { consentId } = req.params;
-
-  let existing = null;
   try {
-    existing = await ConsentRequest.findOne({ consentId });
+    const consent = await ConsentRequest.findOne({ consentId });
+    if (!consent) {
+      return res.status(404).json({ error: 'Consent request not found.' });
+    }
+    return res.status(200).json(consent);
   } catch (err) {
-    console.warn('MongoDB query failed for consent status, using fallback.');
+    return res.status(500).json({ error: 'Failed to fetch consent status.' });
   }
-
-  const status = existing ? existing.status : 'ACTIVE';
-  const isMock = existing ? existing.isMock : true;
-
-  return res.json({
-    consentId,
-    status: status === 'PENDING' ? 'APPROVED' : status, // auto-approval for sandbox demo flow
-    workerId: existing ? existing.workerId : 'OS-DEMO-001',
-    isMock,
-    linkedAccounts: [
-      {
-        bankName: 'HDFC Bank',
-        accountMask: 'XX4821',
-        accountType: 'SAVINGS',
-      },
-    ],
-    updatedAt: new Date().toISOString(),
-  });
 };
