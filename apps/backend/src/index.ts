@@ -3,6 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import routes from './routes';
 import { config } from './config';
+import { errorHandler, notFoundHandler } from './middleware/apiError';
 
 const app = express();
 
@@ -20,6 +21,9 @@ app.get('/', (_req, res) => {
     health: '/api/v1/health',
   });
 });
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   mongoose

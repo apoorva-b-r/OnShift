@@ -95,6 +95,7 @@ describe('Workers', () => {
       .post('/api/v1/workers')
       .send({ id: duplicateId, name: 'Duplicate Worker' });
     expect(res.status).toBe(409);
+    expect(res.body.error).toBe('CONFLICT');
   });
 });
 
@@ -118,7 +119,85 @@ describe('Evidence', () => {
         // integrityHash intentionally omitted
       });
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/integrityHash/i);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.message).toBe('Request validation failed.');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'integrityHash' })])
+    );
+  });
+});
+
+// =============================================================================
+// P1. Request validation and centralized errors
+// =============================================================================
+describe('Request validation and error responses', () => {
+  it('rejects an invalid worker payload with structured field details', async () => {
+    const res = await request(app).post('/api/v1/workers').send({ id: '   ' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'VALIDATION_ERROR',
+      message: 'Request validation failed.',
+      details: expect.arrayContaining([expect.objectContaining({ field: 'id' })]),
+    });
+  });
+
+  it('rejects verification requests with an invalid payout period', async () => {
+    const res = await request(app).post('/api/v1/verification/level').send({
+      workerId: 'OS-TEST-VALIDATION',
+      evidenceIds: [],
+      payoutPeriod: { startDate: '2026-08-08', endDate: '2026-08-01' },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'evidenceIds' }),
+        expect.objectContaining({ field: 'payoutPeriod' }),
+      ])
+    );
+  });
+
+  it('rejects credential issuance with an invalid verification level', async () => {
+    const res = await request(app).post('/api/v1/credentials/issue').send({
+      workerId: 'OS-TEST-VALIDATION',
+      disclosedClaims: {
+        verifiedIncome: 30100,
+        period: '01 Aug to 07 Aug 2026',
+        verificationLevel: 'UNVERIFIED',
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'disclosedClaims.verificationLevel' })])
+    );
+  });
+
+  it('rejects malformed consent and scheme-match payloads', async () => {
+    const [consentResponse, schemeResponse] = await Promise.all([
+      request(app).post('/api/v1/consent/request').send({ aaProvider: 'Finvu Sandbox' }),
+      request(app).post('/api/v1/schemes/match').send({ monthlyIncome: -1 }),
+    ]);
+
+    expect(consentResponse.status).toBe(400);
+    expect(consentResponse.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'workerId' })])
+    );
+    expect(schemeResponse.status).toBe(400);
+    expect(schemeResponse.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'monthlyIncome' })])
+    );
+  });
+
+  it('returns a consistent 404 response for an unknown route', async () => {
+    const res = await request(app).get('/api/v1/not-a-route');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('NOT_FOUND');
+    expect(res.body.message).toMatch(/was not found/i);
   });
 });
 

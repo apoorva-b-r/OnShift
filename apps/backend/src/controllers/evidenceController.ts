@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Evidence } from '@onshift/backend/src/models'; // using barrel export
+import { ApiError } from '../middleware/apiError';
 import {
   DEMO_DECLARED_EVIDENCE,
   DEMO_OBSERVED_EVIDENCE_ZOMATO,
@@ -70,25 +71,6 @@ export const createEvidence = async (req: Request, res: Response) => {
     ...rest
   } = req.body;
 
-  // Required fields per model (including hash‑chain fields)
-  const missing = [];
-  if (!source) missing.push('source');
-  if (!type) missing.push('type');
-  if (!platform) missing.push('platform');
-  if (!timestamp) missing.push('timestamp');
-  if (amount === undefined) missing.push('amount');
-  if (!currency) missing.push('currency');
-  if (!reference) missing.push('reference');
-  if (!capturedAt) missing.push('capturedAt');
-  if (!previousHash) missing.push('previousHash');
-  if (!integrityHash) missing.push('integrityHash');
-
-  if (missing.length) {
-    return res
-      .status(400)
-      .json({ error: `Missing required fields: ${missing.join(', ')}` });
-  }
-
   const evidenceDoc = {
     ...rest,
     source,
@@ -109,7 +91,7 @@ export const createEvidence = async (req: Request, res: Response) => {
     return res.status(201).json(saved);
   } catch (err) {
     console.warn('Failed to persist Evidence document.');
-    return res.status(500).json({ error: 'Failed to save evidence.' });
+    throw new ApiError(500, 'DATABASE_ERROR', 'Failed to save evidence.');
   }
 };
 
