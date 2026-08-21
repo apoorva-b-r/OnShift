@@ -351,3 +351,36 @@ describe('GET /api/v1/schemes', () => {
   });
 });
 
+// =============================================================================
+// 11. Account Aggregator Consent Flow
+// =============================================================================
+describe('Account Aggregator Consent Flow', () => {
+  it('POST /api/v1/consent/request returns 201 with consentId and isMock label', async () => {
+    const res = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST', aaProvider: 'Setu Mock AA' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.consentId).toMatch(/^AA-CONSENT-/);
+    expect(res.body.isMock).toBe(true);
+    expect(res.body.authorizationUrl).toContain(res.body.consentId);
+  });
+
+  it('GET /api/v1/consent/status/:consentId returns linked accounts and status', async () => {
+    const requestRes = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST-2', aaProvider: 'Setu Mock AA' });
+
+    const consentId = requestRes.body.consentId;
+    const res = await request(app).get(`/api/v1/consent/status/${consentId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.consentId).toBe(consentId);
+    expect(res.body.status).toBe('APPROVED');
+    expect(res.body.isMock).toBe(true);
+    expect(res.body.linkedAccounts).toHaveLength(1);
+    expect(res.body.linkedAccounts[0].bankName).toBe('HDFC Bank');
+  });
+});
+
+
