@@ -178,6 +178,19 @@ export const DEMO_VERIFICATION_SCENARIO_1: VerificationResult = {
   limitations: 'Prototype verification heuristic score.',
 };
 
+export const DEMO_VERIFICATION_SCENARIO_2: VerificationResult = {
+  level: 'CORROBORATED',
+  confidence: 0.72,
+  reason: 'Platform notifications corroborate declared income but an unexplained shortfall of INR 600 was detected in the bank settlement. Income is corroborated but not fully financially reconciled.',
+  supportingEvidence: [
+    'ev-decl-001',
+    'ev-obs-zomato-001',
+    'ev-obs-swiggy-001',
+    'ev-fin-hdfc-002',
+  ],
+  limitations: 'Unexplained settlement discrepancy prevents FINANCIALLY_CORROBORATED classification.',
+};
+
 export const DEMO_GOVERNMENT_SCHEMES: GovernmentScheme[] = [
   {
     id: 'SCHEME-ESHRAM-PENSION',

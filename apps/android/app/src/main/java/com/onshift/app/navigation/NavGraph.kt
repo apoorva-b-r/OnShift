@@ -1,20 +1,19 @@
 package com.onshift.app.navigation
 
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.onshift.app.ui.screens.HomeScreen
-import com.onshift.app.ui.screens.IdentityScreen
-import com.onshift.app.ui.screens.EvidenceScreen
-import com.onshift.app.ui.screens.ReconciliationScreen
-import com.onshift.app.ui.screens.SelectiveDisclosureScreen
-import com.onshift.app.ui.screens.GovernmentSchemesScreen
-import com.onshift.app.ui.screens.CredentialScreen
-import com.onshift.app.ui.screens.PrivacyScreen
-import com.onshift.app.ui.screens.VerificationScreen
+import com.onshift.app.data.model.UserPreferences
+import com.onshift.app.data.model.VerificationLevel
+import com.onshift.app.data.model.Worker
+import com.onshift.app.ui.screens.*
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -28,19 +27,37 @@ sealed class Screen(val route: String) {
     object Verification : Screen("verification")
 }
 
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     windowSizeClass: WindowSizeClass? = null
 ) {
+    val effectiveWindowSizeClass = windowSizeClass ?: WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
+
+    // Instantiating the exact data models required by HomeScreen
+    val currentVerificationLevel = VerificationLevel.entries.firstOrNull() ?: VerificationLevel.values().first()
+    val defaultWorker = Worker(
+        id = "OS-DEMO-001",
+        verificationLevel = currentVerificationLevel
+    )
+    val defaultPrefs = UserPreferences(
+        selectedPlatforms = listOf("Zomato", "Swiggy", "Uber")
+    )
+
     NavHost(
         navController = navController,
         startDestination = Screen.Home.route,
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                windowSizeClass = effectiveWindowSizeClass,
+                worker = defaultWorker,
+                reconciliationResult = null,
+                userPrefs = defaultPrefs
+            )
         }
         composable(Screen.Identity.route) {
             IdentityScreen()
@@ -55,7 +72,10 @@ fun AppNavGraph(
             SelectiveDisclosureScreen()
         }
         composable(Screen.GovernmentSchemes.route) {
-            GovernmentSchemesScreen()
+            GovernmentSchemesScreen(
+                schemeMatches = emptyList(),
+                onRestartDemo = { navController.navigate(Screen.Home.route) }
+            )
         }
         composable(Screen.Credential.route) {
             CredentialScreen()

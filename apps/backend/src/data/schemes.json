@@ -1,0 +1,1459 @@
+{
+  "catalogueVersion": "1.0",
+  "totalSchemes": 30,
+  "schemes": [
+    {
+      "id": "SCHEME-01",
+      "name": "Pradhan Mantri Shram Yogi Maan-dhan (PM-SYM)",
+      "category": "A",
+      "governmentLevel": "CENTRAL",
+      "description": "OnShift's delivery partners, transport drivers, and domestic helpers operate with zero structural retirement benefits; the 1:1 government matching contribution significantly reduces the cost of retirement planning",
+      "targetWorkerTypes": [
+        "Unorganised sector workers"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 40,
+          "details": "Age: 18 to 40 years"
+        },
+        "income": {
+          "details": "Monthly income of \u20b915,000/- or less",
+          "limit": 15000,
+          "type": "MAX"
+        },
+        "occupation": [
+          "Unorganised sector worker"
+        ],
+        "location": [],
+        "otherConditions": [
+          "Aadhaar Card mandatory",
+          "Savings Bank Account or Jan-Dhan Account Passbook (Aadhaar-linked) with mobile number linked",
+          "Indian citizen"
+        ],
+        "exclusions": [
+          "Must not be an income tax payer",
+          "Must not be engaged in the organized sector",
+          "Must not hold active membership in EPFO, ESIC, or the National Pension System (NPS)"
+        ]
+      },
+      "benefits": [
+        "Minimum assured monthly pension of \u20b93,000/- after age 60 for life",
+        "A matching contribution is provided by the Central Government on a 50:50 basis, where an equal amount to the subscriber's age-specific contribution (ranging from \u20b955/- to \u20b9200/- per month) is credited to the pension account",
+        "If the beneficiary passes away, the spouse is entitled to a 50% family pension (family pension is applicable only to the spouse)",
+        "If a subscriber dies before age 60, the spouse can choose to continue the regular contributions or withdraw under set provisions",
+        "Exit and Withdrawal Options:",
+        "If the subscriber exits within a period of less than 10 years, only the beneficiary's share of contribution will be returned with the savings bank interest rate",
+        "If exiting after a period of 10 years or more but before the age of 60, the beneficiary's share of contribution along with accumulated interest as actually earned by the fund or at the savings bank interest rate (whichever is higher) will be returned"
+      ],
+      "documents": [
+        "Aadhaar Card",
+        "Savings Bank Account Passbook / Jan-Dhan Account Passbook (Aadhaar-linked)",
+        "mobile number",
+        "bank IFSC code",
+        "and Self-Certification"
+      ],
+      "applicationUrl": "https://maandhan.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pm-sym",
+      "officialSource": "Ministry of Labour and Employment, Government of India"
+    },
+    {
+      "id": "SCHEME-02",
+      "name": "Atal Pension Yojana (APY)",
+      "category": "A",
+      "governmentLevel": "CENTRAL",
+      "description": "Highly beneficial for gig and platform workers who want flexible options for retirement planning, allowing them to choose from five different pension tiers based on average earnings",
+      "targetWorkerTypes": [
+        "Poor",
+        "under-privileged",
+        "and workers in the unorganised sector"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 40,
+          "details": "Age of joining: Minimum age of joining APY is 18 years and maximum is 40 years"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Resident of India",
+          "Subscriber must hold an active savings bank or post office savings bank account and provide consent for auto-debit"
+        ],
+        "exclusions": [
+          "Effective October 1, 2022, any citizen who is or has been an income taxpayer shall not be eligible to join APY"
+        ]
+      },
+      "benefits": [
+        "Guaranteed minimum pension of \u20b91,000/-, \u20b92,000/-, \u20b93,000/-, \u20b94,000/-, or \u20b95,000/- per month after the age of 60 years until death, based on age at entry and contribution amount (contributions range from \u20b942 to \u20b9210/month for age 18 entry, and \u20b9291 to \u20b91,454/month for age 40 entry)",
+        "After the subscriber's demise, the spouse of the subscriber shall be entitled to receive the same pension amount until death",
+        "After the demise of both the subscriber and the spouse, the nominee of the subscriber shall be entitled to receive the pension wealth accumulated till the subscriber's age of 60 years",
+        "Contributions are eligible for tax benefits under Section 80CCD(1) / Section 80CCD of the Income Tax Act",
+        "In case of death of the subscriber before 60 years, the spouse can continue contributions in the APY account in the spouse's name or the entire accumulated pension corpus will be returned to the spouse/nominee"
+      ],
+      "documents": [
+        "KYC details (auto-fetched from the active Bank/Post Office Savings account)",
+        "Aadhaar Card",
+        "mobile number",
+        "and APY Subscriber Registration Form (Aadhaar is not mandatory as of now",
+        "but savings bank account/post office account is mandatory)"
+      ],
+      "applicationUrl": "https://enps.nsdl.com/eNPS/NationalPensionSystem.html",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/apy",
+      "officialSource": "Pension Fund Regulatory and Development Authority (PFRDA) / Ministry of Finance, Government of India"
+    },
+    {
+      "id": "SCHEME-03",
+      "name": "Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)",
+      "category": "A",
+      "governmentLevel": "CENTRAL",
+      "description": "Informal and gig workers are frequently the sole breadwinners for their households. Since life insurance coverage is often low, OnShift can promote PMJJBY as an affordable safety net costing just over \u20b91 per day",
+      "targetWorkerTypes": [
+        "Savings bank/post office account holders"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 50,
+          "details": "Age: 18 to 50 years (completed, age nearer birthday). (Coverage valid up to age 55 subject to regular premium payments)"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Must hold an individual savings account with a participating bank/post office and link Aadhaar-based KYC to the account",
+          "Must provide consent for annual auto-debit",
+          "Eligible to join through only one savings bank account, even if multiple accounts exist",
+          "NRIs having an eligible bank account in India are eligible, but claims are paid in Indian currency"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "One-year term life cover of \u20b92,00,000 payable to the nominee upon the subscriber's death due to any cause (including natural causes, accidents, suicide, murder, or natural disasters)",
+        "Premium is \u20b9436/- per annum, auto-debited annually on or before May 31",
+        "Pro-rated premiums apply for delayed quarterly enrollment: \u20b9342 (Sept-Nov), \u20b9228 (Dec-Feb), and \u20b9114 (Mar-May)",
+        "Lien Period: For subscribers enrolling for the first time on or after June 1, 2016, insurance benefit shall not be available for death (due to any cause other than accident) occurring during the first 30 days from enrolment"
+      ],
+      "documents": [
+        "Aadhaar Card",
+        "Savings Bank Account Details",
+        "and Mobile Number CONSENT-CUM-DECLARATION FORM"
+      ],
+      "applicationUrl": "https://jansuraksha.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pmjjby",
+      "officialSource": "Ministry of Finance, Government of India"
+    },
+    {
+      "id": "SCHEME-04",
+      "name": "Pradhan Mantri Suraksha Bima Yojana (PMSBY)",
+      "category": "A",
+      "governmentLevel": "CENTRAL",
+      "description": "OnShift\u2019s delivery partners and transport drivers face significant road hazards daily. Because PMSBY costs just \u20b920 per year, this is a key recommendation to secure an accidental death/disability safety net",
+      "targetWorkerTypes": [
+        "Savings bank/post office account holders"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 70,
+          "details": "Age: 18 to 70 years (completed, age nearer birthday)"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Must hold an individual savings bank account/post office account with a participating bank",
+          "Must provide consent for annual auto-debit",
+          "In case of joint account holders, all holders can join if they satisfy eligibility criteria and pay the premium",
+          "NRIs holding an eligible bank account in India are eligible (claims paid in Indian currency)",
+          "Restricted to one claim across all bank accounts"
+        ],
+        "exclusions": [
+          "Cover terminates on attaining 70 years of age, upon account closure, or if the account balance is insufficient"
+        ]
+      },
+      "benefits": [
+        "Accidental death and disability insurance cover of up to \u20b92,00,000",
+        "\u20b92,00,000 for accidental death or total irrecoverable loss of both eyes or loss of use of both hands/feet",
+        "\u20b91,00,000 for total and irrecoverable loss of sight of one eye or loss of use of one hand/foot",
+        "Premium is \u20b920/- per annum, auto-debited on or before June 1 of each coverage year",
+        "Covers accidental death/disability resulting from vehicular accidents, drowning, crimes, snake bites, tree falls, and natural calamities Suicide is strictly excluded"
+      ],
+      "documents": [
+        "Aadhaar Card",
+        "Savings Bank Account Details",
+        "and completed Enrollment Form"
+      ],
+      "applicationUrl": "https://jansuraksha.gov.in/Forms-PMSBY.aspx",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pmsby",
+      "officialSource": "Ministry of Finance, Government of India"
+    },
+    {
+      "id": "SCHEME-05",
+      "name": "Ayushman Bharat - Pradhan Mantri Jan Arogya Yojana (AB-PMJAY)",
+      "category": "A",
+      "governmentLevel": "CENTRAL",
+      "description": "Health emergencies are a major cause of debt. OnShift can integrate an eligibility check to help workers instantly discover if their families are enrolled for cashless hospital care",
+      "targetWorkerTypes": [
+        "Economically deprived rural households and designated urban occupational categories"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "No restriction on age or family size"
+        },
+        "income": {
+          "details": "Excludes households earning a monthly income above \u20b910,000/-",
+          "limit": 10000,
+          "type": "MAX"
+        },
+        "occupation": [
+          "Ragpicker",
+          "Beggar",
+          "Domestic worker",
+          "Street vendor / Cobbler / hawker / other service provider working on streets",
+          "Construction worker / Plumber / Mason / Labour / Painter / Welder / Security guard / Coolie and other head-load worker",
+          "Sweeper / Sanitation worker / Mali",
+          "Home-based worker / Artisan / Handicrafts worker / Tailor",
+          "Transport worker / Driver / Conductor / Helper to drivers and conductors / Cart puller / Rickshaw puller",
+          "Shop worker / Assistant / Peon in small establishment / Helper / Delivery assistant / Attendant / Waiter",
+          "Electrician / Mechanic / Assembler / Repair worker",
+          "Washer-man / Chowkidar"
+        ],
+        "location": [
+          "Rural areas",
+          "Urban areas"
+        ],
+        "otherConditions": [
+          "Entitlement-based on deprivation and occupational criteria using the SECC database",
+          "Rural Beneficiaries: Must fall into at least one of six deprivation criteria (e.g. only one room with kucha walls, landless households deriving major income from manual casual labor, SC/ST, disabled member with no able-bodied adult) or automatic inclusion (destitute, manual scavengers, primitive tribal groups, legally released bonded labor)",
+          "Resident in India"
+        ],
+        "exclusions": [
+          "Households owning a 2, 3, or 4-wheeler, or a motorized fishing boat",
+          "Households owning mechanized farming equipment",
+          "Households with government employees",
+          "Households with employees in government-managed non-agricultural enterprises",
+          "Households owning refrigerators or landlines",
+          "Households living in decent, solidly built houses",
+          "Households owning 5 acres or more of agricultural land",
+          "Households holding Kisan cards with a credit limit above \u20b950,000/-"
+        ]
+      },
+      "benefits": [
+        "Cashless, paperless health cover of up to \u20b95,00,000/- per family per year for secondary and tertiary hospitalization in empanelled public and private hospitals across India",
+        "Comprehensive coverage: consultations, diagnostics, medicines, surgery, ICU, implants, food, and pre-hospitalization (3 days) and post-hospitalization (15 days) costs",
+        "Covers approximately 1,929 medical procedures; pre-existing diseases are covered from day one with no age, gender, or family size restrictions"
+      ],
+      "documents": [
+        "Age & Identity Proof (Aadhaar Card / PAN Card)",
+        "Proof of Address",
+        "Contact details (mobile",
+        "email)",
+        "Caste Certificate",
+        "Income Certificate",
+        "and Document Proof of the current status of the family (joint or nuclear) (Aadhaar card is not mandatory for availing services)"
+      ],
+      "applicationUrl": "https://pmjay.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ab-pmjay",
+      "officialSource": "National Health Authority (NHA), Ministry of Health and Family Welfare, Government of India"
+    },
+    {
+      "id": "SCHEME-06",
+      "name": "Mahatma Jyotirao Phule Jan Arogya Yojana (MJPJAY)",
+      "category": "A",
+      "governmentLevel": "STATE",
+      "description": "OnShift\u2019s regional workers in Maharashtra can access the expanded MJPJAY network for cashless surgeries and critical care",
+      "targetWorkerTypes": [
+        "All families residing in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Starting July 1, 2024, the scheme covers all families in Maharashtra (no income limit)",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Maharashtra",
+          "865 villages of Belgaon, Karwar, Kalburgi and Bidar Districts of Maharashtra-Karnataka border"
+        ],
+        "otherConditions": [
+          "Must possess Orange, Yellow, Antyodaya, or Annapurna ration card, or a White ration card (for the 14 agriculturally distressed districts), or have active registration with the Maharashtra Building and Other Construction Workers Welfare Board",
+          "Category B includes White ration card holders and families without ration cards having domicile certificates of Maharashtra",
+          "Category C includes students in government-recognized Ashram schools/orphanages, women in government-recognized Ashrams, senior citizens in recognized old age homes, journalists, and registered construction workers from outside Maharashtra",
+          "Category D includes road traffic accident victims from outside Maharashtra or India who met with an accident on roads in Maharashtra",
+          "Category E includes families holding AAY, PHH, or Annapurna ration cards from the border districts"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Cashless medical treatment up to \u20b91,50,000/- per family per policy year in empanelled hospitals (increased to \u20b92,50,000/- for renal transplants)",
+        "From July 2024, integrated with AB-PMJAY to offer up to \u20b95,00,000/- in total annual coverage for Categories A, B, C, and E",
+        "For Category D, provides \u20b91,00,000/- per person per year for road accident treatments (184 health packages)",
+        "Includes hemodialysis (8 to 12 cycles per pre-auth) covering consultations, diagnostics, consumable dialyzers, tubings, needles, and medicines",
+        "Covers bed charges, nursing, consultants' fees, diagnostic tests, food, and one-time transport cost back to residence (or deceased body transport in the event of death)"
+      ],
+      "documents": [
+        "Health Card",
+        "or Orange/Yellow/Antyodaya/Annapurna/White Ration Card",
+        "or active MBOCWWB registration card",
+        "and valid identity proof (Aadhaar Card/Slip",
+        "PAN",
+        "Voter ID",
+        "Driving License",
+        "Handicap Certificate",
+        "senior citizen card)"
+      ],
+      "applicationUrl": "https://www.jeevandayee.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/mjpjay",
+      "officialSource": "Public Health and Family Welfare Department, Government of Maharashtra\n\n---\n\n## CATEGORY B: CONDITIONALLY RELEVANT\nSchemes that could be useful to some OnShift workers but require additional characteristics such as age, gender, occupation, social category, disability, rural/urban residence, specific registration, employment type, or other conditions"
+    },
+    {
+      "id": "SCHEME-07",
+      "name": "PM Street Vendor's AtmaNirbhar Nidhi (PM SVANidhi)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Helps mobile barbers, on-demand laundry partners, or street hawkers secure collateral-free capital to expand businesses",
+      "targetWorkerTypes": [
+        "Urban and peri-urban street vendors"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Age Limit: There is no age limit to apply"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Street vendor / Hawker"
+        ],
+        "location": [
+          "Urban Local Bodies (ULBs) in all States and Union Territories",
+          "Surrounding development/peri-urban/rural areas vending within ULB limits"
+        ],
+        "otherConditions": [
+          "Must possess Certificate of Vending (CoV) or ULB-issued ID Card, or be identified in a ULB survey, or possess a Letter of Recommendation (LoR) issued by the ULB/Town Vending Committee (TVC)",
+          "Engaged in vending in urban areas on or before March 24, 2020"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Collateral-free working capital loan:",
+        "st Tranche:** Loan up to \u20b910,000 or \u20b915,000 (repayment in 12 months)",
+        "nd Tranche:** Loan up to \u20b920,000 or \u20b925,000 (repayment in 18 months).",
+        "rd Tranche:** Loan up to \u20b950,000 (repayment in 36 months)",
+        "Timely/early repayment unlocks higher tranches with no prepayment penalty",
+        "Interest subsidy on timely/early repayment @ 7% per annum",
+        "Monthly digital transaction cashback incentives from \u20b950/- up to \u20b9100/-"
+      ],
+      "documents": [
+        "For First Loan: Certificate of Vending or ULB Identity Card (for Categories A & B)",
+        "or Letter of Recommendation (for Categories C & D)",
+        "KYC Documents: Aadhaar Card (Voter ID Card for Assam/Meghalaya)",
+        "Driving License",
+        "MNREGA Card",
+        "or PAN Card",
+        "For LoR: account statement/passbook copy",
+        "proof of vendor membership",
+        "and request letter",
+        "For Second Loan: Loan Closure Document"
+      ],
+      "applicationUrl": "https://pmsvanidhi.mohua.gov.in/",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pm-svanidhi",
+      "officialSource": "Ministry of Housing and Urban Affairs (MoHUA), Government of India"
+    },
+    {
+      "id": "SCHEME-08",
+      "name": "PM Vishwakarma",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Self-employed carpenters, plumbers, electricians, and independent craftspeople on OnShift can upgrade tools and access concessional capital",
+      "targetWorkerTypes": [
+        "Traditional artisans and craftspeople"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Age: Minimum 18 years on the date of registration"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Artisan or craftsperson working with hands and tools in one of the 18 family-based traditional trades"
+        ],
+        "location": [],
+        "otherConditions": [
+          "Must be actively engaged in the trade on the date of registration",
+          "Must not have received loans under similar credit-based schemes (PMEGP, PM SVANidhi, Mudra) in the past 5 years"
+        ],
+        "exclusions": [
+          "Restricted to one member per family (husband, wife, and unmarried children)",
+          "A person in government service and their family members shall not be eligible"
+        ]
+      },
+      "benefits": [
+        "PM Vishwakarma Certificate and ID Card",
+        "Basic Training of 5-7 days and optional Advanced Training of 15 days with \u20b9500/- daily stipend",
+        "Toolkit Incentive: \u20b915,000/- grant",
+        "Collateral-free Enterprise Development Loans up to \u20b91,00,000 (First Tranche, 18-month repayment) and \u20b92,00,000 (Second Tranche, 30-month repayment) at a concessional interest rate of 5%, with 8% interest subvention",
+        "Digital transaction incentives: \u20b91 per transaction (up to 100 transactions monthly)"
+      ],
+      "documents": [
+        "Aadhaar Card",
+        "mobile number",
+        "bank account details",
+        "and Ration Card (if unavailable",
+        "Aadhaar cards of all family members)"
+      ],
+      "applicationUrl": "https://pmvishwakarma.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pmv",
+      "officialSource": "Ministry of Micro, Small and Medium Enterprises (MoMSME), Ministry of Skill Development and Entrepreneurship (MSDE), and Department of Financial Services (DFS) of the Ministry of Finance"
+    },
+    {
+      "id": "SCHEME-09",
+      "name": "Pradhan Mantri Matru Vandana Yojana (PMMVY 2.0)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Pregnant gig-economy female workers have no paid maternity leave. PMMVY helps compensate for lost daily earnings during childbirth",
+      "targetWorkerTypes": [
+        "Pregnant women and lactating mothers from socially and economically disadvantaged sections"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 19,
+          "max": null,
+          "details": "At least 19 years old"
+        },
+        "income": {
+          "details": "Net family income is less than \u20b98 Lakh per annum",
+          "limit": 800000,
+          "type": "MAX"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Pregnant woman or lactating mother",
+          "Applicable for first two living children, provided the second child is a girl",
+          "Eligible beneficiary can apply within 270 days from the child birth",
+          "Applicant must belong to a socially and economically disadvantaged category (SC/ST, BPL Card holder, PMJAY beneficiary, female e-Shram cardholder, Kisan Samman Nidhi beneficiary, MGNREGA Job Card holder, or net family income less than \u20b98 Lakh per annum)"
+        ],
+        "exclusions": [
+          "In regular employment with the Central/State Governments, PSUs, or in receipt of similar maternity benefits under any other law"
+        ]
+      },
+      "benefits": [
+        "First Child:** Cash incentive of \u20b95,000/- in two installments:",
+        "\u20b93,000/- on registration and at least one ANC checkup within 6 months of LMP",
+        "\u20b92,000/- post-childbirth registration and immunization",
+        "Average benefit of \u20b96,000/- is achieved when JSY cash incentive is added post institutional delivery",
+        "Second Child (if a girl):** A single cash transfer of \u20b96,000/- post-birth after child registration and 14-week vaccinations"
+      ],
+      "documents": [
+        "Aadhaar card",
+        "Aadhaar-mapped bank details",
+        "e-Shram card / MGNREGA card / BPL ration card / eligibility proof",
+        "MCP/RCHI card showing LMP and ANC dates",
+        "Child Birth Certificate",
+        "and child immunization details"
+      ],
+      "applicationUrl": "https://pmmvy.wcd.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pmmvy",
+      "officialSource": "Ministry of Women and Child Development, Government of India"
+    },
+    {
+      "id": "SCHEME-10",
+      "name": "NAMO Shree Scheme (Gujarat)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Direct maternal nutritional and financial support for female gig partners and spouses of male partners in Gujarat",
+      "targetWorkerTypes": [
+        "Pregnant women and lactating mothers of Gujarat"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Family income must not be more than \u20b98,00,000/- per year",
+          "limit": 800000,
+          "type": "MAX"
+        },
+        "occupation": [],
+        "location": [
+          "Gujarat"
+        ],
+        "otherConditions": [
+          "Must be a pregnant woman or a lactating mother",
+          "Must belong to any of the eligible categories: ST, SC, NFSA beneficiary, PMJAY beneficiary, BPL families, e-Shram Card holder, women farmers, or MGNREGA beneficiary",
+          "Must register at the time of the first antenatal check-up",
+          "Must deliver the child in any government or private hospital"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Financial assistance of \u20b912,000/- for the first two live children, distributed in phases from conception to delivery",
+        "First Pregnancy Disbursal:** \u20b95,000/- at registration; \u20b92,000/- after 6 months; \u20b93,000/- after institutional delivery; \u20b92,000/- after the 14-week vaccination",
+        "Second Pregnancy Disbursal:** \u20b92,000/- at registration; \u20b93,000/- after 6 months; \u20b96,000/- after institutional delivery (from Central Govt if a girl, from State if a boy); \u20b91,000/- after the 14-week vaccination",
+        "Eligible to concurrently avail benefits of central schemes like PMMVY and JSY"
+      ],
+      "documents": [
+        "Aadhaar Card",
+        "details of bank account",
+        "mobile number",
+        "MAMTA Card",
+        "and Certificate from Medical Institution of Delivery (for last installment)"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/nss-g",
+      "officialSource": "Women and Child Development Department, Government of Gujarat"
+    },
+    {
+      "id": "SCHEME-11",
+      "name": "Pradhan Mantri Ujjwala Yojana 2.0 (PMUY)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Helps low-income female informal workers and migrant families on OnShift transition to clean cooking fuel, lowering daily household costs",
+      "targetWorkerTypes": [
+        "Adult women from poor/economically disadvantaged households"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Applicant must be an adult woman (minimum 18 years old)"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Her household must not possess any existing LPG connection",
+          "Must belong to eligible categories: SC/ST Households, Pradhan Mantri Awas Yojana (Gramin) beneficiaries, Most Backward Classes, Antyodaya Anna Yojana (AAY) cardholders, Tea/Ex-Tea Garden tribes, Forest Dwellers, residents of islands/river islands, SECC Households, or poor households verified under a 14-point declaration"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Free LPG connection with cash assistance of \u20b91,600 (for 14.2kg cylinder) / \u20b91,150 (for 5 kg cylinder)",
+        "Covers Security Deposit of Cylinder (\u20b91,250 / \u20b9800), Pressure Regulator (\u20b9150), LPG Hose (\u20b9100), Domestic Gas Consumer Card (\u20b925), and installation/demonstration charges (\u20b975)",
+        "First LPG refill and stove (hotplate) provided free of cost by Oil Marketing Companies"
+      ],
+      "documents": [
+        "KYC",
+        "Ration Card / State family composition document (or self-declaration Annexure I for migrants)",
+        "Aadhaar of applicant and adult family members",
+        "Proof of Address",
+        "and Bank Account Details (Aadhaar-linked)"
+      ],
+      "applicationUrl": "https://www.pmuy.gov.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/pmuy2",
+      "officialSource": "Ministry of Petroleum and Natural Gas, Government of India"
+    },
+    {
+      "id": "SCHEME-12",
+      "name": "National Family Benefit Scheme (Maharashtra)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Low-income families working in the informal economy in Maharashtra can access a lump sum of \u20b920,000 to stabilize finances if the primary earner passes away",
+      "targetWorkerTypes": [
+        "Low-income BPL households"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "The family must be living Below the Poverty Line (BPL)",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Deceased primary earner must be between 18 and 59 years old",
+          "Applicant must be a family member or dependent of the deceased primary breadwinner (earning member on whom family primarily depended for income)",
+          "The family must be living Below the Poverty Line (BPL)"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "One-time lump sum financial assistance of \u20b920,000/- paid to the surviving family members"
+      ],
+      "documents": [
+        "Applicant's ID Proof (Aadhaar/Voter ID)",
+        "Aadhaar Card of the deceased",
+        "Death Certificate",
+        "FIR Copy (if applicable)",
+        "Age Proof of the deceased",
+        "verified BPL Card/Ration Card",
+        "Address Proof",
+        "and Bank Passbook"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/nfbsm",
+      "officialSource": "Social Justice & Special Assistance Department, Government of Maharashtra (Guidelines link: [https://sjsa.maharashtra.gov.in/scheme/national-family-benefit-scheme/](https://sjsa.maharashtra.gov.in/scheme/national-family-benefit-scheme/))"
+    },
+    {
+      "id": "SCHEME-13",
+      "name": "Indira Gandhi National Old Age Pension Scheme (IGNOAPS)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Direct retirement income security for unorganised workers who have retired from platform/informal work",
+      "targetWorkerTypes": [
+        "Elderly Below Poverty Line (BPL) citizens"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 60,
+          "max": null,
+          "details": "Age: At least 60 years of age"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Citizen of India",
+          "Must belong to a household living Below Poverty Line according to criteria prescribed by GoI"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Monthly pension of \u20b9200/- up to 79 years and \u20b9500/- thereafter (80 years and above)"
+      ],
+      "documents": [
+        "Application Form",
+        "Domicile Certificate",
+        "Residential Proof (Voter card/Electricity Bill/Aadhaar Card)",
+        "Age Proof (Birth Certificate or school certificate or SHO or Medical Board)",
+        "Aadhaar Number",
+        "and Bank Passbook"
+      ],
+      "applicationUrl": "https://web.umang.gov.in/web_new/home",
+      "mySchemeUrl": "Not specified",
+      "officialSource": "Ministry of Rural Development, Government of India"
+    },
+    {
+      "id": "SCHEME-14",
+      "name": "Indira Gandhi National Widow Pension Scheme (IGNWPS)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Direct financial safety net for widows of unorganised workers",
+      "targetWorkerTypes": [
+        "Widows of BPL families"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 40,
+          "max": 79,
+          "details": "Widow in the age group of 40-79 years"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Indian citizen",
+          "Must belong to a household living below the poverty line according to criteria prescribed by GoI",
+          "Must be a widow"
+        ],
+        "exclusions": [
+          "Discontinued in case of remarriage or if the widow moves above the poverty line"
+        ]
+      },
+      "benefits": [
+        "Monthly pension of \u20b9300/- per month for widows between 40 and 79 years, and \u20b9500/- per month for widows aged 80 years and above"
+      ],
+      "documents": [
+        "Death Certificate of husband (with the name of surviving wife/widow)",
+        "BPL Card",
+        "and Age Proof (Birth certificate/school certificate/ration card/EPIC/Medical Officer age certificate)"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ignwps",
+      "officialSource": "Administered by the Ministry of Rural Development & State Governments"
+    },
+    {
+      "id": "SCHEME-15",
+      "name": "Indira Gandhi National Disability Pension Scheme (IGNDPS)",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Essential financial support for unorganised gig workers who suffer severe permanent disabilities",
+      "targetWorkerTypes": [
+        "Disabled people from BPL households"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Age: 18 years and above"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [],
+        "otherConditions": [
+          "Physically or mentally disabled with a disability level of 80% or more (Dwarfs are also eligible)",
+          "Resident of India",
+          "Household must belong to Below Poverty Line (BPL) category"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Monthly pension of \u20b9300/- per month for disabled individuals between 18 and 79 years, and \u20b9500/- per month for those aged 80 years and above"
+      ],
+      "documents": [
+        "BPL Card / Aadhaar Card",
+        "Age Proof (Birth/school certificate",
+        "ration card",
+        "EPIC",
+        "or Medical Officer age certificate)",
+        "and Disability Certificate."
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "Not specified",
+      "officialSource": "Ministry of Rural Development, Government of India"
+    },
+    {
+      "id": "SCHEME-16",
+      "name": "Maharashtra Construction Worker Natural Death Benefit",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "OnShift manual laborers registered with the state board can secure a lump sum of \u20b92,00,000 for their families in case of natural death",
+      "targetWorkerTypes": [
+        "Legal heirs of deceased registered construction workers in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Deceased construction worker must have been registered under the Maharashtra Building and Other Construction Workers Welfare Board with active registration at the time of death",
+          "Deceased construction worker must have been between 18 and 60 years old at active registration",
+          "Death of the worker must be due to natural causes",
+          "Applicant should be the legal heir of the deceased construction worker"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "One-time lump sum financial assistance of \u20b92,00,000/- paid directly to the registered legal heir"
+      ],
+      "documents": [
+        "Passport-size Photo of applicant",
+        "Aadhaar Card",
+        "Death Certificate (issued by competent medical authorities)",
+        "MBOCWWB Identity Card of the deceased worker",
+        "Bank Passbook",
+        "and Proof of Residence"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/fafnd",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-17",
+      "name": "Maharashtra Construction Worker Maternity Benefit",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Manual construction laborers on OnShift can claim delivery benefits to help cover childbirth costs without debt",
+      "targetWorkerTypes": [
+        "Registered construction workers or their spouses in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Applicant must be a registered female construction worker under the MBOCWWB, or the pregnant wife of a registered male worker with active board subscription",
+          "The registered worker must be between 18 and 60 years old",
+          "Applicant must be Pregnant",
+          "Benefit is strictly restricted to the first two deliveries only"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Direct cash assistance for childbirth expenses:",
+        "\u20b915,000/- for Normal Delivery",
+        "\u20b920,000/- for Surgical Delivery (Cesarean Section)"
+      ],
+      "documents": [
+        "Passport-size Photo",
+        "Aadhaar Card",
+        "Identity Card of Maharashtra Building and Other Construction Workers Welfare Board",
+        "Bank Passbook",
+        "Natural/Surgical Maternity Certificate (issued by competent medical authorities)",
+        "medical treatment payments",
+        "and Proof of Residence"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/fandsd",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-18",
+      "name": "Maharashtra Construction Worker First Self-Marriage Expenses",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Reimburses marriage costs for young unorganised laborers, preventing them from falling into informal debt",
+      "targetWorkerTypes": [
+        "Registered construction workers in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 60,
+          "details": "Registered worker must be between 18 and 60 years old"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Building and other construction work"
+        ],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Must hold active registration with the MBOCWWB",
+          "Benefit is strictly restricted to the worker's first self-marriage"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "A one-time lump sum reimbursement of \u20b930,000/- to help cover first marriage expenses"
+      ],
+      "documents": [
+        "Passport-size Photo",
+        "Aadhaar Card",
+        "MBOCWWB Identity Card",
+        "Bank Passbook",
+        "Proof of Residence",
+        "Marriage Certificate",
+        "and Affidavit for first marriage"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/fsme",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-19",
+      "name": "Maharashtra Construction Worker Permanent Disability Benefit",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "On-site injuries can end earnings; provides registered workers with \u20b92,00,000 in transition capital",
+      "targetWorkerTypes": [
+        "Registered construction workers with severe permanent disabilities"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 60,
+          "details": "Registered worker must be between 18 and 60 years old"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Building and other construction work"
+        ],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Must hold active registration under the MBOCWWB",
+          "Must have a certified permanent disability of 75% or more as certified by a competent medical officer or board",
+          "Covered under the board's Mediclaim & Personal Accident Insurance framework (effective for cases after July 26, 2014)"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "A one-time lump sum financial assistance of \u20b92,00,000/- to support the disabled worker"
+      ],
+      "documents": [
+        "Passport-size Photo",
+        "Aadhaar Card",
+        "MBOCWWB Identity Card",
+        "Bank Passbook",
+        "Disability Certificate (issued by a competent medical officer/board)",
+        "details of medical treatment payments",
+        "and Proof of Residence"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/fat75opd",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-20",
+      "name": "Maharashtra Construction Worker Tool Purchase Grant",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Direct cash grant to help manual laborers buy professional tools, improving platform job opportunities and earning capacity",
+      "targetWorkerTypes": [
+        "Registered construction workers in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": 60,
+          "details": "Registered worker must be between 18 and 60 years old"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Building and other construction work"
+        ],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Must hold active registration with the MBOCWWB and regularly pay subscriptions"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "A one-time direct cash grant of \u20b95,000/- for purchasing professional tools and equipment related to the worker's trade"
+      ],
+      "documents": [
+        "Worker ID Proof (Ration Card",
+        "Voter ID",
+        "Aadhaar",
+        "etc.)",
+        "Employer Certificate or Self-Certification (verified by the Labour Inspector or SDO)",
+        "Bank Passbook",
+        "and eShram ID Card (if available)"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ltmbocwwb",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-21",
+      "name": "Maharashtra Construction Worker Widow/Widower Pension",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Provides stable, multi-year annuity support for the spouses of registered manual partners who pass away",
+      "targetWorkerTypes": [
+        "Surviving spouses of deceased registered construction workers in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Applicant must be the widow or widower of a deceased construction worker",
+          "The deceased worker must have held active registration with the MBOCWWB (registration age limit is 18 to 60 years)",
+          "The death of the worker must have occurred during the course of employment"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Financial pension of \u20b924,000/- per annum, paid annually for up to 5 years (totaling \u20b91,20,000)"
+      ],
+      "documents": [
+        "Passport-size Photo",
+        "Aadhaar Card",
+        "MBOCWWB Identity Card of the deceased worker",
+        "Bank Passbook",
+        "Death Certificate (confirming death during employment)",
+        "and Proof of Residence"
+      ],
+      "applicationUrl": "https://mahabocw.in",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/fawwrcw",
+      "officialSource": "Maharashtra Building and Other Construction Workers Welfare Board, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-22",
+      "name": "Providing Tin Stalls to Gatai Kamgar (Maharashtra Cobblers)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Helps neighborhood SC shoe-repair partners protect tools and inventory from monsoons, ensuring consistent daily earnings",
+      "targetWorkerTypes": [
+        "Roadside cobblers belonging to the Scheduled Caste (Charmakar) community in Maharashtra"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Age: 18 years of age or older"
+        },
+        "income": {
+          "details": "Total annual household income must be below \u20b940,000/- in rural areas and \u20b950,000/- in urban areas",
+          "limit": 50000,
+          "type": "MAX"
+        },
+        "occupation": [
+          "Roadside cobbler / Leather footwear production and leather goods preparation"
+        ],
+        "location": [
+          "Maharashtra"
+        ],
+        "otherConditions": [
+          "Must belong to a Scheduled Caste (specifically the Charmakar community)",
+          "The workspace location must be owned, rented, leased, or officially provided free of charge by a Gram Panchayat, Municipality, Cantonment Board, or Municipal Corporation or must be of own property of the applicant"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "% government grant for a durable tin stall (size: 4' x 5' x 6.5') valued at \u20b916,367/- and \u20b9500/- in financial assistance for setup charges"
+      ],
+      "documents": [
+        "Proof of Age (Birth Certificate",
+        "Marksheet)",
+        "Passport Sized Photographs (signed across)",
+        "Domicile Certificate of Maharashtra",
+        "Proof of roadside cobbler status (issued by Gram Panchayat)",
+        "Caste Certificate",
+        "Income Certificate",
+        "and Bank Account Details"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ptstgk",
+      "officialSource": "Department of Social Justice & Special Assistance, Government of Maharashtra"
+    },
+    {
+      "id": "SCHEME-23",
+      "name": "Labor Tool Assistance Scheme (Chhattisgarh)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Helps onboarding electricians, plumbers, carpenters, and painters on OnShift in Chhattisgarh secure free professional tool kits to perform jobs",
+      "targetWorkerTypes": [
+        "Registered construction workers in Chhattisgarh State"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Age of the registered worker should not be less than 18 years"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Construction work (mason, electrician, plumber, carpenter, porter, painter, etc.)"
+        ],
+        "location": [
+          "Chhattisgarh"
+        ],
+        "otherConditions": [
+          "Construction worker registered in any district of Chhattisgarh",
+          "Can avail the help of tools of only one trade"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Free equipment/tools provided based on the registered category to help resume and expand work"
+      ],
+      "documents": [
+        "Training Certificate",
+        "Registration Card",
+        "and Bank passbook photo copy"
+      ],
+      "applicationUrl": "https://cdn.s3waas.gov.in/s3d395771085aab05244a4fb8fd91bf4ee/uploads/2018/05/2018051923.pdf",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ltas",
+      "officialSource": "Labor Department, Government of Chhattisgarh (Guidelines/Rules website: [https://cglabour.nic.in/BOCW/ApplicationSchemes.aspx](https://cglabour.nic.in/BOCW/ApplicationSchemes.aspx))."
+    },
+    {
+      "id": "SCHEME-24",
+      "name": "Loans for Tools (MBOCWWB) (Meghalaya)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Assists older, long-term construction partners in Meghalaya in upgrading or buying specialized instruments",
+      "targetWorkerTypes": [
+        "Registered building and construction workers in Meghalaya"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 55,
+          "max": null,
+          "details": "Beneficiary should have completed 55 years of age"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Building and other construction work"
+        ],
+        "location": [
+          "Meghalaya"
+        ],
+        "otherConditions": [
+          "Must be registered under the Meghalaya Building & Other Construction Workers Welfare Board",
+          "Completed 3 years of membership in the fund and regularly remits contributions"
+        ],
+        "exclusions": [
+          "Beneficiary is prohibited from selling the tools purchased and is not entitled to a second grant"
+        ]
+      },
+      "benefits": [
+        "One-time grant of up to \u20b910,000/- for the purchase of tools, recovered in not more than sixty installments"
+      ],
+      "documents": [
+        "For New Registration: Photograph",
+        "ID Proof (Electoral Card",
+        "Ration Card",
+        "etc.)",
+        "Employer Certificate/Self-Certification",
+        "Bank Passbook",
+        "Nomination Form",
+        "self-declaration of non-enrolment in other boards",
+        "and Age proof",
+        "For Instrument Grant: MBOCWWB ID Card",
+        "Invoice Copy of Instruments Purchased",
+        "and Bank account details/Bank Passbook"
+      ],
+      "applicationUrl": "http://megbocwwb.gov.in/bocw_services",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/ltmbocwwb",
+      "officialSource": "Meghalaya Building and Other Construction Workers Welfare Board, Labour Department, Government of Meghalaya"
+    },
+    {
+      "id": "SCHEME-25",
+      "name": "Sikkim Grant of Award to Transgender (SGATT)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Supports platform diversity and inclusion, providing financial grants to disadvantaged transgender gig partners in Sikkim",
+      "targetWorkerTypes": [
+        "Transgender individuals belonging to BPL households in Sikkim"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Belonging to a household of the Below Poverty Line (BPL) category",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Sikkim"
+        ],
+        "otherConditions": [
+          "Transgender individual",
+          "Belonging to a household of the Below Poverty Line (BPL) category in Sikkim"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Financial assistance provided by the state government (Exact amount is *Not specified*)."
+      ],
+      "documents": [
+        "Not specified"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/hi/schemes/sgatt",
+      "officialSource": "Department of Women & Child Welfare, Government of Sikkim"
+    },
+    {
+      "id": "SCHEME-26",
+      "name": "Direct Benefit to Artisans - Supports to Artisans in Indigent Circumstances",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Helps retired or elderly self-employed craftspeople on OnShift secure direct monthly financial assistance during their non-earning years",
+      "targetWorkerTypes": [
+        "Master craftspeople and traditional artisans in old age"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 60,
+          "max": null,
+          "details": "The artisan should not be less than 60 years of age on the date of application (age may be relaxed in the case of artisans with disabilities)"
+        },
+        "income": {
+          "details": "Annual income of the artisan must not exceed \u20b91,00,000/- in the preceding financial year",
+          "limit": 100000,
+          "type": "MAX"
+        },
+        "occupation": [
+          "Artisan or craftsperson"
+        ],
+        "location": [],
+        "otherConditions": [
+          "Master craftsperson who is a recipient of Shilp Guru Award / National Award / Merit Certificate / State Award / or any larger award"
+        ],
+        "exclusions": [
+          "Should not be a recipient of similar financial assistance from any other source"
+        ]
+      },
+      "benefits": [
+        "Assistance of up to \u20b98,000/- per month granted as a monthly allowance or lump sum grant or both, disbursed via DBT/PFMS"
+      ],
+      "documents": [
+        "Photograph",
+        "Self-Attested copy of Handicrafts Award certificate",
+        "Income Certificate",
+        "Age Proof",
+        "Disability Certificate (if applicable)",
+        "and Affidavit attested by First-Class Magistrate"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/schemes/nhdp-dba-saic",
+      "officialSource": "Office of the Development Commissioner (Handicrafts), Ministry of Textiles, Government of India"
+    },
+    {
+      "id": "SCHEME-27",
+      "name": "Scheme for Financial Assistance for Veteran Artists",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Financial support for older, creative self-employed partners in Delhi or Maharashtra who have contributed significantly to their fields",
+      "targetWorkerTypes": [
+        "Elderly artists and scholars"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 60,
+          "max": null,
+          "details": "Must be at least 60 years of age (does not apply to the spouse)"
+        },
+        "income": {
+          "details": "Personal income (including spouse) must not exceed \u20b94,000/- per month or an annual income of \u20b948,000/- (excluding any artiste pension already received from Govt)",
+          "limit": 48000,
+          "type": "MAX"
+        },
+        "occupation": [
+          "Artist",
+          "Scholar"
+        ],
+        "location": [],
+        "otherConditions": [
+          "Must be getting a pension of at least \u20b9500/- per month from the State Government/UT, or recommended by the Zonal Cultural Centres",
+          "Contribution of significance to art and letters (traditional scholars are eligible notwithstanding the absence of published works)"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Financial assistance given in the form of a monthly allowance, shared between Center and State/UT (Exact amount is *Not specified*)."
+      ],
+      "documents": [
+        "Recent passport-size photo",
+        "self-attested copies of address proof",
+        "date of birth proof",
+        "Aadhaar Card",
+        "original Income Certificate [Annexure-II(A)]",
+        "copies of supporting documents for contributions/awards",
+        "and verified Bank Authorization letter (Annexure-IV)"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "Not specified",
+      "officialSource": "Ministry of Culture, Government of India"
+    },
+    {
+      "id": "SCHEME-28",
+      "name": "MGNREGA",
+      "category": "B",
+      "governmentLevel": "CENTRAL",
+      "description": "Rural partners on OnShift can access guaranteed manual employment during off-peak seasons",
+      "targetWorkerTypes": [
+        "Rural households"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": 18,
+          "max": null,
+          "details": "Age: Above 18 years old"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Rural areas"
+        ],
+        "otherConditions": [
+          "Indian Citizen"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Entitled to work within 15 days, up to a limit of 100 days per household per year",
+        "Paid wage rate (currently increased to \u20b9267/day)"
+      ],
+      "documents": [
+        "Not specified"
+      ],
+      "applicationUrl": "https://nrega.nic.in/MGNREGA_new/Nrega_home.aspx",
+      "mySchemeUrl": "Not specified",
+      "officialSource": "Ministry of Rural Development, Government of India"
+    },
+    {
+      "id": "SCHEME-29",
+      "name": "Direct Lending Scheme (Punjab)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Helps Punjab-based SC and disabled gig partners obtain low-interest credit for economic upliftment",
+      "targetWorkerTypes": [
+        "Members of Scheduled Castes and Handicapped People in Punjab"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [],
+        "location": [
+          "Punjab"
+        ],
+        "otherConditions": [
+          "Member of Scheduled Castes or a Handicapped Person"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Direct loans for economic upliftment (Exact details and rates are *Not specified*)."
+      ],
+      "documents": [
+        "Not specified"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/hi/schemes/dls-punjab",
+      "officialSource": "Punjab Scheduled Castes Land Development & Finance Corporation (PSCLDFC), Government of Punjab"
+    },
+    {
+      "id": "SCHEME-30",
+      "name": "Rajiv Gandhi Swavlamban Rojgar Yojna (Delhi)",
+      "category": "B",
+      "governmentLevel": "STATE",
+      "description": "Direct access to employment opportunities for Delhi-based self-employed partners",
+      "targetWorkerTypes": [
+        "Artisans",
+        "entrepreneurs",
+        "skilled technocrats",
+        "trained professionals",
+        "and youths"
+      ],
+      "eligibilityRules": {
+        "age": {
+          "min": null,
+          "max": null,
+          "details": "Not specified"
+        },
+        "income": {
+          "details": "Not specified",
+          "limit": null,
+          "type": "NONE"
+        },
+        "occupation": [
+          "Artisans",
+          "Entrepreneurs",
+          "Skilled technocrats",
+          "Trained professionals",
+          "Youths"
+        ],
+        "location": [
+          "Delhi"
+        ],
+        "otherConditions": [
+          "Indian citizen"
+        ],
+        "exclusions": []
+      },
+      "benefits": [
+        "Designed to provide employment opportunities (Exact details of benefits are *Not specified*)."
+      ],
+      "documents": [
+        "Not specified"
+      ],
+      "applicationUrl": "Not specified",
+      "mySchemeUrl": "https://www.myscheme.gov.in/hi/schemes/rgsry",
+      "officialSource": "Delhi Khadi & Village Industries Board, Government of NCT of Delhi\n\n---"
+    }
+  ]
+}
