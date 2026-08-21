@@ -1,6 +1,5 @@
 package com.onshift.app.notifications
 
 interface NotificationParser {
-    fun canParse(notification: RawNotification): Boolean
-    fun parse(notification: RawNotification): ParseResult
+    fun parse(title: String, body: String, notificationId: String, workerId: String): NormalizedEvidence?
 }

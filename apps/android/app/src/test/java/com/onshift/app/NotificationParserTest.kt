@@ -1,125 +1,96 @@
-package com.onshift.app
+package com.onshift.app.notifications
 
-import com.onshift.app.notifications.*
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.Instant
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 
+@RunWith(JUnit4::class)
 class NotificationParserTest {
 
-    private val zomatoParser = ZomatoParser()
-    private val swiggyParser = SwiggyParser()
-    private val uberParser = UberParser()
+    private val workerId = "OS-DEMO-001"
 
     @Test
     fun testZomatoHappyPathOrderCompleted() {
-        val raw = RawNotification(
-            packageName = "com.application.zomato",
-            title = "Zomato",
-            text = "Order #ZMT4821 completed. Earnings ₹245",
-            timestamp = Instant.now(),
-            notificationId = "demo-001"
-        )
+        val parser = ZomatoParser()
+        val title = "Order Delivered"
+        val body = "Order #ZMT4821 completed. You earned ₹500.00"
+        val notificationId = "notif-zmt-001"
 
-        assertTrue(zomatoParser.canParse(raw))
-        val result = zomatoParser.parse(raw)
+        val evidence = parser.parse(title, body, notificationId, workerId)
 
-        assertTrue(result.success)
-        assertNotNull(result.evidence)
-        assertEquals(Platform.ZOMATO, result.evidence?.platform)
-        assertEquals(EventType.ORDER_COMPLETED, result.evidence?.eventType)
-        assertEquals(245.0, result.evidence?.amount)
-        assertEquals("ZMT4821", result.evidence?.orderId)
-        assertEquals(ExtractionConfidence.HIGH, result.extractionConfidence)
+        assertNotNull(evidence)
+        assertEquals("ORDER_COMPLETED", evidence?.type)
+        assertEquals("EARNING", evidence?.category)
+        assertEquals("ZOMATO", evidence?.platform)
+        assertEquals(500.0, evidence?.amount ?: 0.0, 0.01)
+        assertEquals("ZMT4821", evidence?.reference)
+        assertEquals(workerId, evidence?.workerId)
     }
 
     @Test
-    fun testSwiggyHappyPathDelivery() {
-        val raw = RawNotification(
-            packageName = "in.swiggy.android",
-            title = "Swiggy",
-            text = "Delivery completed. You earned ₹312.50 for Order #SW-998",
-            timestamp = Instant.now(),
-            notificationId = "demo-002"
-        )
+    fun testZomatoPayoutCompleted() {
+        val parser = ZomatoParser()
+        val title = "Weekly Payout"
+        val body = "Zomato payout of Rs. 1200 transferred. Ref: TXN9912"
+        val notificationId = "notif-zmt-002"
 
-        assertTrue(swiggyParser.canParse(raw))
-        val result = swiggyParser.parse(raw)
+        val evidence = parser.parse(title, body, notificationId, workerId)
 
-        assertTrue(result.success)
-        assertNotNull(result.evidence)
-        assertEquals(Platform.SWIGGY, result.evidence?.platform)
-        assertEquals(EventType.ORDER_COMPLETED, result.evidence?.eventType)
-        assertEquals(312.50, result.evidence?.amount)
-        assertEquals("SW-998", result.evidence?.orderId)
-        assertEquals(ExtractionConfidence.HIGH, result.extractionConfidence)
+        assertNotNull(evidence)
+        assertEquals("PAYOUT_COMPLETED", evidence?.type)
+        assertEquals("PAYOUT", evidence?.category)
+        assertEquals("ZOMATO", evidence?.platform)
+        assertEquals(1200.0, evidence?.amount ?: 0.0, 0.01)
+        assertEquals("TXN9912", evidence?.reference)
     }
 
     @Test
-    fun testUberHappyPathTrip() {
-        val raw = RawNotification(
-            packageName = "com.ubercab.driver",
-            title = "Uber",
-            text = "Trip #UBR771 completed. You earned ₹180",
-            timestamp = Instant.now(),
-            notificationId = "demo-003"
-        )
+    fun testSwiggyParsing() {
+        val parser = SwiggyParser()
+        val title = "Delivery Completed"
+        val body = "Order #SW-998 delivered. Earnings: ₹320"
+        val notificationId = "notif-swg-001"
 
-        assertTrue(uberParser.canParse(raw))
-        val result = uberParser.parse(raw)
+        val evidence = parser.parse(title, body, notificationId, workerId)
 
-        assertTrue(result.success)
-        assertNotNull(result.evidence)
-        assertEquals(Platform.UBER, result.evidence?.platform)
-        assertEquals(EventType.TRIP_COMPLETED, result.evidence?.eventType)
-        assertEquals(180.0, result.evidence?.amount)
-        assertEquals("UBR771", result.evidence?.orderId)
-        assertEquals(ExtractionConfidence.HIGH, result.extractionConfidence)
+        assertNotNull(evidence)
+        assertEquals("ORDER_COMPLETED", evidence?.type)
+        assertEquals("EARNING", evidence?.category)
+        assertEquals("SWIGGY", evidence?.platform)
+        assertEquals(320.0, evidence?.amount ?: 0.0, 0.01)
     }
 
     @Test
-    fun testMissingAmountHandledGracefully() {
-        val raw = RawNotification(
-            packageName = "com.application.zomato",
-            title = "Zomato",
-            text = "Order #ZMT4821 completed. Safe driving!",
-            timestamp = Instant.now()
-        )
+    fun testUberParsing() {
+        val parser = UberParser()
+        val title = "Trip Finished"
+        val body = "Trip #UBR771 completed. Fare: INR 450.50"
+        val notificationId = "notif-ubr-001"
 
-        val result = zomatoParser.parse(raw)
-        assertTrue(result.success)
-        assertNull(result.evidence?.amount)
-        assertTrue(result.warnings.contains("AMOUNT_MISSING"))
+        val evidence = parser.parse(title, body, notificationId, workerId)
+
+        assertNotNull(evidence)
+        assertEquals("ORDER_COMPLETED", evidence?.type)
+        assertEquals("EARNING", evidence?.category)
+        assertEquals("UBER", evidence?.platform)
+        assertEquals(450.50, evidence?.amount ?: 0.0, 0.01)
     }
 
     @Test
-    fun testAmbiguousAmountsFlagged() {
-        val raw = RawNotification(
-            packageName = "com.application.zomato",
-            title = "Zomato",
-            text = "Order completed. Earnings ₹245. Bonus ₹50 pending.",
-            timestamp = Instant.now()
-        )
+    fun testPlatformRegistryRouting() {
+        val zomatoParser = PlatformRegistry.getParserForPackage("com.application.zomato", "New order")
+        assertTrue(zomatoParser is ZomatoParser)
 
-        val result = zomatoParser.parse(raw)
-        assertTrue(result.success)
-        assertNull(result.evidence?.amount)
-        assertTrue(result.warnings.contains("AMOUNT_AMBIGUOUS"))
-        assertEquals(ExtractionConfidence.LOW, result.extractionConfidence)
-    }
+        val swiggyParser = PlatformRegistry.getParserForPackage("in.swiggy.android", "Order")
+        assertTrue(swiggyParser is SwiggyParser)
 
-    @Test
-    fun testPlatformRegistryFallback() {
-        val raw = RawNotification(
-            packageName = "com.unknown.app",
-            title = "Payout alert",
-            text = "You received ₹500 today",
-            timestamp = Instant.now()
-        )
+        val uberParser = PlatformRegistry.getParserForPackage("com.ubercab.driver", "Trip")
+        assertTrue(uberParser is UberParser)
 
-        val result = PlatformRegistry.parse(raw)
-        assertTrue(result.success)
-        assertEquals(Platform.UNKNOWN, result.evidence?.platform)
-        assertEquals(500.0, result.evidence?.amount)
+        val genericParser = PlatformRegistry.getParserForPackage("com.random.app", "Payment of 100")
+        assertTrue(genericParser is GenericParser)
     }
 }

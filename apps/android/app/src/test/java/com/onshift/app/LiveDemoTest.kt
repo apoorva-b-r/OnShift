@@ -1,133 +1,71 @@
 package com.onshift.app
 
+import com.onshift.app.notifications.*
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 import java.security.MessageDigest
 
-// 1. Data Models for Classification
-enum class PayoutType {
-    PER_ORDER,      // Instant delivery or single trip earnings
-    WEEKEND_BATCH,  // Weekly summary or weekend bank settlement
-    INCENTIVE       // Surge, peak hours, or weekly target bonus
-}
-
-data class ParsedEarnings(
-    val platform: String,
-    val amount: Double,
-    val payoutType: PayoutType,
-    val orderId: String?
-)
-
+@RunWith(JUnit4::class)
 class LiveDemoTest {
 
-    // --- Helper for SHA-256 cryptographic chain generation ---
-    private fun sha256(input: String): String {
-        return MessageDigest.getInstance("SHA-256")
-            .digest(input.toByteArray())
+    @Test
+    fun testNormalizationAndDistinctCategoryAssignment() {
+        val parser = ZomatoParser()
+
+        // 1. Test Earning Notification
+        val earning = parser.parse(
+            title = "Order Delivered",
+            body = "Order #ZMT4821 completed. You earned ₹500.00",
+            notificationId = "notif-001",
+            workerId = "OS-DEMO-001"
+        )
+        assertNotNull(earning)
+        assertEquals("ORDER_COMPLETED", earning?.type)
+        assertEquals("EARNING", earning?.category)
+        assertEquals(500.0, earning?.amount ?: 0.0, 0.01)
+        assertEquals("ZMT4821", earning?.reference)
+
+        // 2. Test Payout Notification
+        val payout = parser.parse(
+            title = "Weekly Payout",
+            body = "Zomato payout of Rs. 1200 transferred. Ref: TXN9912",
+            notificationId = "notif-002",
+            workerId = "OS-DEMO-001"
+        )
+        assertNotNull(payout)
+        assertEquals("PAYOUT_COMPLETED", payout?.type)
+        assertEquals("PAYOUT", payout?.category)
+        assertEquals(1200.0, payout?.amount ?: 0.0, 0.01)
+        assertEquals("TXN9912", payout?.reference)
+    }
+
+    @Test
+    fun testHashChainLinkageAndTamperDetection() {
+        val parser = ZomatoParser()
+        val item1 = parser.parse("Order", "Order #ZMT1 completed ₹500", "n1", "OS-DEMO-001")
+        val item2 = parser.parse("Order", "Order #ZMT2 completed ₹700", "n2", "OS-DEMO-001")
+
+        assertNotNull(item1)
+        assertNotNull(item2)
+
+        val genesisHash = "0000000000000000000000000000000000000000000000000000000000000000"
+        val hash1 = item1!!.computeIntegrityHash(genesisHash)
+        val hash2 = item2!!.computeIntegrityHash(hash1)
+
+        assertEquals(hash1, item2.previousHash)
+        assertNotNull(item2.integrityHash)
+
+        // Tamper test
+        val tamperedAmount = 9999.0
+        val tamperedPayload = "${item1.id}|${item1.workerId}|${item1.source}|${item1.type}|${item1.category}|${item1.platform}|${item1.timestamp}|$tamperedAmount|${item1.reference}|${item1.previousHash}"
+        val recalculatedHash = MessageDigest.getInstance("SHA-256")
+            .digest(tamperedPayload.toByteArray())
             .joinToString("") { "%02x".format(it) }
-    }
 
-    // --- Engine: Ingestion, Regex Extraction & Payout Classification ---
-    private fun parseNotification(rawText: String): ParsedEarnings {
-        val upper = rawText.uppercase()
-
-        // 1. Identify Platform
-        val platform = when {
-            upper.contains("ZOMATO") -> "ZOMATO"
-            upper.contains("SWIGGY") -> "SWIGGY"
-            upper.contains("UBER") -> "UBER"
-            else -> "UNKNOWN"
-        }
-
-        // 2. Extract Numerical Amount
-        val amountRegex = Regex("""(?:[₹Rs\.]\s*|INR\s*)(\d+(?:,\d+)*(?:\.\d{1,2})?)""")
-        val rawAmountStr = amountRegex.find(rawText)?.groupValues?.get(1)?.replace(",", "")
-        val amount = rawAmountStr?.toDoubleOrNull() ?: 0.0
-
-        // 3. Classify Payout Frequency (Per-Order vs Weekend Batch vs Incentive)
-        val payoutType = when {
-            upper.contains("WEEKEND") || upper.contains("WEEKLY") || upper.contains("SETTLEMENT") || upper.contains("BATCH") -> {
-                PayoutType.WEEKEND_BATCH
-            }
-            upper.contains("BONUS") || upper.contains("INCENTIVE") || upper.contains("SURGE") -> {
-                PayoutType.INCENTIVE
-            }
-            else -> {
-                PayoutType.PER_ORDER
-            }
-        }
-
-        // 4. Extract Order or Batch ID
-        val orderIdRegex = Regex("""#(?:[A-Z0-9_-]+)""")
-        val orderId = orderIdRegex.find(rawText)?.value
-
-        return ParsedEarnings(platform, amount, payoutType, orderId)
-    }
-
-    @Test
-    fun `DEMO 1 - Ingest Notifications, Extract Amounts & Classify Weekend Payouts`() {
-        println("\n=======================================================")
-        println("  DEMO STEP 1: PARSING & PAYOUT FREQUENCY EXTRACTION")
-        println("=======================================================")
-
-        val incomingAlerts = listOf(
-            "ZOMATO: Order #5542 delivered. ₹45 credited to your wallet.",
-            "SWIGGY: Weekend payout batch processed! ₹4,850 credited to your bank account.",
-            "UBER: Weekly settlement completed. ₹6,200 transferred to account.",
-            "ZOMATO: Weekend Surge Bonus of ₹300 added for peak hours target!"
-        )
-
-        incomingAlerts.forEach { rawText ->
-            val parsed = parseNotification(rawText)
-
-            println("📥 Ingested Raw: \"$rawText\"")
-            println("   -> Platform Identified: [${parsed.platform}]")
-            println("   -> Extracted Amount:    ₹${parsed.amount}")
-            println("   -> Payout Type Field:   ${parsed.payoutType}")
-            if (parsed.orderId != null) {
-                println("   -> Reference ID:        ${parsed.orderId}")
-            }
-            println("-------------------------------------------------------")
-        }
-
-        // Programmatic Assertions: Proves mathematically that extraction works
-        val weekendSample = parseNotification("SWIGGY: Weekend payout batch processed! ₹4,850 credited")
-        assertEquals(4850.0, weekendSample.amount, 0.0)
-        assertEquals(PayoutType.WEEKEND_BATCH, weekendSample.payoutType)
-        assertEquals("SWIGGY", weekendSample.platform)
-
-        val perOrderSample = parseNotification("ZOMATO: Order #5542 delivered. ₹45 credited")
-        assertEquals(45.0, perOrderSample.amount, 0.0)
-        assertEquals(PayoutType.PER_ORDER, perOrderSample.payoutType)
-    }
-
-    @Test
-    fun `DEMO 2 - Cryptographic SHA-256 Tamper-Proof Hash Chain`() {
-        println("\n=======================================================")
-        println("  DEMO STEP 2: VERIFIABLE HASH CHAIN GENERATION")
-        println("=======================================================")
-
-        var previousHash = "0000000000000000000000000000000000000000000000000000000000000000"
-        val mockRecords = listOf(
-            "Record 1: Rider 901 | Zomato | ₹45   | PER_ORDER     | Ts: 1713001",
-            "Record 2: Rider 901 | Swiggy | ₹4850 | WEEKEND_BATCH | Ts: 1713045",
-            "Record 3: Rider 901 | Uber   | ₹6200 | WEEKEND_BATCH | Ts: 1713090"
-        )
-
-        mockRecords.forEachIndexed { index, record ->
-            val currentPayload = "$previousHash + $record"
-            val currentHash = sha256(currentPayload)
-
-            println("🔗 Block #${index + 1}: $record")
-            println("   ↳ Prev Hash:  $previousHash")
-            println("   ↳ Block Hash: $currentHash")
-            println("-------------------------------------------------------")
-
-            previousHash = currentHash
-        }
-
-        println("✅ Hash Chain Integrity: 100% VALIDATED (Zero Tampering Detected)")
-        assertTrue(previousHash.isNotEmpty())
+        assertNotEquals(item1.integrityHash, recalculatedHash)
     }
 }

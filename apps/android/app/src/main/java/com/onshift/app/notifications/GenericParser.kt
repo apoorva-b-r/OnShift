@@ -1,47 +1,46 @@
 package com.onshift.app.notifications
 
+import java.time.Instant
 import java.util.UUID
 
 class GenericParser : NotificationParser {
 
-    override fun canParse(notification: RawNotification): Boolean = true
+    override fun parse(title: String, body: String, notificationId: String, workerId: String): NormalizedEvidence? {
+        val content = "$title $body"
 
-    override fun parse(notification: RawNotification): ParseResult {
-        val text = "${notification.title ?: ""} ${notification.text ?: ""}".trim()
-        val warnings = mutableListOf("UNKNOWN_PLATFORM")
+        // 1. Determine Type & Category
+        val isPayout = content.contains("payout", ignoreCase = true) ||
+                content.contains("credited", ignoreCase = true) ||
+                content.contains("settlement", ignoreCase = true)
 
-        val amountRegex = Regex("""(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)""", RegexOption.IGNORE_CASE)
-        val matches = amountRegex.findAll(text).toList()
+        val type = if (isPayout) "PAYOUT_COMPLETED" else "EARNING_RECORDED"
+        val category = if (isPayout) "PAYOUT" else "EARNING"
 
-        val amount = if (matches.size == 1) {
-            matches[0].groupValues[1].replace(",", "").toDoubleOrNull()
-        } else {
-            if (matches.size > 1) warnings.add("AMOUNT_AMBIGUOUS") else warnings.add("AMOUNT_MISSING")
-            null
-        }
+        // 2. Extract Amount
+        val amountRegex = Regex("""(?:₹|Rs\.?|INR|\$)\s*([0-9]+(?:\.[0-9]{1,2})?)""", RegexOption.IGNORE_CASE)
+        val amountMatch = amountRegex.find(content)
+        val amount = amountMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: return null
 
-        val evidence = ObservedEvidence(
-            evidenceId = "OBS-${UUID.randomUUID().toString().take(8).uppercase()}",
-            source = "OBSERVED_NOTIFICATION",
-            platform = Platform.UNKNOWN,
-            eventType = EventType.UNKNOWN,
+        // 3. Fallback Reference
+        val refRegex = Regex("""(?:#|ID:?\s*|Ref:\s*)([A-Z0-9]+)""", RegexOption.IGNORE_CASE)
+        val refMatch = refRegex.find(content)
+        val reference = refMatch?.groupValues?.get(1) ?: "GEN-${UUID.randomUUID().toString().take(6).uppercase()}"
+
+        return NormalizedEvidence(
+            id = "obs-gen-${UUID.randomUUID().toString().take(8)}",
+            workerId = workerId,
+            source = "OBSERVED",
+            type = type,
+            category = category,
+            platform = "GENERIC",
+            timestamp = Instant.now().toString(),
             amount = amount,
-            currency = "INR",
-            orderId = null,
-            observedAt = notification.timestamp.toString(),
-            extractionConfidence = if (amount != null) ExtractionConfidence.LOW else ExtractionConfidence.NONE,
-            warnings = warnings,
-            provenance = Provenance(
-                parser = "GenericParser",
-                sourceType = "ANDROID_NOTIFICATION"
+            reference = reference,
+            metadata = EvidenceMetadata(
+                rawNotificationId = notificationId,
+                parserVersion = "1.0",
+                title = title
             )
-        )
-
-        return ParseResult(
-            success = amount != null,
-            evidence = evidence,
-            warnings = warnings,
-            extractionConfidence = evidence.extractionConfidence
         )
     }
 }
