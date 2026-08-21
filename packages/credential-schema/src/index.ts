@@ -1,4 +1,4 @@
-import { generateKeyPairSync, createPrivateKey, createPublicKey, sign as cryptoSign, verify as cryptoVerify } from 'node:crypto';
+import { generateKeyPairSync, createPrivateKey, createPublicKey, sign as cryptoSign, verify as cryptoVerify } from 'crypto';
 import { CredentialClaim, VerificationLevel } from '@onshift/shared-types';
 
 export { CredentialClaim, VerificationLevel };

@@ -13,5 +13,5 @@ export function issueCredential(workerId: string, claims: CredentialClaim): Cred
 }
 
 export function verifyCredential(credential: Credential): CredentialVerificationResult {
-  return verifyCredentialSignature(credential);
+  return verifyCredentialSignature(credential as any);
 }

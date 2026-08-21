@@ -1,15 +1,22 @@
 import { ReconciliationResult, PayoutPeriod } from '@onshift/shared-types';
 import { DEMO_RECONCILIATION_SCENARIO_1, DEMO_RECONCILIATION_SCENARIO_2 } from '@onshift/mock-data';
 import { config } from '../config';
+import { validateAndNormalizeEvidence, CanonicalEvidenceInput } from './evidenceAdapter';
 
 export async function runReconciliation(
   workerId: string,
   payoutPeriod: PayoutPeriod,
   evidenceIds: string[],
-  scenarioMode: string = 'SCENARIO_1'
+  scenarioMode: string = 'SCENARIO_1',
+  evidences?: any[]
 ): Promise<ReconciliationResult> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  let normalizedEvidences: CanonicalEvidenceInput[] | undefined = undefined;
+  if (evidences && Array.isArray(evidences)) {
+    normalizedEvidences = evidences.map(validateAndNormalizeEvidence);
+  }
 
   let result: ReconciliationResult | null = null;
 
@@ -17,7 +24,13 @@ export async function runReconciliation(
     const res = await fetch(`${config.verificationEngineUrl}/reconciliation/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workerId, payoutPeriod, evidenceIds, scenarioMode }),
+      body: JSON.stringify({
+        workerId,
+        payoutPeriod,
+        evidenceIds,
+        evidences: normalizedEvidences,
+        scenarioMode,
+      }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

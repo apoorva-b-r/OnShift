@@ -19,8 +19,8 @@ class LocalEncryptedEvidenceRepository : EvidenceRepository {
 
     @Synchronized
     fun createAndSaveEvidence(
-        workerId: String = "WORKER_DEMO_01",
-        source: String = "NOTIFICATION_LISTENER",
+        workerId: String = "OS-DEMO-001",
+        source: String = "OBSERVED",
         platform: String,
         amount: Double,
         timestamp: Long = System.currentTimeMillis()
