@@ -20,6 +20,8 @@ export interface Worker {
   id: string; // Pseudonymous ID (e.g. OS-DEMO-001)
   name?: string;
   phoneHash?: string;
+  workerCategory?: string; // e.g. "Delivery Partner", "Rideshare Driver", "Task Worker"
+  location?: string; // e.g. "Pune, Maharashtra" - used by deterministic scheme filter
   createdAt: string;
   updatedAt: string;
 }
