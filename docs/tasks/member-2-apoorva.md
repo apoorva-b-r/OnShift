@@ -11,8 +11,8 @@ Evidence normalization, evidence strength weighting, payout-period reconciliatio
 
 # Intellectual Core Contribution
 Apoorva owns the core intelligence and analytical reasoning of OnShift:
-- What evidence do we have? (Declared, Observed, Financial)
-- How strong is each evidence source? (Self-report vs platform notification vs bank settlement)
+- What evidence do we have? (Declared, Observed, Financial, OCR)
+- How strong is each evidence source? (Self-report vs platform notification vs bank settlement vs OCR extraction)
 - Do the sources agree? (Reconciliation matching)
 - If not, why? (Explained deduction vs unexplained shortfall)
 - What can we legitimately claim? (Conservative verification level & confidence)
@@ -29,6 +29,7 @@ Apoorva's engine provides technical credibility during judge evaluation. When a 
 # Exact Files / Directories Owned
 - `apps/verification-engine/app/main.py`
 - `apps/verification-engine/app/schemas/domain.py`
+- `apps/verification-engine/app/services/evidence.py`
 - `apps/verification-engine/app/services/reconciliation.py`
 - `apps/verification-engine/app/services/verification.py`
 - `apps/verification-engine/tests/test_engine.py`
@@ -39,13 +40,23 @@ Apoorva's engine provides technical credibility during judge evaluation. When a 
 1. **Reconciliation Engine Endpoint (`POST /reconciliation/run`)**:
    - Compute expected gross earnings, known platform deductions, expected net settlement, actual bank settlement, and difference.
    - Classify statuses: `MATCHED`, `EXPLAINED_DIFFERENCE`, `UNEXPLAINED_DIFFERENCE`, `INSUFFICIENT_EVIDENCE`.
-   - Provide human-explainable notes and supporting evidence IDs.
+   - Provide human-explainable notes, supporting evidence IDs, earning IDs, deduction IDs, and settlement IDs.
 2. **Verification Pipeline Endpoint (`POST /verification/level`)**:
    - Compute verification levels: `DECLARED`, `OBSERVED`, `CORROBORATED`, `FINANCIALLY_CORROBORATED`.
    - Compute conservative heuristic confidence score (e.g. 0.96 for financially corroborated, 0.72 for unmapped shortfall) and explicit limitation notes.
-3. **Pytest Coverage**: Write test cases covering all 4 reconciliation statuses and conflicting evidence edge cases.
+3. **Comprehensive Pytest Suite (10 Test Cases)**:
+   - Test 1: Perfect match (`MATCHED`, `FINANCIALLY_CORROBORATED`, 0.96).
+   - Test 2: Unexplained difference (`UNEXPLAINED_DIFFERENCE`, `CORROBORATED`, 0.72).
+   - Test 3: Explained deduction (`EXPLAINED_DIFFERENCE`).
+   - Test 4: Observed only (`OBSERVED`, NOT `FINANCIALLY_CORROBORATED`).
+   - Test 5: Declared only (`DECLARED`).
+   - Test 6: Missing AA settlement (`INSUFFICIENT_EVIDENCE`).
+   - Test 7: Conflicting evidence (surfaced in limitations).
+   - Test 8: Duplicate evidence (identical ref deduplicated, distinct orders counted).
+   - Test 9: Timestamp normalization across ISO formats & timezone offsets.
+   - Test 10: OCR-derived evidence (provenance & confidence preserved).
 
-# Canonical Scenarios to Implement
+# Canonical Scenarios Implemented
 - **Scenario 1 (`MATCHED`)**:
   - Expected: ₹30,500 gross - ₹400 kit deduction = ₹30,100 expected net.
   - Actual: ₹30,100 bank settlement credit.
@@ -72,28 +83,36 @@ Apoorva's engine provides technical credibility during judge evaluation. When a 
 - Canonical demo dataset (`@onshift/mock-data`).
 - Pydantic v2 schemas (`domain.py`).
 
-# Interfaces to Expose
+# Interfaces Exposed
 FastAPI HTTP Endpoints on Port 8000:
 - `GET /health`
 - `POST /reconciliation/run`
 - `POST /verification/level`
 
 # Inputs Required
-- `ReconciliationRequestSchema`: `workerId`, `payoutPeriod`, `evidenceIds`, `scenarioMode`.
-- `VerificationRequestSchema`: `workerId`, `payoutPeriod`, `evidenceIds`.
+- `ReconciliationRequestSchema`: `workerId`, `payoutPeriod`, `evidenceIds`, `evidences`, `scenarioMode`.
+- `VerificationRequestSchema`: `workerId`, `payoutPeriod`, `evidenceIds`, `evidences`.
 
 # Outputs Expected
 ```json
 {
   "status": "UNEXPLAINED_DIFFERENCE",
-  "expectedAmount": 30100,
-  "actualAmount": 29500,
+  "expectedAmount": 30500,
+  "knownDeductions": 400,
+  "expectedSettlement": 30100,
+  "actualSettlement": 29500,
   "difference": 600,
   "level": "CORROBORATED",
   "confidence": 0.72,
-  "reason": "Observed platform activity exceeds financially settled amount by INR 600.",
-  "supportingEvidence": ["ev-decl-001", "ev-obs-zomato-001", "ev-obs-swiggy-001", "ev-fin-hdfc-002"],
-  "limitations": "Platform-side deduction statement unavailable."
+  "explanation": "Actual bank deposit of INR 29,500.00 is lower than expected net payout of INR 30,100.00 by INR 600.00 with no documented deduction record.",
+  "supportingEvidenceIds": ["ev-decl-001", "ev-obs-zomato-001", "ev-obs-swiggy-001", "ev-fin-hdfc-002"],
+  "earningEvidenceIds": ["ev-obs-zomato-001", "ev-obs-swiggy-001"],
+  "deductionEvidenceIds": [],
+  "settlementEvidenceIds": ["ev-fin-hdfc-002"],
+  "limitations": [
+    "Observed platform activity exceeds financially settled amount by INR 600 with an unexplained bank settlement shortfall.",
+    "Platform-side deduction statement unavailable."
+  ]
 }
 ```
 
@@ -106,11 +125,8 @@ FastAPI HTTP Endpoints on Port 8000:
 - Process pseudonymous worker IDs (`OS-DEMO-001`). Do not store or process unhashed raw bank account numbers.
 
 # Testing Requirements
-Run `pytest` inside `apps/verification-engine/`:
-- Test 1: Perfect match (Scenario 1 ₹30,100 -> `MATCHED`).
-- Test 2: Unexplained difference (Scenario 2 ₹600 shortfall: Expected ₹30,100, Actual ₹29,500 -> `UNEXPLAINED_DIFFERENCE`).
-- Test 3: Observed-only evidence (`OBSERVED`).
-- Test 4: Declared-only evidence (`DECLARED`).
+Run `PYTHONPATH=. python3 -m pytest` inside `apps/verification-engine/`:
+- All 10 unit test cases MUST pass with 100% success.
 
 # Demo Requirements
 Support deterministic execution of Scenario 1 (₹30,100 matched) and Scenario 2 (₹600 unexplained shortfall: Expected ₹30,100, Actual ₹29,500).
@@ -119,10 +135,10 @@ Support deterministic execution of Scenario 1 (₹30,100 matched) and Scenario 2
 If an evidence ID is unrecognized, default status to `INSUFFICIENT_EVIDENCE` with explicit explanation notes.
 
 # Known Risks
-Discrepancies in date formatting (ISO 8601 vs local timestamps). Standardize on UTC ISO string parsing.
+Discrepancies in date formatting (ISO 8601 vs local timestamps). Standardize on UTC ISO string parsing via `parse_iso_timestamp`.
 
 # Potential Blockers
-None. Verification engine is fully self-contained and run via FastAPI/uvicorn.
+None. Verification engine is fully self-contained and run via FastAPI/uvicorn on port 8000.
 
 # Who Depends on This Work
 - Member 3 (Rimjhim) proxies backend API calls to this service.
@@ -132,7 +148,7 @@ None. Verification engine is fully self-contained and run via FastAPI/uvicorn.
 - Shared domain object definitions (`packages/shared-types`).
 
 # Handoff Checklist
-- `pytest` passes with 100% success.
+- `pytest` passes with 100% success across 10 test cases.
 - `POST /reconciliation/run` returns valid Pydantic response JSON.
 - `POST /verification/level` returns valid Pydantic response JSON.
 
@@ -140,19 +156,24 @@ None. Verification engine is fully self-contained and run via FastAPI/uvicorn.
 1. FastAPI server runs on port 8000.
 2. Reconciliation logic handles all 4 statuses deterministically.
 3. Verification level logic handles all 4 levels with conservative confidence scoring.
-4. Pytest suite passes cleanly.
-
-# Day 1 Goals
-Implement and unit test core logic in `reconciliation.py` and `verification.py`.
-
-# Day 2 Goals
-Integrate FastAPI endpoints with Express backend proxy requests.
-
-# Day 3 Goals
-Add edge-case tests for conflicting evidence and freeze algorithms.
+4. Pytest 10-test suite passes cleanly.
 
 # Final Evaluation Checklist
-- [ ] `pytest` passes 100%.
-- [ ] `POST /reconciliation/run` returns explainable status.
-- [ ] `POST /verification/level` returns conservative confidence score and limitations.
-- [ ] Scenarios 1 and 2 produce mathematically verified outputs.
+- [x] `MATCHED` scenario test passed.
+- [x] `EXPLAINED_DIFFERENCE` scenario test passed.
+- [x] `UNEXPLAINED_DIFFERENCE` scenario test passed.
+- [x] `INSUFFICIENT_EVIDENCE` scenario test passed.
+- [x] `DECLARED` verification level test passed.
+- [x] `OBSERVED` verification level test passed.
+- [x] `CORROBORATED` verification level test passed.
+- [x] `FINANCIALLY_CORROBORATED` verification level test passed.
+- [x] Duplicate evidence handling test passed.
+- [x] Conflicting evidence test passed.
+- [x] Timestamp normalization test passed.
+- [x] OCR provenance handling test passed.
+- [x] Human-readable reasoning generated.
+- [x] Supporting evidence IDs exposed (`earningEvidenceIds`, `deductionEvidenceIds`, `settlementEvidenceIds`).
+- [x] Limitations array populated.
+- [x] FastAPI `/reconciliation/run` operational.
+- [x] FastAPI `/verification/level` operational.
+- [x] Pytest 10/10 passed.
