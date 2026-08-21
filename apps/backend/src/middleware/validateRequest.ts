@@ -127,7 +127,9 @@ export const validateCredentialVerify: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  for (const field of ['credentialType', 'issuer', 'issuerPublicKey', 'workerId', 'issuedAt', 'validUntil', 'signature']) {
+  // Matches OnShiftIncomeCredential shape from @onshift/credential-schema:
+  // { type, workerId, issuer, issuedAt, claims, signature, publicKeyHex }
+  for (const field of ['type', 'issuer', 'publicKeyHex', 'workerId', 'issuedAt', 'signature']) {
     requiredString(data, field, details);
   }
   if (!isRecord(data.claims)) {

@@ -32,6 +32,8 @@ beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   const uri = mongod.getUri();
   await mongoose.connect(uri);
+  // Ensure unique indexes (e.g. Worker.id) are built before tests run.
+  await Worker.ensureIndexes();
 });
 
 afterAll(async () => {
@@ -310,6 +312,9 @@ describe('Credentials', () => {
     const res = await request(app)
       .post('/api/v1/credentials/verify')
       .send(mutated);
+    if (res.status !== 200) {
+      console.log('Verify Error Response:', JSON.stringify(res.body, null, 2));
+    }
     expect(res.status).toBe(200);
     expect(res.body.valid).toBe(false);
   });

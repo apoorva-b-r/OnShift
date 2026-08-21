@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Evidence } from '@onshift/backend/src/models'; // using barrel export
+import { Evidence } from '../models';
 import { ApiError } from '../middleware/apiError';
 import {
   DEMO_DECLARED_EVIDENCE,

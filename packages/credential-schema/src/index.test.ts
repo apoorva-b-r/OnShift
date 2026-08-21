@@ -510,6 +510,7 @@ test('Test 22 — Tampering selective credential fails verification', () => {
   const tamperedCred: OnShiftIncomeCredential = {
     ...cred,
     claims: {
+      ...cred.claims,
       verifiedIncome: 50100,
     },
   };
