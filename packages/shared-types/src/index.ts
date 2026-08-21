@@ -116,29 +116,33 @@ export interface SelectiveDisclosureRequest {
 }
 
 export interface CredentialClaim {
-  verifiedIncome: number;
-  period: string;
-  verificationLevel: VerificationLevel;
+  verifiedIncome?: number;
+  period?: string;
+  verificationLevel?: VerificationLevel;
   platformBreakdown?: Record<string, number>;
 }
 
 export interface Credential {
-  credentialType: string;
+  type?: string;
+  credentialType?: string;
   issuer: string;
-  issuerPublicKey: string;
+  issuerPublicKey?: string;
+  publicKeyHex?: string;
   workerId: string;
   issuedAt: string;
-  validUntil: string;
+  validUntil?: string;
   claims: CredentialClaim;
   signature: string;
 }
 
 export interface CredentialVerificationResult {
   valid: boolean;
-  issuerVerified: boolean;
+  issuerVerified?: boolean;
   signatureVerified: boolean;
   claims?: CredentialClaim;
-  message: string;
+  issuer?: string;
+  workerId?: string;
+  message?: string;
 }
 
 export interface GovernmentScheme {

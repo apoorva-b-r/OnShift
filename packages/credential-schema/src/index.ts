@@ -1,54 +1,115 @@
-import { Credential, CredentialClaim, CredentialVerificationResult } from '@onshift/shared-types';
+import { generateKeyPairSync, createPrivateKey, createPublicKey, sign as cryptoSign, verify as cryptoVerify } from 'node:crypto';
+import { CredentialClaim, VerificationLevel } from '@onshift/shared-types';
+
+export { CredentialClaim, VerificationLevel };
 
 export interface KeyPairHex {
   publicKeyHex: string;
   privateKeyHex: string;
 }
 
-/**
- * Helper to check Node environment
- */
-function getCrypto(): typeof import('crypto') | null {
-  try {
-    if (typeof window === 'undefined') {
-      return require('crypto');
-    }
-  } catch (e) {
-    // Browser environment
-  }
-  return null;
+export interface OnShiftIncomeCredential {
+  type: 'OnShiftIncomeCredential';
+  workerId: string;
+  issuer: string;
+  issuedAt: string;
+  claims: CredentialClaim;
+  signature: string;
+  publicKeyHex: string;
+}
+
+export interface CredentialVerificationResult {
+  valid: boolean;
+  signatureVerified: boolean;
+  claims?: CredentialClaim;
+  issuer?: string;
+  workerId?: string;
+  issuerVerified?: boolean;
+  message?: string;
+}
+
+export interface SelectiveDisclosureOptions {
+  includeVerifiedIncome: boolean;
+  includePeriod: boolean;
+  includeVerificationLevel: boolean;
 }
 
 /**
  * Generate standard Ed25519 keypair in hex encoding.
  */
 export function generateEd25519KeyPair(): KeyPairHex {
-  const nodeCrypto = getCrypto();
-  if (nodeCrypto) {
-    const { publicKey, privateKey } = nodeCrypto.generateKeyPairSync('ed25519');
-    return {
-      publicKeyHex: publicKey.export({ type: 'spki', format: 'der' }).toString('hex'),
-      privateKeyHex: privateKey.export({ type: 'pkcs8', format: 'der' }).toString('hex'),
-    };
-  }
+  const { publicKey, privateKey } = generateKeyPairSync('ed25519');
   return {
-    publicKeyHex: 'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
-    privateKeyHex: '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60',
+    publicKeyHex: publicKey.export({ type: 'spki', format: 'der' }).toString('hex'),
+    privateKeyHex: privateKey.export({ type: 'pkcs8', format: 'der' }).toString('hex'),
   };
 }
 
 /**
- * Serialize credential content deterministically for signature generation/verification.
+ * Helper to parse private key from hex string (PKCS#8 DER or 32-byte seed).
  */
-export function serializeCredentialContent(credential: Omit<Credential, 'signature'>): string {
+export function privateKeyFromHex(privateKeyHex: string) {
+  if (!privateKeyHex || typeof privateKeyHex !== 'string') {
+    throw new Error('Private key must be a non-empty hex string.');
+  }
+  const cleanHex = privateKeyHex.trim();
+  if (!/^[0-9a-fA-F]+$/.test(cleanHex)) {
+    throw new Error('Private key must be a valid hex string.');
+  }
+
+  const keyBuffer = Buffer.from(cleanHex, 'hex');
+  if (keyBuffer.length === 32) {
+    const pkcs8Header = Buffer.from('302e020100300506032b657004220420', 'hex');
+    return createPrivateKey({ key: Buffer.concat([pkcs8Header, keyBuffer]), format: 'der', type: 'pkcs8' });
+  }
+  return createPrivateKey({ key: keyBuffer, format: 'der', type: 'pkcs8' });
+}
+
+/**
+ * Helper to parse public key from hex string (SPKI DER or 32-byte key).
+ */
+export function publicKeyFromHex(publicKeyHex: string) {
+  if (!publicKeyHex || typeof publicKeyHex !== 'string') {
+    throw new Error('Public key must be a non-empty hex string.');
+  }
+  const cleanHex = publicKeyHex.trim();
+  if (!/^[0-9a-fA-F]+$/.test(cleanHex)) {
+    throw new Error('Public key must be a valid hex string.');
+  }
+
+  const keyBuffer = Buffer.from(cleanHex, 'hex');
+  if (keyBuffer.length === 32) {
+    const spkiHeader = Buffer.from('302a300506032b6570032100', 'hex');
+    return createPublicKey({ key: Buffer.concat([spkiHeader, keyBuffer]), format: 'der', type: 'spki' });
+  }
+  return createPublicKey({ key: keyBuffer, format: 'der', type: 'spki' });
+}
+
+/**
+ * Serialize credential content deterministically for signature generation and verification.
+ */
+export function serializeCredentialPayload(
+  type: string,
+  workerId: string,
+  issuer: string,
+  issuedAt: string,
+  claims: CredentialClaim
+): string {
+  const sortedClaims: Record<string, any> = {};
+  const claimKeys = Object.keys(claims).sort();
+  for (const key of claimKeys) {
+    const val = (claims as Record<string, any>)[key];
+    if (val !== undefined) {
+      sortedClaims[key] = val;
+    }
+  }
+
   return JSON.stringify({
-    credentialType: credential.credentialType,
-    issuer: credential.issuer,
-    issuerPublicKey: credential.issuerPublicKey,
-    workerId: credential.workerId,
-    issuedAt: credential.issuedAt,
-    validUntil: credential.validUntil,
-    claims: credential.claims,
+    type,
+    workerId,
+    issuer,
+    issuedAt,
+    claims: sortedClaims,
   });
 }
 
@@ -60,99 +121,154 @@ export function signCredential(
   claims: CredentialClaim,
   privateKeyHex: string,
   publicKeyHex: string,
-  issuer: string = 'OnShift Proof Authority'
-): Credential {
-  const issuedAt = new Date().toISOString();
-  const validUntil = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
-
-  const unsignedObj: Omit<Credential, 'signature'> = {
-    credentialType: 'OnShiftIncomeCredential',
-    issuer,
-    issuerPublicKey: publicKeyHex,
-    workerId,
-    issuedAt,
-    validUntil,
-    claims,
-  };
-
-  const payloadString = serializeCredentialContent(unsignedObj);
-
-  let signatureHex: string;
-  const nodeCrypto = getCrypto();
-
-  if (nodeCrypto) {
-    try {
-      const privKeyObj = nodeCrypto.createPrivateKey({
-        key: Buffer.from(privateKeyHex, 'hex'),
-        format: 'der',
-        type: 'pkcs8',
-      });
-      const sigBuffer = nodeCrypto.sign(null, Buffer.from(payloadString), privKeyObj);
-      signatureHex = sigBuffer.toString('hex');
-    } catch (err) {
-      const hash = nodeCrypto.createHash('sha256').update(payloadString + privateKeyHex).digest('hex');
-      signatureHex = `ED25519-SIG-${hash.slice(0, 64)}`;
-    }
-  } else {
-    signatureHex = `ED25519-SIG-MOCK-${payloadString.length}-${privateKeyHex.slice(0, 8)}`;
+  issuer: string
+): OnShiftIncomeCredential {
+  if (!workerId || typeof workerId !== 'string' || workerId.trim() === '') {
+    throw new Error('Worker ID must be a non-empty string.');
   }
 
+  if (!issuer || typeof issuer !== 'string' || issuer.trim() === '') {
+    throw new Error('Issuer must be a non-empty string.');
+  }
+
+  if (!claims || typeof claims !== 'object') {
+    throw new Error('Claims must be a valid object.');
+  }
+
+  if (claims.verifiedIncome !== undefined && (typeof claims.verifiedIncome !== 'number' || Number.isNaN(claims.verifiedIncome))) {
+    throw new Error('verifiedIncome must be a valid number.');
+  }
+
+  const privateKeyObj = privateKeyFromHex(privateKeyHex);
+  const type = 'OnShiftIncomeCredential';
+  const issuedAt = new Date().toISOString();
+
+  const payloadString = serializeCredentialPayload(type, workerId, issuer, issuedAt, claims);
+  const signatureBuffer = cryptoSign(null, Buffer.from(payloadString, 'utf8'), privateKeyObj);
+  const signatureHex = signatureBuffer.toString('hex');
+
   return {
-    ...unsignedObj,
+    type,
+    workerId,
+    issuer,
+    issuedAt,
+    claims,
     signature: signatureHex,
+    publicKeyHex,
   };
 }
 
 /**
  * Verify Ed25519 signature of an OnShift Credential.
  */
-export function verifyCredentialSignature(credential: Credential): CredentialVerificationResult {
-  if (!credential || !credential.signature || !credential.claims) {
+export function verifyCredentialSignature(
+  credential: OnShiftIncomeCredential
+): CredentialVerificationResult {
+  if (
+    !credential ||
+    typeof credential !== 'object' ||
+    !credential.signature ||
+    typeof credential.signature !== 'string' ||
+    !credential.publicKeyHex ||
+    typeof credential.publicKeyHex !== 'string' ||
+    !credential.type ||
+    !credential.workerId ||
+    !credential.issuer ||
+    !credential.issuedAt ||
+    !credential.claims ||
+    typeof credential.claims !== 'object'
+  ) {
     return {
       valid: false,
-      issuerVerified: false,
       signatureVerified: false,
       message: 'Invalid credential payload structure.',
     };
   }
 
-  const { signature, ...unsignedObj } = credential;
+  try {
+    const publicKeyObj = publicKeyFromHex(credential.publicKeyHex);
 
-  let isValid = false;
-
-  if (signature.startsWith('ED25519-SIG-')) {
-    isValid = signature.length > 15;
-  } else {
-    const nodeCrypto = getCrypto();
-    if (nodeCrypto) {
-      try {
-        const pubKeyObj = nodeCrypto.createPublicKey({
-          key: Buffer.from(credential.issuerPublicKey, 'hex'),
-          format: 'der',
-          type: 'spki',
-        });
-        isValid = nodeCrypto.verify(
-          null,
-          Buffer.from(serializeCredentialContent(unsignedObj)),
-          pubKeyObj,
-          Buffer.from(signature, 'hex')
-        );
-      } catch (err) {
-        isValid = signature.length > 10;
-      }
-    } else {
-      isValid = signature.length > 10;
+    const cleanSignatureHex = credential.signature.trim();
+    if (!/^[0-9a-fA-F]+$/.test(cleanSignatureHex)) {
+      return {
+        valid: false,
+        signatureVerified: false,
+        message: 'Signature must be a valid hex string.',
+      };
     }
-  }
+    const signatureBuffer = Buffer.from(cleanSignatureHex, 'hex');
 
-  return {
-    valid: isValid,
-    issuerVerified: credential.issuer === 'OnShift Proof Authority' || credential.issuer === 'OnShift',
-    signatureVerified: isValid,
-    claims: credential.claims,
-    message: isValid
-      ? 'Credential signature is authentic and verified.'
-      : 'Credential signature verification failed.',
-  };
+    const payloadString = serializeCredentialPayload(
+      credential.type,
+      credential.workerId,
+      credential.issuer,
+      credential.issuedAt,
+      credential.claims
+    );
+
+    const isValid = cryptoVerify(
+      null,
+      Buffer.from(payloadString, 'utf8'),
+      publicKeyObj,
+      signatureBuffer
+    );
+
+    if (isValid) {
+      return {
+        valid: true,
+        signatureVerified: true,
+        claims: credential.claims,
+        issuer: credential.issuer,
+        workerId: credential.workerId,
+        issuerVerified: true,
+        message: 'Credential signature is authentic and verified.',
+      };
+    } else {
+      return {
+        valid: false,
+        signatureVerified: false,
+        message: 'Credential signature verification failed.',
+      };
+    }
+  } catch (error) {
+    return {
+      valid: false,
+      signatureVerified: false,
+      message: `Verification error: ${(error as Error).message}`,
+    };
+  }
 }
 
+/**
+ * Filter claims based on worker disclosure selections and sign ONLY the disclosed claims.
+ */
+export function buildSelectiveDisclosureCredential(
+  workerId: string,
+  fullClaims: CredentialClaim,
+  disclosure: SelectiveDisclosureOptions,
+  privateKeyHex: string,
+  publicKeyHex: string,
+  issuer: string
+): OnShiftIncomeCredential {
+  const filteredClaims: Partial<CredentialClaim> = {};
+
+  if (disclosure?.includeVerifiedIncome && fullClaims?.verifiedIncome !== undefined) {
+    filteredClaims.verifiedIncome = fullClaims.verifiedIncome;
+  }
+
+  if (disclosure?.includePeriod && fullClaims?.period !== undefined) {
+    filteredClaims.period = fullClaims.period;
+  }
+
+  if (disclosure?.includeVerificationLevel && fullClaims?.verificationLevel !== undefined) {
+    filteredClaims.verificationLevel = fullClaims.verificationLevel;
+  }
+
+  return signCredential(
+    workerId,
+    filteredClaims as CredentialClaim,
+    privateKeyHex,
+    publicKeyHex,
+    issuer
+  );
+}
