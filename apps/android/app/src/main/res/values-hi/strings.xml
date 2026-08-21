@@ -1,0 +1,95 @@
+<resources>
+    <string name="app_name">OnShift</string>
+
+    <!-- Onboarding -->
+    <string name="select_language">भाषा चुनें</string>
+    <string name="english">अंग्रेज़ी</string>
+    <string name="hindi">हिंदी</string>
+    <string name="continue_btn">जारी रखें</string>
+    <string name="select_platforms">प्लेटफॉर्म चुनें</string>
+    <string name="platform_selection_desc">अपनी कमाई के डेटा को सिंक करने के लिए उन प्लेटफॉर्म को चुनें जिनके साथ आप काम करते हैं।</string>
+    <string name="zomato">ज़ोमैटो</string>
+    <string name="swiggy">स्विगी</string>
+    <string name="blinkit">ब्लिंकिट</string>
+    <string name="bank_aa">बैंक AA</string>
+    <string name="identity_verification">पहचान सत्यापन</string>
+    <string name="aadhaar_desc">डिजीलॉकर के माध्यम से आधार का उपयोग करके अपनी पहचान सत्यापित करें।</string>
+    <string name="verify_with_digilocker">डिजीलॉकर के साथ सत्यापित करें</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">होम</string>
+    <string name="nav_evidence">प्रमाण</string>
+    <string name="nav_credential">प्रमाणपत्र</string>
+    <string name="nav_schemes">योजनाएं</string>
+    <string name="nav_profile">प्रोफ़ाइल</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_worker">स्वागत है, कार्यकर्ता %1$s</string>
+    <string name="identity_verified">पहचान सत्यापित</string>
+    <string name="platforms_connected">प्लेटफॉर्म जुड़े हुए हैं</string>
+    <string name="platform_activity">प्लेटफॉर्म गतिविधि</string>
+    <string name="platform_stat">%1$s: %2$s</string>
+    <string name="reconciliation_status">मिलान की स्थिति</string>
+    <string name="awaiting_reconciliation">आपके पहले मिलान की प्रतीक्षा है</string>
+    <string name="verification_level">सत्यापन स्तर</string>
+    <string name="expected_income">अपेक्षित: %1$s</string>
+    <string name="actual_income">वास्तविक: %1$s</string>
+    <string name="matched">मिल गया</string>
+    <string name="unexplained_difference">अस्पष्ट अंतर</string>
+    <string name="difference_amount">अंतर: %1$s</string>
+    <string name="level_declared">घोषित</string>
+    <string name="level_observed">देखा गया</string>
+    <string name="level_corroborated">पुष्टि की गई</string>
+    <string name="level_financially_corroborated">वित्तीय रूप से पुष्टि की गई</string>
+
+    <!-- Evidence Screen -->
+    <string name="evidence_log">प्रमाण लॉग</string>
+    <string name="filter_all">सभी</string>
+    <string name="no_evidence">चयनित प्लेटफॉर्म के लिए कोई प्रमाण नहीं मिला।</string>
+    <string name="evidence_source">स्रोत: %1$s</string>
+    <string name="evidence_amount">राशि: %1$s</string>
+    <string name="evidence_date">तारीख: %1$s</string>
+    <string name="evidence_type">प्रकार: %1$s</string>
+
+    <!-- Credential Screen -->
+    <string name="selective_disclosure">चयनात्मक प्रकटीकरण</string>
+    <string name="disclosure_desc">उन विवरणों को चुनें जिन्हें आप अपने सत्यापन योग्य प्रमाणपत्र में शामिल करना चाहते हैं।</string>
+    <string name="claim_worker_id">कार्यकर्ता आईडी</string>
+    <string name="claim_identity_verified">पहचान सत्यापित</string>
+    <string name="claim_verified_income">सत्यापित आय</string>
+    <string name="claim_period">अवधि</string>
+    <string name="claim_verification_level">सत्यापन स्तर</string>
+    <string name="claim_reconciliation_status">मिलान की स्थिति</string>
+    <string name="claim_individual_orders">व्यक्तिगत आदेश</string>
+    <string name="claim_timestamps">टाइमस्टैम्प</string>
+    <string name="claim_location">स्थान</string>
+    <string name="generate_credential">प्रमाणपत्र तैयार करें</string>
+    <string name="income_credential">आय प्रमाणपत्र</string>
+    <string name="worker_id">कार्यकर्ता आईडी: %1$s</string>
+    <string name="period">अवधि: %1$s</string>
+    <string name="verified_income">सत्यापित आय: %1$s</string>
+    <string name="verification_level_label">स्तर: %1$s</string>
+    <string name="signature">हस्ताक्षर: %1$s</string>
+    <string name="share_with_lender">ऋणदाता के साथ साझा करें</string>
+
+    <!-- Schemes Screen -->
+    <string name="eligible_schemes">पात्र योजनाएं</string>
+    <string name="apply_now">अभी आवेदन करें</string>
+    <string name="scheme_pm_svanidhi_name">पीएम-स्वनिधि</string>
+    <string name="scheme_pm_svanidhi_desc">रेहड़ी-पटरी वालों के लिए सूक्ष्म ऋण</string>
+    <string name="scheme_ayushman_bharat_name">आयुष्मान भारत</string>
+    <string name="scheme_ayushman_bharat_desc">कम आय वाले श्रमिकों के लिए स्वास्थ्य बीमा</string>
+    <string name="scheme_eshram_name">ई-श्रम लाभ</string>
+    <string name="scheme_eshram_desc">असंगठित श्रमिकों के लिए सामाजिक सुरक्षा</string>
+
+    <!-- Profile Screen -->
+    <string name="privacy_vault">गोपनीयता तिजोरी</string>
+    <string name="hash_chain_status">हैश चेन की स्थिति</string>
+    <string name="valid">वैध</string>
+    <string name="tampered">छेड़छाड़ की गई</string>
+    <string name="last_verified">पिछला सत्यापन: %1$s</string>
+    <string name="change_language">भाषा बदलें</string>
+    <string name="edit_platforms">प्लेटफॉर्म संपादित करें</string>
+    <string name="demo_tampering">डेमो: डेटा के साथ छेड़छाड़ करें</string>
+    <string name="reset_hash">हैश चेन रीसेट करें</string>
+</resources>

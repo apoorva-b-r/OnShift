@@ -1,0 +1,95 @@
+<resources>
+    <string name="app_name">OnShift</string>
+
+    <!-- Onboarding -->
+    <string name="select_language">Select Language</string>
+    <string name="english">English</string>
+    <string name="hindi">Hindi</string>
+    <string name="continue_btn">Continue</string>
+    <string name="select_platforms">Select Platforms</string>
+    <string name="platform_selection_desc">Select the platforms you work with to sync your earnings data.</string>
+    <string name="zomato">Zomato</string>
+    <string name="swiggy">Swiggy</string>
+    <string name="blinkit">Blinkit</string>
+    <string name="bank_aa">Bank AA</string>
+    <string name="identity_verification">Identity Verification</string>
+    <string name="aadhaar_desc">Verify your identity using Aadhaar via DigiLocker.</string>
+    <string name="verify_with_digilocker">Verify with DigiLocker</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_evidence">Evidence</string>
+    <string name="nav_credential">Credential</string>
+    <string name="nav_schemes">Schemes</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Home Screen -->
+    <string name="welcome_worker">Welcome, Worker %1$s</string>
+    <string name="identity_verified">Identity verified</string>
+    <string name="platforms_connected">Platforms connected</string>
+    <string name="platform_activity">Platform Activity</string>
+    <string name="platform_stat">%1$s: %2$s</string>
+    <string name="reconciliation_status">Reconciliation Status</string>
+    <string name="awaiting_reconciliation">Awaiting your first reconciliation</string>
+    <string name="verification_level">Verification Level</string>
+    <string name="expected_income">Expected: %1$s</string>
+    <string name="actual_income">Actual: %1$s</string>
+    <string name="matched">Matched</string>
+    <string name="unexplained_difference">Unexplained Difference</string>
+    <string name="difference_amount">Difference: %1$s</string>
+    <string name="level_declared">Declared</string>
+    <string name="level_observed">Observed</string>
+    <string name="level_corroborated">Corroborated</string>
+    <string name="level_financially_corroborated">Financially Corroborated</string>
+
+    <!-- Evidence Screen -->
+    <string name="evidence_log">Evidence Log</string>
+    <string name="filter_all">All</string>
+    <string name="no_evidence">No evidence found for selected platforms.</string>
+    <string name="evidence_source">Source: %1$s</string>
+    <string name="evidence_amount">Amount: %1$s</string>
+    <string name="evidence_date">Date: %1$s</string>
+    <string name="evidence_type">Type: %1$s</string>
+
+    <!-- Credential Screen -->
+    <string name="selective_disclosure">Selective Disclosure</string>
+    <string name="disclosure_desc">Select the details you want to include in your verifiable credential.</string>
+    <string name="claim_worker_id">Worker ID</string>
+    <string name="claim_identity_verified">Identity verified</string>
+    <string name="claim_verified_income">Verified income</string>
+    <string name="claim_period">Period</string>
+    <string name="claim_verification_level">Verification level</string>
+    <string name="claim_reconciliation_status">Reconciliation status</string>
+    <string name="claim_individual_orders">Individual orders</string>
+    <string name="claim_timestamps">Timestamps</string>
+    <string name="claim_location">Location</string>
+    <string name="generate_credential">Generate Credential</string>
+    <string name="income_credential">Income Credential</string>
+    <string name="worker_id">Worker ID: %1$s</string>
+    <string name="period">Period: %1$s</string>
+    <string name="verified_income">Verified Income: %1$s</string>
+    <string name="verification_level_label">Level: %1$s</string>
+    <string name="signature">Signature: %1$s</string>
+    <string name="share_with_lender">Share with lender</string>
+
+    <!-- Schemes Screen -->
+    <string name="eligible_schemes">Eligible Schemes</string>
+    <string name="apply_now">Apply Now</string>
+    <string name="scheme_pm_svanidhi_name">PM-SVANidhi</string>
+    <string name="scheme_pm_svanidhi_desc">Micro-credit for street vendors</string>
+    <string name="scheme_ayushman_bharat_name">Ayushman Bharat</string>
+    <string name="scheme_ayushman_bharat_desc">Health insurance for low income workers</string>
+    <string name="scheme_eshram_name">e-Shram Benefits</string>
+    <string name="scheme_eshram_desc">Social security for unorganized workers</string>
+
+    <!-- Profile Screen -->
+    <string name="privacy_vault">Privacy Vault</string>
+    <string name="hash_chain_status">Hash Chain Status</string>
+    <string name="valid">Valid</string>
+    <string name="tampered">Tampered</string>
+    <string name="last_verified">Last verified: %1$s</string>
+    <string name="change_language">Change Language</string>
+    <string name="edit_platforms">Edit Platforms</string>
+    <string name="demo_tampering">Demo: Tamper Data</string>
+    <string name="reset_hash">Reset Hash Chain</string>
+</resources>

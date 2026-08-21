@@ -12,27 +12,15 @@ import androidx.compose.ui.unit.dp
 import com.onshift.app.R
 
 @Composable
-fun SelectiveDisclosureScreen(
-    onGenerate: (List<String>) -> Unit
+fun PlatformSelectionScreen(
+    onPlatformsSelected: (List<String>) -> Unit
 ) {
-    val claims = listOf(
-        stringResource(R.string.claim_identity_verified),
-        stringResource(R.string.claim_verified_income),
-        stringResource(R.string.claim_verification_level),
-        stringResource(R.string.claim_reconciliation_status),
-        stringResource(R.string.claim_individual_orders),
-        stringResource(R.string.claim_timestamps),
-        stringResource(R.string.claim_location)
+    val platforms = listOf(
+        stringResource(R.string.zomato),
+        stringResource(R.string.swiggy),
+        stringResource(R.string.blinkit)
     )
-    
-    val defaultChecked = setOf(
-        stringResource(R.string.claim_identity_verified),
-        stringResource(R.string.claim_verified_income),
-        stringResource(R.string.claim_verification_level),
-        stringResource(R.string.claim_reconciliation_status)
-    )
-
-    var selectedClaims by remember { mutableStateOf(defaultChecked) }
+    var selectedPlatforms by remember { mutableStateOf(setOf<String>()) }
 
     Column(
         modifier = Modifier
@@ -40,13 +28,13 @@ fun SelectiveDisclosureScreen(
             .padding(20.dp)
     ) {
         Text(
-            text = stringResource(R.string.selective_disclosure),
+            text = stringResource(R.string.select_platforms),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.disclosure_desc),
+            text = stringResource(R.string.platform_selection_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = com.onshift.app.ui.theme.TextSecondary
         )
@@ -56,7 +44,7 @@ fun SelectiveDisclosureScreen(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(claims) { claim ->
+            items(platforms) { platform ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
@@ -70,17 +58,17 @@ fun SelectiveDisclosureScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
-                            checked = selectedClaims.contains(claim),
+                            checked = selectedPlatforms.contains(platform),
                             onCheckedChange = { checked ->
-                                selectedClaims = if (checked) {
-                                    selectedClaims + claim
+                                selectedPlatforms = if (checked) {
+                                    selectedPlatforms + platform
                                 } else {
-                                    selectedClaims - claim
+                                    selectedPlatforms - platform
                                 }
                             }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = claim, style = MaterialTheme.typography.bodyLarge)
+                        Text(text = platform, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
@@ -89,12 +77,12 @@ fun SelectiveDisclosureScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { onGenerate(selectedClaims.toList()) },
+            onClick = { onPlatformsSelected(selectedPlatforms.toList()) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = selectedClaims.isNotEmpty(),
+            enabled = selectedPlatforms.isNotEmpty(),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
         ) {
-            Text(text = stringResource(R.string.generate_credential))
+            Text(text = stringResource(R.string.continue_btn))
         }
     }
 }
