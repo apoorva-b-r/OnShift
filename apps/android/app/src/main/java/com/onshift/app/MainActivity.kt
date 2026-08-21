@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             val language = prefs.language
-            val startDest = if (prefs.selectedPlatforms.isNotEmpty()) "main" else OnboardingScreen.LanguageSelection.route
+            val startDest = if (prefs.onboardingCompleted) "main" else OnboardingScreen.LanguageSelection.route
 
             // Sync AppCompatDelegate with DataStore preference
             LaunchedEffect(language) {

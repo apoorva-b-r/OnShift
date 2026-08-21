@@ -42,6 +42,7 @@ sealed class Screen(val route: String, val resourceId: Int, val icon: ImageVecto
     object CredentialTab : Screen("credential_tab", R.string.nav_credential, Icons.Default.Badge)
     object Schemes : Screen("schemes", R.string.nav_schemes, Icons.Default.Policy)
     object Profile : Screen("profile", R.string.nav_profile, Icons.Default.Person)
+    object EditPlatforms : Screen("edit_platforms", R.string.edit_platforms, Icons.Default.Edit)
 }
 
 sealed class OnboardingScreen(val route: String) {
@@ -80,6 +81,9 @@ fun NavGraph(
         }
         composable(OnboardingScreen.Identity.route) {
             IdentityScreen(onNext = {
+                scope.launch {
+                    repository.setOnboardingCompleted(true)
+                }
                 navController.navigate("main") {
                     popUpTo(OnboardingScreen.LanguageSelection.route) { inclusive = true }
                 }
@@ -87,13 +91,13 @@ fun NavGraph(
         }
         composable("main") {
             MainScaffold(
+                outerNavController = navController,
                 windowSizeClass = windowSizeClass,
                 privacyRecord = privacyRecord,
                 userPrefs = userPrefs,
-                onLanguageToggle = {
-                    val newLang = if (userPrefs.language == "hi") "en" else "hi"
-                    onLanguageChange(newLang)
-                },
+                repository = repository,
+                scope = scope,
+                onLanguageChange = onLanguageChange,
                 onTamperDemo = {
                     privacyRecord = privacyRecord.copy(hashChainValid = !privacyRecord.hashChainValid)
                 },
@@ -107,10 +111,13 @@ fun NavGraph(
 
 @Composable
 fun MainScaffold(
+    outerNavController: androidx.navigation.NavHostController,
     windowSizeClass: WindowSizeClass,
     privacyRecord: PrivacyRecord,
     userPrefs: com.onshift.app.data.model.UserPreferences,
-    onLanguageToggle: () -> Unit,
+    repository: com.onshift.app.data.UserPreferencesRepository,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onLanguageChange: (String) -> Unit,
     onTamperDemo: () -> Unit,
     onResetHash: () -> Unit
 ) {
@@ -165,15 +172,54 @@ fun MainScaffold(
                 CredentialNavGraph()
             }
             composable(Screen.Schemes.route) {
-                GovernmentSchemesScreen(schemeMatches = MockData.mockSchemeMatches)
+                GovernmentSchemesScreen(
+                    schemeMatches = MockData.mockSchemeMatches,
+                    onRestartDemo = {
+                        scope.launch {
+                            repository.updateSelectedPlatforms(emptyList())
+                            repository.setOnboardingCompleted(false)
+                        }
+                        outerNavController.navigate(OnboardingScreen.LanguageSelection.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     privacyRecord = privacyRecord,
-                    onLanguageToggle = onLanguageToggle,
-                    onEditPlatforms = { /* Edit platforms logic */ },
+                    selectedPlatforms = userPrefs.selectedPlatforms,
+                    onLanguageToggle = {
+                        val newLang = if (userPrefs.language == "hi") "en" else "hi"
+                        onLanguageChange(newLang)
+                    },
+                    onEditPlatforms = {
+                        navController.navigate(Screen.EditPlatforms.route)
+                    },
                     onTamperDemo = onTamperDemo,
-                    onResetHash = onResetHash
+                    onResetHash = onResetHash,
+                    onRestartDemo = {
+                        scope.launch {
+                            repository.updateSelectedPlatforms(emptyList())
+                            repository.setOnboardingCompleted(false)
+                        }
+                        outerNavController.navigate(OnboardingScreen.LanguageSelection.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.EditPlatforms.route) {
+                PlatformSelectionScreen(
+                    initialSelections = userPrefs.selectedPlatforms,
+                    showBackButton = true,
+                    onBack = { navController.popBackStack() },
+                    onPlatformsSelected = { platforms ->
+                        scope.launch {
+                            repository.updateSelectedPlatforms(platforms)
+                        }
+                        navController.popBackStack()
+                    }
                 )
             }
         }

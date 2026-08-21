@@ -15,7 +15,8 @@ import com.onshift.app.data.model.SchemeMatch
 
 @Composable
 fun GovernmentSchemesScreen(
-    schemeMatches: List<SchemeMatch>
+    schemeMatches: List<SchemeMatch>,
+    onRestartDemo: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -30,13 +31,15 @@ fun GovernmentSchemesScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(schemeMatches) { scheme ->
                 SchemeCard(scheme)
             }
         }
+        
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 

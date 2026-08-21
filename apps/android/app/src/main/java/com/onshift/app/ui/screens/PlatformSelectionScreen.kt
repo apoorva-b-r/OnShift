@@ -3,6 +3,8 @@ package com.onshift.app.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,6 +15,9 @@ import com.onshift.app.R
 
 @Composable
 fun PlatformSelectionScreen(
+    initialSelections: List<String> = emptyList(),
+    showBackButton: Boolean = false,
+    onBack: () -> Unit = {},
     onPlatformsSelected: (List<String>) -> Unit
 ) {
     val platforms = listOf(
@@ -20,13 +25,19 @@ fun PlatformSelectionScreen(
         stringResource(R.string.swiggy),
         stringResource(R.string.blinkit)
     )
-    var selectedPlatforms by remember { mutableStateOf(setOf<String>()) }
+    var selectedPlatforms by remember { mutableStateOf(initialSelections.toSet()) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
     ) {
+        if (showBackButton) {
+            IconButton(onClick = onBack, modifier = Modifier.padding(bottom = 16.dp)) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+        }
+        
         Text(
             text = stringResource(R.string.select_platforms),
             style = MaterialTheme.typography.headlineSmall,
