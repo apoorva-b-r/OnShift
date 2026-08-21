@@ -1,6 +1,14 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface IGovernmentSchemeDocument extends Document {
+/**
+ * GovernmentScheme
+ * Structured catalog entry for a government benefit/loan/pension scheme
+ * (e.g. PM SVANidhi, e-Shram). Used by the deterministic eligibility
+ * filter BEFORE anything is passed to the Nemotron Ultra 3 AI layer
+ * (owned by Member 6 / Surbhi). Field-for-field match with shared-types'
+ * GovernmentScheme interface, so no import/type adjustment was needed here.
+ */
+export interface GovernmentSchemeDocument extends Document {
   id: string;
   name: string;
   description: string;
@@ -10,23 +18,66 @@ export interface IGovernmentSchemeDocument extends Document {
   eligibilityRules: string[];
   documents: string[];
   applicationUrl: string;
-  status: string;
+  status: 'ACTIVE' | 'UPCOMING';
 }
 
-const GovernmentSchemeSchema = new Schema<IGovernmentSchemeDocument>(
+const GovernmentSchemeSchema = new Schema<GovernmentSchemeDocument>(
   {
-    id: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true },
-    description: { type: String, required: true },
-    targetWorkerTypes: [{ type: String }],
-    minMonthlyIncome: { type: Number },
-    maxMonthlyIncome: { type: Number },
-    eligibilityRules: [{ type: String }],
-    documents: [{ type: String }],
-    applicationUrl: { type: String, required: true },
-    status: { type: String, default: 'ACTIVE' },
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    targetWorkerTypes: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    minMonthlyIncome: {
+      type: Number,
+      required: false,
+    },
+    maxMonthlyIncome: {
+      type: Number,
+      required: false,
+    },
+    eligibilityRules: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    documents: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    applicationUrl: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ['ACTIVE', 'UPCOMING'],
+      default: 'ACTIVE',
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: false,
+    versionKey: false,
+  }
 );
 
-export const GovernmentSchemeModel = model<IGovernmentSchemeDocument>('GovernmentScheme', GovernmentSchemeSchema);
+export const GovernmentScheme = model<GovernmentSchemeDocument>(
+  'GovernmentScheme',
+  GovernmentSchemeSchema
+);
