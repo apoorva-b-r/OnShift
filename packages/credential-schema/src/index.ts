@@ -13,6 +13,7 @@ export interface OnShiftIncomeCredential {
   workerId: string;
   issuer: string;
   issuedAt: string;
+  validUntil: string;
   claims: CredentialClaim;
   signature: string;
   publicKeyHex: string;
@@ -93,6 +94,7 @@ export function serializeCredentialPayload(
   workerId: string,
   issuer: string,
   issuedAt: string,
+  validUntil: string,
   claims: CredentialClaim
 ): string {
   const sortedClaims: Record<string, any> = {};
@@ -109,6 +111,7 @@ export function serializeCredentialPayload(
     workerId,
     issuer,
     issuedAt,
+    validUntil,
     claims: sortedClaims,
   });
 }
@@ -141,9 +144,12 @@ export function signCredential(
 
   const privateKeyObj = privateKeyFromHex(privateKeyHex);
   const type = 'OnShiftIncomeCredential';
-  const issuedAt = new Date().toISOString();
+  const issuedAt = new Date();
+  const issuedAtISO = issuedAt.toISOString();
+  const validUntil = new Date(issuedAt.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const validUntilISO = validUntil.toISOString();
 
-  const payloadString = serializeCredentialPayload(type, workerId, issuer, issuedAt, claims);
+  const payloadString = serializeCredentialPayload(type, workerId, issuer, issuedAtISO, validUntilISO, claims);
   const signatureBuffer = cryptoSign(null, Buffer.from(payloadString, 'utf8'), privateKeyObj);
   const signatureHex = signatureBuffer.toString('hex');
 
@@ -151,7 +157,8 @@ export function signCredential(
     type,
     workerId,
     issuer,
-    issuedAt,
+    issuedAt: issuedAtISO,
+    validUntil: validUntilISO,
     claims,
     signature: signatureHex,
     publicKeyHex,
@@ -175,6 +182,7 @@ export function verifyCredentialSignature(
     !credential.workerId ||
     !credential.issuer ||
     !credential.issuedAt ||
+    !credential.validUntil ||
     !credential.claims ||
     typeof credential.claims !== 'object'
   ) {
@@ -203,6 +211,7 @@ export function verifyCredentialSignature(
       credential.workerId,
       credential.issuer,
       credential.issuedAt,
+      credential.validUntil,
       credential.claims
     );
 
