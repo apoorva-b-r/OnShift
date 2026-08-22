@@ -3,14 +3,16 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No standalone test for credential-schema\""
+    "test": "tsc && node --test dist/index.test.js"
   },
   "dependencies": {
     "@onshift/shared-types": "*"
   },
   "devDependencies": {
+    "@types/node": "^20.11.16",
     "typescript": "^5.3.3"
   }
 }

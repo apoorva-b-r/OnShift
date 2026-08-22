@@ -3,34 +3,37 @@ package com.onshift.app.notifications
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class OnShiftNotificationListenerService : NotificationListenerService() {
 
-    private val parsers: List<NotificationParser> = listOf(
-        ZomatoParser(),
-        SwiggyParser(),
-        UberParser(),
-        GenericParser()
-    )
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        sbn ?: return
+        if (sbn == null) return
 
-        val packageName = sbn.packageName ?: return
-        val extras = sbn.notification?.extras ?: return
-        val title = extras.getCharSequence("android.title")?.toString() ?: ""
+        val packageName = sbn.packageName ?: ""
+        val extras = sbn.notification.extras
+        val title = extras.getString("android.title") ?: ""
         val text = extras.getCharSequence("android.text")?.toString() ?: ""
-        val fullText = "$title $text"
+        val notificationId = "${sbn.id}-${sbn.postTime}"
 
-        for (parser in parsers) {
-            if (parser.canParse(packageName, fullText)) {
-                val parsed = parser.parse(packageName, fullText)
-                if (parsed != null) {
-                    Log.d("OnShiftNotif", "Captured evidence from ${parsed.platform}: INR ${parsed.amount}")
-                    // Store into LocalEncryptedEvidenceRepository and update HashChain
-                }
-                break
+        val content = "$title $text"
+        val parser = PlatformRegistry.getParserForPackage(packageName, content)
+
+        scope.launch {
+            val evidence = parser.parse(
+                title = title,
+                body = text,
+                notificationId = notificationId,
+                workerId = "OS-DEMO-001"
+            )
+
+            if (evidence != null) {
+                Log.d("OnShiftNotification", "Parsed Evidence: ${evidence.toJson()}")
             }
         }
     }

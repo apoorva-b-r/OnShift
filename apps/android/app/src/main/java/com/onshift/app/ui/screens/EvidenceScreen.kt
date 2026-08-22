@@ -1,97 +1,195 @@
 package com.onshift.app.ui.screens
 
-import androidx.compose.foundation.background
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.onshift.app.R
-import com.onshift.app.data.model.Evidence
-import java.text.NumberFormat
+import androidx.compose.ui.unit.sp
+import com.onshift.app.data.hashchain.HashChain
+import com.onshift.app.data.vault.EvidenceRecord
+import com.onshift.app.data.vault.LocalEncryptedEvidenceRepository
+import com.onshift.app.notifications.TesseractOcrScanner
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EvidenceScreen(
-    evidenceList: List<Evidence>,
-    selectedPlatforms: List<String>
-) {
-    var filter by remember { mutableStateOf("All") }
-    
-    val allowedSources = selectedPlatforms + "Bank AA"
-    val filteredByPlatforms = evidenceList.filter { it.source in allowedSources }
-    
-    val sources = listOf("All") + filteredByPlatforms.map { it.source }.distinct()
-    
-    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
-        maximumFractionDigits = 0
+fun EvidenceScreen() {
+    val repository = remember { LocalEncryptedEvidenceRepository.instance }
+    var evidenceList by remember { mutableStateOf(repository.getAllEvidence()) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isScanning by remember { mutableStateOf(false) }
+
+    fun refreshList() {
+        evidenceList = repository.getAllEvidence()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.evidence_log),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            
-            var expanded by remember { mutableStateOf(false) }
-            Box {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.FilterList, contentDescription = "Filter")
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    sources.forEach { source ->
-                        DropdownMenuItem(
-                            text = { Text(source) },
-                            onClick = {
-                                filter = source
-                                expanded = false
-                            }
+    // 1. Updated Contract to OpenDocument for broad file-format support (PDF + Images)
+    val pickDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            isScanning = true
+            coroutineScope.launch {
+                try {
+                    val parseResult = TesseractOcrScanner.scanAndParseDocument(context, uri)
+                    if (parseResult.success && parseResult.evidence?.amount != null) {
+                        repository.createAndSaveEvidence(
+                            source = "TESSERACT_OCR",
+                            platform = parseResult.evidence.platform.name,
+                            amount = parseResult.evidence.amount
                         )
+                        refreshList()
+                        Toast.makeText(
+                            context,
+                            "Parsed ₹${parseResult.evidence.amount} (${parseResult.evidence.platform}) via Tesseract",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Could not extract amount. Check image or PDF clarity.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "OCR Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                } finally {
+                    isScanning = false
                 }
             }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val displayList = if (filter == "All") filteredByPlatforms else filteredByPlatforms.filter { it.source == filter }
-
-        if (displayList.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.no_evidence),
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    color = com.onshift.app.ui.theme.TextSecondary
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Evidence Vault", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            // Action Buttons Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(displayList) { evidence ->
-                    EvidenceItem(evidence, currencyFormatter)
+                // Simulate Realtime Notification Button
+                Button(
+                    onClick = {
+                        val samplePlatforms = listOf("ZOMATO", "SWIGGY", "UBER")
+                        val sampleAmounts = listOf(245.0, 312.5, 180.0, 95.0)
+                        repository.createAndSaveEvidence(
+                            source = "NOTIFICATION_SIMULATION",
+                            platform = samplePlatforms.random(),
+                            amount = sampleAmounts.random()
+                        )
+                        refreshList()
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Simulate Push", fontSize = 12.sp)
+                }
+
+                // 2. Updated OCR Upload Button to launch both Images & PDFs
+                Button(
+                    onClick = {
+                        pickDocumentLauncher.launch(arrayOf("image/*", "application/pdf"))
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                    modifier = Modifier.weight(1f),
+                    enabled = !isScanning
+                ) {
+                    Text(if (isScanning) "Scanning..." else "Upload Doc / Slip", fontSize = 12.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Verify Hash Chain Integrity Button
+            OutlinedButton(
+                onClick = {
+                    val records = repository.getAllEvidence()
+                    var isValid = true
+                    var prevHash = "GENESIS_0000000000000000000000000000000000000000000000000000000000000000"
+
+                    for (record in records) {
+                        if (record.previousHash != prevHash) {
+                            isValid = false
+                            break
+                        }
+                        val computed = HashChain.calculateRecordHash(record, record.previousHash)
+                        if (computed != record.integrityHash) {
+                            isValid = false
+                            break
+                        }
+                        prevHash = record.integrityHash
+                    }
+
+                    val msg = if (isValid) "Hash-Chain Verified! Vault is tamper-free." else "Integrity Compromised!"
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Verify SHA-256 Chain Integrity")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Captured Records (${evidenceList.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (evidenceList.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No evidence recorded yet.\nSimulate a push notification or upload an earnings slip / PDF.",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(evidenceList) { item ->
+                        EvidenceCard(item)
+                    }
                 }
             }
         }
@@ -99,59 +197,56 @@ fun EvidenceScreen(
 }
 
 @Composable
-fun EvidenceItem(evidence: Evidence, formatter: NumberFormat) {
-    val badgeColor = when (evidence.source) {
-        "Zomato" -> Color(0xFFCB202D)
-        "Swiggy" -> Color(0xFFFC8019)
-        "Blinkit" -> Color(0xFFFFD337)
-        "Bank AA" -> Color(0xFF1976D2)
-        else -> Color.Gray
+fun EvidenceCard(item: EvidenceRecord) {
+    val dateString = remember(item.timestamp) {
+        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
+        sdf.format(Date(item.timestamp))
     }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(badgeColor, CircleShape),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = evidence.source.take(1).uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    text = item.platform,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "₹${item.amount}",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp
                 )
             }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column {
-                Text(
-                    text = stringResource(R.string.evidence_source, evidence.source),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = stringResource(R.string.evidence_date, evidence.timestamp),
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                evidence.amount?.let {
-                    Text(
-                        text = stringResource(R.string.evidence_amount, formatter.format(it)),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.evidence_type, evidence.type),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Source: ${item.source} • $dateString",
+                fontSize = 11.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Integrity Hash: ${item.integrityHash.take(18)}...",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Prev Hash: ${item.previousHash.take(18)}...",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

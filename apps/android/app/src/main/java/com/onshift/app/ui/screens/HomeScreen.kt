@@ -131,15 +131,15 @@ fun HomeScreen(
 @Composable
 fun StatusIndicator(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusReconciled, modifier = Modifier.size(16.dp))
         Text(text = text, style = MaterialTheme.typography.labelMedium, color = TextSecondary)
     }
 }
 
 @Composable
 fun ReconciliationCard(result: ReconciliationResult?, formatter: NumberFormat) {
-    val containerColor = if (result != null) Color(0xFF7BBBFF) else MaterialTheme.colorScheme.surfaceVariant
-    val contentColor = if (result != null) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant
+    val containerColor = if (result != null) Primary else MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = if (result != null) OnSurface else MaterialTheme.colorScheme.onSurfaceVariant
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -167,10 +167,11 @@ fun ReconciliationCard(result: ReconciliationResult?, formatter: NumberFormat) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (result.status == ReconciliationStatus.MATCHED) 
-                            stringResource(R.string.matched) 
-                        else 
+                        text = if (result.status == ReconciliationStatus.MATCHED)
+                            stringResource(R.string.matched)
+                        else
                             stringResource(R.string.unexplained_difference),
+                        color = if (result.status == ReconciliationStatus.MATCHED) OnSurface else StatusUnreconciled,
                         fontWeight = FontWeight.Bold
                     )
                     Text(text = result.period, style = MaterialTheme.typography.bodySmall)
@@ -181,7 +182,7 @@ fun ReconciliationCard(result: ReconciliationResult?, formatter: NumberFormat) {
                 if (result.status == ReconciliationStatus.UNEXPLAINED_DIFFERENCE) {
                     Text(
                         text = stringResource(R.string.difference_amount, formatter.format(result.differenceAmount)),
-                        color = Color(0xFFB00020)
+                        color = StatusUnreconciled
                     )
                 }
             }

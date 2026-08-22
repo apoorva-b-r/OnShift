@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ES2022",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@onshift/shared-types": ["../shared-types/dist/index.d.ts"]
+    },
+    "types": ["node"],
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",

@@ -6,6 +6,18 @@ import { getVerificationLevel } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
+import { asyncHandler } from '../middleware/apiError';
+import {
+  validateConsentRequest,
+  validateCredentialIssue,
+  validateCredentialVerify,
+  validateEvidence,
+  validateReconciliation,
+  validateRequest,
+  validateSchemeMatch,
+  validateVerification,
+  validateWorker,
+} from '../middleware/validateRequest';
 
 const router = Router();
 
@@ -20,28 +32,28 @@ router.get('/health', (_req, res) => {
 });
 
 // Workers
-router.get('/workers/:id', getWorker);
-router.post('/workers', createWorker);
+router.get('/workers/:id', asyncHandler(getWorker));
+router.post('/workers', validateRequest(validateWorker), asyncHandler(createWorker));
 
 // Evidence
-router.get('/evidence/worker/:workerId', getEvidenceByWorker);
-router.post('/evidence', createEvidence);
+router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
+router.post('/evidence', validateRequest(validateEvidence), asyncHandler(createEvidence));
 
 // Reconciliation & Verification
-router.post('/reconciliation/run', executeReconciliation);
-router.post('/verification/level', getVerificationLevel);
+router.post('/reconciliation/run', validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
+router.post('/verification/level', validateRequest(validateVerification), asyncHandler(getVerificationLevel));
 
 // Credentials
-router.post('/credentials/issue', handleIssueCredential);
-router.post('/credentials/verify', handleVerifyCredential);
+router.post('/credentials/issue', validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
+router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
 
 // Government Schemes
-router.get('/schemes', getSchemes);
-router.post('/schemes/match', matchSchemes);
-router.post('/schemes/recommend', recommendSchemes);
+router.get('/schemes', asyncHandler(getSchemes));
+router.post('/schemes/match', validateRequest(validateSchemeMatch), asyncHandler(matchSchemes));
+router.post('/schemes/recommend', asyncHandler(recommendSchemes));
 
 // Account Aggregator Consent
-router.post('/consent/request', requestConsent);
-router.get('/consent/status/:consentId', getConsentStatus);
+router.post('/consent/request', validateRequest(validateConsentRequest), asyncHandler(requestConsent));
+router.get('/consent/status/:consentId', asyncHandler(getConsentStatus));
 
 export default router;

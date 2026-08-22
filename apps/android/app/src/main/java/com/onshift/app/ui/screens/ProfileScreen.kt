@@ -20,13 +20,16 @@ import androidx.compose.ui.unit.dp
 import com.onshift.app.R
 import com.onshift.app.data.model.PrivacyRecord
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     privacyRecord: PrivacyRecord,
+    selectedPlatforms: List<String>,
     onLanguageToggle: () -> Unit,
     onEditPlatforms: () -> Unit,
     onTamperDemo: () -> Unit,
-    onResetHash: () -> Unit
+    onResetHash: () -> Unit,
+    onRestartDemo: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -51,6 +54,8 @@ fun ProfileScreen(
                 tint = com.onshift.app.ui.theme.Primary
             )
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Worker OS-82F91A", style = MaterialTheme.typography.titleMedium, color = com.onshift.app.ui.theme.TextSecondary)
         Spacer(modifier = Modifier.height(24.dp))
 
         // Privacy Vault Card
@@ -83,9 +88,49 @@ fun ProfileScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Platforms Card
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = com.onshift.app.ui.theme.Surface)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.select_platforms),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = onEditPlatforms) {
+                        Text(text = "Edit", color = com.onshift.app.ui.theme.Primary)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    selectedPlatforms.forEach { platform ->
+                        AssistChip(
+                            onClick = { },
+                            label = { Text(platform) },
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Actions
+        // Language
         OutlinedButton(
             onClick = onLanguageToggle,
             modifier = Modifier.fillMaxWidth(),
@@ -93,14 +138,7 @@ fun ProfileScreen(
         ) {
             Text(text = stringResource(R.string.change_language))
         }
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = onEditPlatforms,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(text = stringResource(R.string.edit_platforms))
-        }
+        
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(
@@ -109,11 +147,24 @@ fun ProfileScreen(
             colors = ButtonDefaults.buttonColors(containerColor = com.onshift.app.ui.theme.StatusUnreconciled),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text(text = stringResource(R.string.demo_tampering))
+            Text(text = stringResource(R.string.demo_tampering), color = Color.White)
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = onResetHash) {
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        OutlinedButton(
+            onClick = onResetHash,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
             Text(text = stringResource(R.string.reset_hash), color = com.onshift.app.ui.theme.StatusReconciled)
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        TextButton(
+            onClick = onRestartDemo
+        ) {
+            Text(text = "Reset All Data (Demo)", color = Color.Red.copy(alpha = 0.7f))
         }
     }
 }
