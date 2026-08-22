@@ -116,18 +116,23 @@ export const validateCredentialIssue: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
-  if (!isRecord(data.disclosedClaims)) {
-    details.push({ field: 'disclosedClaims', issue: 'Must be an object.' });
-    return details;
+  optionalString(data, 'workerId', details);
+  optionalString(data, 'verificationId', details);
+
+  if (!data.verificationId) {
+    if (!isRecord(data.disclosedClaims)) {
+      details.push({ field: 'disclosedClaims', issue: 'Must be an object when verificationId is omitted.' });
+      return details;
+    }
+    if (typeof data.disclosedClaims.verifiedIncome !== 'number' || data.disclosedClaims.verifiedIncome < 0) {
+      details.push({ field: 'disclosedClaims.verifiedIncome', issue: 'Must be a non-negative number.' });
+    }
+    requiredString(data.disclosedClaims, 'period', details);
+    if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel as string)) {
+      details.push({ field: 'disclosedClaims.verificationLevel', issue: 'Must be a valid verification level.' });
+    }
   }
-  if (typeof data.disclosedClaims.verifiedIncome !== 'number' || data.disclosedClaims.verifiedIncome < 0) {
-    details.push({ field: 'disclosedClaims.verifiedIncome', issue: 'Must be a non-negative number.' });
-  }
-  requiredString(data.disclosedClaims, 'period', details);
-  if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel)) {
-    details.push({ field: 'disclosedClaims.verificationLevel', issue: 'Must be a valid verification level.' });
-  }
+
   return details;
 };
 

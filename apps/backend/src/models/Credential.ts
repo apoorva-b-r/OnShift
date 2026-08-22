@@ -20,7 +20,9 @@ export interface CredentialDocument extends Document {
   credentialType: string;
   issuer: string;
   issuerPublicKey: string;
+  publicKeyHex?: string;
   workerId: string;
+  verificationId?: string;
   issuedAt: string;
   validUntil: string;
   claims: CredentialClaim;
@@ -43,9 +45,18 @@ const CredentialSchema = new Schema<CredentialDocument>(
       type: String,
       required: true,
     },
+    publicKeyHex: {
+      type: String,
+      required: false,
+    },
     workerId: {
       type: String,
       required: true,
+      index: true,
+    },
+    verificationId: {
+      type: String,
+      required: false,
       index: true,
     },
     issuedAt: {

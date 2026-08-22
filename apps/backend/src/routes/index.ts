@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { getWorker, createWorker } from '../controllers/workerController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
-import { getVerificationLevel } from '../controllers/verificationController';
+import { getVerificationLevel, runVerification } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
 import { asyncHandler } from '../middleware/apiError';
+import { authenticateWorker } from '../middleware/authMiddleware';
 import {
   validateConsentRequest,
   validateCredentialIssue,
@@ -37,14 +38,15 @@ router.post('/workers', validateRequest(validateWorker), asyncHandler(createWork
 
 // Evidence
 router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
-router.post('/evidence', validateRequest(validateEvidence), asyncHandler(createEvidence));
+router.post('/evidence', authenticateWorker, validateRequest(validateEvidence), asyncHandler(createEvidence));
 
 // Reconciliation & Verification
-router.post('/reconciliation/run', validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
+router.post('/reconciliation/run', authenticateWorker, validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
 router.post('/verification/level', validateRequest(validateVerification), asyncHandler(getVerificationLevel));
+router.post('/verification/run', authenticateWorker, asyncHandler(runVerification));
 
 // Credentials
-router.post('/credentials/issue', validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
+router.post('/credentials/issue', authenticateWorker, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
 router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
 
 // Government Schemes
