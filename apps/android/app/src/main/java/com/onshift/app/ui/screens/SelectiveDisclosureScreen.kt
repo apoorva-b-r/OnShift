@@ -8,135 +8,153 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.onshift.app.R
+import com.onshift.app.ui.common.*
 
 @Composable
 fun SelectiveDisclosureScreen(
-    onClaimsSelected: (List<String>) -> Unit = {}
+    onGenerateCredential: () -> Unit = {},
+    onClaimsSelected: ((List<String>) -> Unit)? = null,
+    uiState: UiState<Unit>? = null
 ) {
-    var includeVerifiedIncome by remember { mutableStateOf(true) }
-    var includePeriod by remember { mutableStateOf(true) }
-    var includeVerificationLevel by remember { mutableStateOf(true) }
-    var includePlatformBreakdown by remember { mutableStateOf(false) }
-    var includeRawBankTransactions by remember { mutableStateOf(false) }
+    if (uiState != null) {
+        when (uiState) {
+            is UiState.Loading -> UiStateLoadingView()
+            is UiState.Error -> UiStateErrorView(message = uiState.message)
+            is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.empty_credential))
+            is UiState.Success -> SelectiveDisclosureContent(onGenerateCredential, onClaimsSelected)
+        }
+    } else {
+        SelectiveDisclosureContent(onGenerateCredential, onClaimsSelected)
+    }
+}
 
-    val previewClaims by remember(
-        includeVerifiedIncome,
-        includePeriod,
-        includeVerificationLevel,
-        includePlatformBreakdown,
-        includeRawBankTransactions
+@Composable
+fun SelectiveDisclosureContent(
+    onGenerateCredential: () -> Unit,
+    onClaimsSelected: ((List<String>) -> Unit)? = null
+) {
+    var claimIdentity by remember { mutableStateOf(true) }
+    var claimIncome by remember { mutableStateOf(true) }
+    var claimLevel by remember { mutableStateOf(true) }
+    var claimReconciliation by remember { mutableStateOf(true) }
+    var claimOrders by remember { mutableStateOf(false) }
+    var claimTimestamps by remember { mutableStateOf(false) }
+    var claimLocation by remember { mutableStateOf(false) }
+
+    val activeClaims by remember(
+        claimIdentity,
+        claimIncome,
+        claimLevel,
+        claimReconciliation,
+        claimOrders,
+        claimTimestamps,
+        claimLocation
     ) {
         derivedStateOf {
             buildList {
-                if (includeVerifiedIncome) add("Verified Income: ₹30,100")
-                if (includePeriod) add("Period: July 2026")
-                if (includeVerificationLevel) add("Verification Level: FINANCIALLY CORROBORATED")
-                if (includePlatformBreakdown) add("Platform Detailed Breakdown")
-                if (includeRawBankTransactions) add("Raw Bank Statement Transactions")
+                if (claimIdentity) add("Identity Verified")
+                if (claimIncome) add("Verified Income: ₹30,100")
+                if (claimLevel) add("Verification Level: FINANCIALLY CORROBORATED")
+                if (claimReconciliation) add("Reconciliation Status: MATCHED")
+                if (claimOrders) add("Individual Orders Breakdown")
+                if (claimTimestamps) add("Detailed Timestamps")
+                if (claimLocation) add("Location Ledger")
             }
         }
     }
 
-    LaunchedEffect(previewClaims) {
-        onClaimsSelected(previewClaims)
+    LaunchedEffect(activeClaims) {
+        onClaimsSelected?.invoke(activeClaims)
     }
+
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .padding(20.dp)
     ) {
         Text(
-            text = "Selective Disclosure Claims",
-            style = MaterialTheme.typography.headlineMedium,
+            text = stringResource(R.string.selective_disclosure),
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Select which claims to include in your generated credential preview:",
+            text = stringResource(R.string.disclosure_desc),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = com.onshift.app.ui.theme.TextSecondary
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        DisclosureCheckboxRow(
-            label = "Verified Income (₹30,100)",
-            checked = includeVerifiedIncome,
-            onCheckedChange = { includeVerifiedIncome = it }
-        )
-        DisclosureCheckboxRow(
-            label = "Period (July 2026)",
-            checked = includePeriod,
-            onCheckedChange = { includePeriod = it }
-        )
-        DisclosureCheckboxRow(
-            label = "Verification Level (FINANCIALLY CORROBORATED)",
-            checked = includeVerificationLevel,
-            onCheckedChange = { includeVerificationLevel = it }
-        )
-        DisclosureCheckboxRow(
-            label = "Platform Detailed Breakdown",
-            checked = includePlatformBreakdown,
-            onCheckedChange = { includePlatformBreakdown = it }
-        )
-        DisclosureCheckboxRow(
-            label = "Raw Bank Statement Transactions",
-            checked = includeRawBankTransactions,
-            onCheckedChange = { includeRawBankTransactions = it }
-        )
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = com.onshift.app.ui.theme.Surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_identity_verified),
+                    checked = claimIdentity,
+                    onCheckedChange = { claimIdentity = it }
+                )
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_verified_income),
+                    checked = claimIncome,
+                    onCheckedChange = { claimIncome = it }
+                )
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_verification_level),
+                    checked = claimLevel,
+                    onCheckedChange = { claimLevel = it }
+                )
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_reconciliation_status),
+                    checked = claimReconciliation,
+                    onCheckedChange = { claimReconciliation = it }
+                )
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_individual_orders),
+                    checked = claimOrders,
+                    onCheckedChange = { claimOrders = it }
+                )
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_timestamps),
+                    checked = claimTimestamps,
+                    onCheckedChange = { claimTimestamps = it }
+                )
+                ClaimCheckboxItem(
+                    label = stringResource(R.string.claim_location),
+                    checked = claimLocation,
+                    onCheckedChange = { claimLocation = it }
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Credential Output Preview",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
+        Button(
+            onClick = onGenerateCredential,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Type: OnShiftIncomeCredential",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Disclosed Claims (${previewClaims.size}):",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (previewClaims.isEmpty()) {
-                    Text(
-                        text = "• No claims selected for disclosure",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                } else {
-                    previewClaims.forEach { claim ->
-                        Text(
-                            text = "• $claim",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
+            Text(text = stringResource(R.string.generate_credential))
         }
     }
 }
 
 @Composable
-private fun DisclosureCheckboxRow(
+fun ClaimCheckboxItem(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
@@ -152,10 +170,31 @@ private fun DisclosureCheckboxRow(
             onCheckedChange = onCheckedChange
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge
-        )
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
+// Previews for all 4 states
+@Preview(showBackground = true, name = "SelectiveDisclosure Loading")
+@Composable
+fun SelectiveDisclosurePreviewLoading() {
+    SelectiveDisclosureScreen(uiState = UiState.Loading)
+}
+
+@Preview(showBackground = true, name = "SelectiveDisclosure Error")
+@Composable
+fun SelectiveDisclosurePreviewError() {
+    SelectiveDisclosureScreen(uiState = UiState.Error("Could not reach the server, showing saved data instead"))
+}
+
+@Preview(showBackground = true, name = "SelectiveDisclosure Empty")
+@Composable
+fun SelectiveDisclosurePreviewEmpty() {
+    SelectiveDisclosureScreen(uiState = UiState.Empty)
+}
+
+@Preview(showBackground = true, name = "SelectiveDisclosure Populated")
+@Composable
+fun SelectiveDisclosurePreviewPopulated() {
+    SelectiveDisclosureScreen(uiState = UiState.Success(Unit))
+}

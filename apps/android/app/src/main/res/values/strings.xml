@@ -15,6 +15,10 @@
     <string name="identity_verification">Identity Verification</string>
     <string name="aadhaar_desc">Verify your identity using Aadhaar via DigiLocker.</string>
     <string name="verify_with_digilocker">Verify with DigiLocker</string>
+    <string name="pseudonym_id">Pseudonymous OnShift ID: %1$s</string>
+    <string name="worker_name">Worker Name: %1$s</string>
+    <string name="primary_role">Primary Role: Delivery Partner (Zomato, Swiggy)</string>
+    <string name="vault_status_active">Status: Encrypted Vault Active</string>
 
     <!-- Navigation -->
     <string name="nav_home">Home</string>
@@ -41,8 +45,11 @@
     <string name="level_observed">Observed</string>
     <string name="level_corroborated">Corroborated</string>
     <string name="level_financially_corroborated">Financially Corroborated</string>
+    <string name="confidence_percentage">%1$d%% confidence</string>
+    <string name="verification_explanation">Income matches bank settlement credit via Account Aggregator flow within an acceptable margin across the last reconciliation period.</string>
 
     <!-- Evidence Screen -->
+    <string name="evidence_vault">Evidence Vault</string>
     <string name="evidence_log">Evidence Log</string>
     <string name="filter_all">All</string>
     <string name="no_evidence">No evidence found for selected platforms.</string>
@@ -50,10 +57,29 @@
     <string name="evidence_amount">Amount: %1$s</string>
     <string name="evidence_date">Date: %1$s</string>
     <string name="evidence_type">Type: %1$s</string>
+    <string name="simulate_push">Simulate Push</string>
+    <string name="upload_doc">Upload Doc</string>
+    <string name="scanning">Scanning...</string>
+    <string name="verify_chain_integrity">Verify SHA-256 Chain Integrity</string>
+    <string name="captured_records_count">Captured Records (%1$d)</string>
+    <string name="no_evidence_recorded">No evidence recorded yet.\nSimulate a push notification or upload an earnings slip / PDF.</string>
+    <string name="source_prefix">Source: %1$s • %2$s</string>
+    <string name="integrity_hash_prefix">Integrity Hash: %1$s...</string>
+    <string name="prev_hash_prefix">Prev Hash: %1$s...</string>
 
     <!-- Credential Screen -->
+    <string name="signed_portable_credential">Signed Portable Credential</string>
+    <string name="credential_type">Type: OnShiftIncomeCredential</string>
+    <string name="credential_issuer">Issuer: OnShift Proof Authority</string>
+    <string name="credential_signature_verified">Signature: Ed25519 Verified</string>
+    <string name="credential_pseudonym">Worker Pseudonym: OS-DEMO-001</string>
     <string name="selective_disclosure">Selective Disclosure</string>
     <string name="disclosure_desc">Select the details you want to include in your verifiable credential.</string>
+    <string name="selective_disclosure_claims">Selective Disclosure Claims</string>
+    <string name="claim_verified_income_item">[X] Verified Income (₹30,100)</string>
+    <string name="claim_verification_level_item">[X] Verification Level (FINANCIALLY CORROBORATED)</string>
+    <string name="claim_breakdown_unchecked">[ ] Platform Detailed Breakdown (Unchecked)</string>
+    <string name="claim_bank_transactions_unchecked">[ ] Raw Bank Statement Transactions (Unchecked)</string>
     <string name="claim_worker_id">Worker ID</string>
     <string name="claim_identity_verified">Identity verified</string>
     <string name="claim_verified_income">Verified income</string>
@@ -72,9 +98,32 @@
     <string name="signature">Signature: %1$s</string>
     <string name="share_with_lender">Share with lender</string>
 
+    <!-- Verification Screen -->
+    <string name="evidence_verification_title">Evidence Verification Level</string>
+    <string name="confidence_score">Confidence Score: %1$s</string>
+    <string name="verification_reason">Reason: Platform notifications match bank settlement credit via Account Aggregator flow.</string>
+    <string name="level_financially_corroborated_val">Level: FINANCIALLY CORROBORATED</string>
+
+    <!-- Reconciliation Screen -->
+    <string name="reconciliation_engine">Reconciliation Engine</string>
+    <string name="expected_amount_val">Expected Amount: ₹30,500</string>
+    <string name="known_deductions_val">Known Deductions: ₹400 (Uniform Charge)</string>
+    <string name="expected_settlement_val">Expected Settlement: ₹30,100</string>
+    <string name="actual_settlement_val">Actual Bank Settlement: ₹30,100</string>
+    <string name="difference_val">Difference: ₹0</string>
+    <string name="status_matched_label">Status: MATCHED</string>
+
+    <!-- Privacy Screen -->
+    <string name="privacy_layer_control">Privacy Layer Control</string>
+    <string name="privacy_item_1">1. Pseudonymous Worker ID: OS-DEMO-001</string>
+    <string name="privacy_item_2">2. Encrypted Local Storage: Active (Android Keystore)</string>
+    <string name="privacy_item_3">3. Provenance: Local SHA-256 Tamper Detection</string>
+    <string name="privacy_item_4">4. Data Sharing: Worker Consent Required</string>
+
     <!-- Schemes Screen -->
     <string name="eligible_schemes">Eligible Schemes</string>
     <string name="apply_now">Apply Now</string>
+    <string name="no_matching_schemes">No matching schemes found yet</string>
     <string name="scheme_pm_svanidhi_name">PM-SVANidhi</string>
     <string name="scheme_pm_svanidhi_desc">Micro-credit for street vendors</string>
     <string name="scheme_ayushman_bharat_name">Ayushman Bharat</string>
@@ -92,4 +141,14 @@
     <string name="edit_platforms">Edit Platforms</string>
     <string name="demo_tampering">Demo: Tamper Data</string>
     <string name="reset_hash">Reset Hash Chain</string>
+    <string name="worker_id_label">Worker %1$s</string>
+    <string name="no_platforms_selected">No platforms selected</string>
+    <string name="reset_all_data_demo">Reset All Data (Demo)</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- UiState Strings -->
+    <string name="loading_data">Loading your data...</string>
+    <string name="error_occurred">Could not reach the server, showing saved data instead</string>
+    <string name="empty_data">No data available</string>
+    <string name="empty_credential">Complete onboarding to generate a credential</string>
 </resources>

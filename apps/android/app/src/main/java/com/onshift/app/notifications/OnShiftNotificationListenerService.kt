@@ -33,7 +33,7 @@ class OnShiftNotificationListenerService : NotificationListenerService() {
             )
 
             if (evidence != null) {
-                Log.d("OnShiftNotification", "Parsed Evidence: ${evidence.toJson()}")
+                Log.d("OnShiftNotification", "Successfully parsed notification evidence record")
             }
         }
     }

@@ -8,13 +8,17 @@
     <string name="continue_btn">जारी रखें</string>
     <string name="select_platforms">प्लेटफॉर्म चुनें</string>
     <string name="platform_selection_desc">अपनी कमाई के डेटा को सिंक करने के लिए उन प्लेटफॉर्म को चुनें जिनके साथ आप काम करते हैं।</string>
-    <string name="zomato">ज़ोमैटो</string>
-    <string name="swiggy">स्विगी</string>
-    <string name="blinkit">ब्लिंकिट</string>
-    <string name="bank_aa">बैंक AA</string>
+    <string name="zomato">Zomato</string>
+    <string name="swiggy">Swiggy</string>
+    <string name="blinkit">Blinkit</string>
+    <string name="bank_aa">Bank AA</string>
     <string name="identity_verification">पहचान सत्यापन</string>
     <string name="aadhaar_desc">डिजीलॉकर के माध्यम से आधार का उपयोग करके अपनी पहचान सत्यापित करें।</string>
     <string name="verify_with_digilocker">डिजीलॉकर के साथ सत्यापित करें</string>
+    <string name="pseudonym_id">छद्म नाम OnShift आईडी: %1$s</string>
+    <string name="worker_name">कार्यकर्ता का नाम: %1$s</string>
+    <string name="primary_role">मुख्य भूमिका: डिलीवरी पार्टनर (Zomato, Swiggy)</string>
+    <string name="vault_status_active">स्थिति: एन्क्रिप्टेड तिजोरी सक्रिय</string>
 
     <!-- Navigation -->
     <string name="nav_home">होम</string>
@@ -41,8 +45,11 @@
     <string name="level_observed">देखा गया</string>
     <string name="level_corroborated">पुष्टि की गई</string>
     <string name="level_financially_corroborated">वित्तीय रूप से पुष्टि की गई</string>
+    <string name="confidence_percentage">%1$d%% विश्वास</string>
+    <string name="verification_explanation">आय अंतिम मिलान अवधि के दौरान स्वीकार्य अंतर के भीतर खाता एग्रीगेटर प्रवाह के माध्यम से बैंक निपटान क्रेडिट से मेल खाती है।</string>
 
     <!-- Evidence Screen -->
+    <string name="evidence_vault">प्रमाण तिजोरी</string>
     <string name="evidence_log">प्रमाण लॉग</string>
     <string name="filter_all">सभी</string>
     <string name="no_evidence">चयनित प्लेटफॉर्म के लिए कोई प्रमाण नहीं मिला।</string>
@@ -50,10 +57,29 @@
     <string name="evidence_amount">राशि: %1$s</string>
     <string name="evidence_date">तारीख: %1$s</string>
     <string name="evidence_type">प्रकार: %1$s</string>
+    <string name="simulate_push">पुश सिमुलेशन</string>
+    <string name="upload_doc">दस्तावेज़ अपलोड करें</string>
+    <string name="scanning">स्कैन हो रहा है...</string>
+    <string name="verify_chain_integrity">SHA-256 चेन की पुष्टि करें</string>
+    <string name="captured_records_count">कैप्चर किए गए रिकॉर्ड (%1$d)</string>
+    <string name="no_evidence_recorded">अभी तक कोई प्रमाण दर्ज नहीं किया गया है।\nपुश अधिसूचना का अनुकरण करें या कमाई की पर्ची / पीडीएफ अपलोड करें।</string>
+    <string name="source_prefix">स्रोत: %1$s • %2$s</string>
+    <string name="integrity_hash_prefix">अखंडता हैश: %1$s...</string>
+    <string name="prev_hash_prefix">पिछला हैश: %1$s...</string>
 
     <!-- Credential Screen -->
+    <string name="signed_portable_credential">हस्ताक्षरित पोर्टेबल प्रमाणपत्र</string>
+    <string name="credential_type">प्रकार: OnShiftआयप्रमाणपत्र</string>
+    <string name="credential_issuer">जारीकर्ता: OnShift प्रमाण प्राधिकरण</string>
+    <string name="credential_signature_verified">हस्ताक्षर: Ed25519 सत्यापित</string>
+    <string name="credential_pseudonym">कार्यकर्ता छद्म नाम: OS-DEMO-001</string>
     <string name="selective_disclosure">चयनात्मक प्रकटीकरण</string>
     <string name="disclosure_desc">उन विवरणों को चुनें जिन्हें आप अपने सत्यापन योग्य प्रमाणपत्र में शामिल करना चाहते हैं।</string>
+    <string name="selective_disclosure_claims">चयनात्मक प्रकटीकरण दावे</string>
+    <string name="claim_verified_income_item">[X] सत्यापित आय (₹30,100)</string>
+    <string name="claim_verification_level_item">[X] सत्यापन स्तर (वित्तीय रूप से पुष्टि की गई)</string>
+    <string name="claim_breakdown_unchecked">[ ] प्लेटफॉर्म विस्तृत विवरण (अनचेक)</string>
+    <string name="claim_bank_transactions_unchecked">[ ] कच्चे बैंक विवरण लेनदेन (अनचेक)</string>
     <string name="claim_worker_id">कार्यकर्ता आईडी</string>
     <string name="claim_identity_verified">पहचान सत्यापित</string>
     <string name="claim_verified_income">सत्यापित आय</string>
@@ -72,9 +98,32 @@
     <string name="signature">हस्ताक्षर: %1$s</string>
     <string name="share_with_lender">ऋणदाता के साथ साझा करें</string>
 
+    <!-- Verification Screen -->
+    <string name="evidence_verification_title">प्रमाण सत्यापन स्तर</string>
+    <string name="confidence_score">विश्वास स्कोर: %1$s</string>
+    <string name="verification_reason">कारण: प्लेटफॉर्म सूचनाएं खाता एग्रीगेटर प्रवाह के माध्यम से बैंक निपटान क्रेडिट से मेल खाती हैं।</string>
+    <string name="level_financially_corroborated_val">स्तर: वित्तीय रूप से पुष्टि की गई</string>
+
+    <!-- Reconciliation Screen -->
+    <string name="reconciliation_engine">मिलान इंजन</string>
+    <string name="expected_amount_val">अपेक्षित राशि: ₹30,500</string>
+    <string name="known_deductions_val">ज्ञात कटौती: ₹400 (वर्दी शुल्क)</string>
+    <string name="expected_settlement_val">अपेक्षित निपटान: ₹30,100</string>
+    <string name="actual_settlement_val">वास्तविक बैंक निपटान: ₹30,100</string>
+    <string name="difference_val">अंतर: ₹0</string>
+    <string name="status_matched_label">स्थिति: मिल गया</string>
+
+    <!-- Privacy Screen -->
+    <string name="privacy_layer_control">गोपनीयता परत नियंत्रण</string>
+    <string name="privacy_item_1">1. छद्म नाम कार्यकर्ता आईडी: OS-DEMO-001</string>
+    <string name="privacy_item_2">2. एन्क्रिप्टेड स्थानीय भंडारण: सक्रिय (एंड्रॉइड कीस्टोर)</string>
+    <string name="privacy_item_3">3. उत्पत्ति: स्थानीय SHA-256 छेड़छाड़ का पता लगाना</string>
+    <string name="privacy_item_4">4. डेटा साझाकरण: कार्यकर्ता की सहमति आवश्यक है</string>
+
     <!-- Schemes Screen -->
     <string name="eligible_schemes">पात्र योजनाएं</string>
     <string name="apply_now">अभी आवेदन करें</string>
+    <string name="no_matching_schemes">अभी तक कोई मिलान वाली योजनाएं नहीं मिलीं</string>
     <string name="scheme_pm_svanidhi_name">पीएम-स्वनिधि</string>
     <string name="scheme_pm_svanidhi_desc">रेहड़ी-पटरी वालों के लिए सूक्ष्म ऋण</string>
     <string name="scheme_ayushman_bharat_name">आयुष्मान भारत</string>
@@ -92,4 +141,14 @@
     <string name="edit_platforms">प्लेटफॉर्म संपादित करें</string>
     <string name="demo_tampering">डेमो: डेटा के साथ छेड़छाड़ करें</string>
     <string name="reset_hash">हैश चेन रीसेट करें</string>
+    <string name="worker_id_label">कार्यकर्ता %1$s</string>
+    <string name="no_platforms_selected">कोई प्लेटफॉर्म चुना नहीं गया</string>
+    <string name="reset_all_data_demo">सभी डेटा रीसेट करें (डेमो)</string>
+    <string name="cancel">रद्द करें</string>
+
+    <!-- UiState Strings -->
+    <string name="loading_data">आपका डेटा लोड हो रहा है...</string>
+    <string name="error_occurred">सर्वर तक नहीं पहुंचा जा सका, इसके बजाय सहेजा गया डेटा दिखाया जा रहा है</string>
+    <string name="empty_data">कोई डेटा उपलब्ध नहीं है</string>
+    <string name="empty_credential">प्रमाणपत्र तैयार करने के लिए ऑनबोर्डिंग पूरी करें</string>
 </resources>
