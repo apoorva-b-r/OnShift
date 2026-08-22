@@ -34,7 +34,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
       const existingCred = await Credential.findOne({ verificationId }).lean();
       if (existingCred) {
         const credentialObj = {
-          type: existingCred.credentialType,
+          type: existingCred.type || (existingCred as any).credentialType || 'OnShiftIncomeCredential',
           workerId: existingCred.workerId,
           issuer: existingCred.issuer,
           issuedAt: existingCred.issuedAt,

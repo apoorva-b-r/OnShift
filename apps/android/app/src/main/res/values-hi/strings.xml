@@ -147,6 +147,10 @@
     <string name="eligible_schemes">पात्र योजनाएं</string>
     <string name="apply_now">अभी आवेदन करें</string>
     <string name="no_matching_schemes">अभी तक कोई मिलान वाली योजनाएं नहीं मिलीं</string>
+    <string name="consulting_ai_engine">एआई इंजन से परामर्श लिया जा रहा है...</string>
+    <string name="engine_source_nemotron">नेमोटाउन अल्ट्रा 3 एआई</string>
+    <string name="engine_source_deterministic">डिटर्मिनिस्टिक इंजन</string>
+    <string name="retry">पुनः प्रयास करें</string>
     <string name="scheme_pm_svanidhi_name">पीएम-स्वनिधि</string>
     <string name="scheme_pm_svanidhi_desc">रेहड़ी-पटरी वालों के लिए सूक्ष्म ऋण</string>
     <string name="scheme_ayushman_bharat_name">आयुष्मान भारत</string>
@@ -168,6 +172,12 @@
     <string name="no_platforms_selected">कोई प्लेटफॉर्म चुना नहीं गया</string>
     <string name="reset_all_data_demo">सभी डेटा रीसेट करें (डेमो)</string>
     <string name="cancel">रद्द करें</string>
+    <string name="backup_title">डेटा बैकअप</string>
+    <string name="backup_desc">आपके प्रमाण रिकॉर्ड, सत्यापन इतिहास और प्राथमिकताओं का बैकअप लिया जा रहा है।</string>
+    <string name="backed_up_pct">%1$d%% बैकअप हो गया</string>
+    <string name="last_backed_up">अंतिम बैकअप: %1$s</string>
+    <string name="back_up_now">अभी बैकअप लें</string>
+    <string name="back_up_again">फिर से बैकअप लें</string>
 
     <!-- UiState Strings -->
     <string name="loading_data">आपका डेटा लोड हो रहा है...</string>
