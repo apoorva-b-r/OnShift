@@ -67,7 +67,13 @@ fun AccountAggregatorScreen(
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(current.transactions) { transaction -> TransactionRow(transaction) }
                 }
-                Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = {
+                        onReconciliationReady(settlement)
+                        onBack()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text("Back to dashboard")
                 }
             }
