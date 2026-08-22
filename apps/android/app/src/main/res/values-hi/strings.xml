@@ -14,7 +14,8 @@
     <string name="bank_aa">Bank AA</string>
     <string name="identity_verification">पहचान सत्यापन</string>
     <string name="aadhaar_desc">डिजीलॉकर के माध्यम से आधार का उपयोग करके अपनी पहचान सत्यापित करें।</string>
-    <string name="verify_with_digilocker">डिजीलॉकर के साथ सत्यापित करें</string>
+    <string name="verify_with_digilocker">आधार (डिजीलॉकर) के साथ सत्यापित करें</string>
+    <string name="verifying_digilocker">डिजीलॉकर से सत्यापन हो रहा है...</string>
     <string name="pseudonym_id">छद्म नाम OnShift आईडी: %1$s</string>
     <string name="worker_name">कार्यकर्ता का नाम: %1$s</string>
     <string name="primary_role">मुख्य भूमिका: डिलीवरी पार्टनर (Zomato, Swiggy)</string>
@@ -62,6 +63,11 @@
     <string name="scanning">स्कैन हो रहा है...</string>
     <string name="verify_chain_integrity">SHA-256 चेन की पुष्टि करें</string>
     <string name="captured_records_count">कैप्चर किए गए रिकॉर्ड (%1$d)</string>
+    <string name="hash_chain_integrity">हैश चेन अखंडता</string>
+    <string name="status_valid">वैध ✓</string>
+    <string name="status_invalid">अवैध ✗</string>
+    <string name="simulate_tampering">छेड़छाड़ सिमुलेशन</string>
+    <string name="reset_hash_chain">हैश चेन रीसेट करें</string>
     <string name="no_evidence_recorded">अभी तक कोई प्रमाण दर्ज नहीं किया गया है।\nपुश अधिसूचना का अनुकरण करें या कमाई की पर्ची / पीडीएफ अपलोड करें।</string>
     <string name="source_prefix">स्रोत: %1$s • %2$s</string>
     <string name="integrity_hash_prefix">अखंडता हैश: %1$s...</string>
@@ -101,8 +107,13 @@
     <!-- Verification Screen -->
     <string name="evidence_verification_title">प्रमाण सत्यापन स्तर</string>
     <string name="confidence_score">विश्वास स्कोर: %1$s</string>
-    <string name="verification_reason">कारण: प्लेटफॉर्म सूचनाएं खाता एग्रीगेटर प्रवाह के माध्यम से बैंक निपटान क्रेडिट से मेल खाती हैं।</string>
+    <string name="verification_reason">कारण: प्लेटफ़ॉर्म सूचनाएं खाता एग्रीगेटर प्रवाह के माध्यम से बैंक निपटान क्रेडिट से मेल खाती हैं।</string>
     <string name="level_financially_corroborated_val">स्तर: वित्तीय रूप से पुष्टि की गई</string>
+    <string name="select_verification_level">सत्यापन स्तर चुनें (डेमो)</string>
+    <string name="level_declared_desc">स्वयं-रिपोर्ट किए गए दावे या मैन्युअल रूप से अपलोड की गई पे-पर्ची।</string>
+    <string name="level_observed_desc">प्लेटफ़ॉर्म ऐप्स से देखी गई रीयल-टाइम पुश सूचनाएं।</string>
+    <string name="level_corroborated_desc">ऐतिहासिक डिलीवरी रुझानों के विरुद्ध बहु-प्लेटफ़ॉर्म क्रॉस-सत्यापन।</string>
+    <string name="level_financially_corroborated_desc">आय अंतिम मिलान अवधि में एक स्वीकार्य सीमा के भीतर खाता एग्रीगेटर प्रवाह के माध्यम से बैंक निपटान क्रेडिट से मेल खाती है।</string>
 
     <!-- Reconciliation Screen -->
     <string name="reconciliation_engine">मिलान इंजन</string>
@@ -110,15 +121,27 @@
     <string name="known_deductions_val">ज्ञात कटौती: ₹400 (वर्दी शुल्क)</string>
     <string name="expected_settlement_val">अपेक्षित निपटान: ₹30,100</string>
     <string name="actual_settlement_val">वास्तविक बैंक निपटान: ₹30,100</string>
+    <string name="actual_settlement_fmt">वास्तविक बैंक निपटान: %1$s</string>
     <string name="difference_val">अंतर: ₹0</string>
+    <string name="difference_fmt">अंतर: %1$s</string>
     <string name="status_matched_label">स्थिति: मिल गया</string>
+    <string name="status_unexplained_label">स्थिति: अस्पष्ट अंतर</string>
+    <string name="select_scenario">मिलान परिदृश्य चुनें</string>
+    <string name="scenario_1_matched">परिदृश्य 1: मेल खाया (₹30,100)</string>
+    <string name="scenario_2_shortfall">परिदृश्य 2: कमी (₹29,500)</string>
 
     <!-- Privacy Screen -->
     <string name="privacy_layer_control">गोपनीयता परत नियंत्रण</string>
     <string name="privacy_item_1">1. छद्म नाम कार्यकर्ता आईडी: OS-DEMO-001</string>
-    <string name="privacy_item_2">2. एन्क्रिप्टेड स्थानीय भंडारण: सक्रिय (एंड्रॉइड कीस्टोर)</string>
+    <string name="privacy_item_2">2. एन्क्रिप्टेड स्थानीय संग्रहण: सक्रिय (एंड्रॉइड कीस्टोर)</string>
     <string name="privacy_item_3">3. उत्पत्ति: स्थानीय SHA-256 छेड़छाड़ का पता लगाना</string>
-    <string name="privacy_item_4">4. डेटा साझाकरण: कार्यकर्ता की सहमति आवश्यक है</string>
+    <string name="privacy_item_4">4. डेटा शेयरिंग: कार्यकर्ता की सहमति आवश्यक है</string>
+    <string name="encrypted_vault_summary">एन्क्रिप्टेड वॉल्ट सारांश</string>
+    <string name="vault_active_status">सक्रिय (एंड्रॉइड कीस्टोर + AES-256-GCM)</string>
+    <string name="data_sharing_controls">डेटा शेयरिंग नियंत्रण</string>
+    <string name="consent_required_toggle">डेटा शेयरिंग के लिए स्पष्ट सहमति आवश्यक</string>
+    <string name="zk_disclosure_toggle">शून्य-ज्ञान चयनात्मक प्रकटीकरण लागू करें</string>
+    <string name="local_only_toggle">कच्चे वित्तीय डेटा को केवल डिवाइस पर रखें</string>
 
     <!-- Schemes Screen -->
     <string name="eligible_schemes">पात्र योजनाएं</string>

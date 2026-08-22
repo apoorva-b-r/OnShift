@@ -14,7 +14,8 @@
     <string name="bank_aa">Bank AA</string>
     <string name="identity_verification">Identity Verification</string>
     <string name="aadhaar_desc">Verify your identity using Aadhaar via DigiLocker.</string>
-    <string name="verify_with_digilocker">Verify with DigiLocker</string>
+    <string name="verify_with_digilocker">Verify with Aadhaar (DigiLocker)</string>
+    <string name="verifying_digilocker">Verifying with DigiLocker...</string>
     <string name="pseudonym_id">Pseudonymous OnShift ID: %1$s</string>
     <string name="worker_name">Worker Name: %1$s</string>
     <string name="primary_role">Primary Role: Delivery Partner (Zomato, Swiggy)</string>
@@ -62,6 +63,11 @@
     <string name="scanning">Scanning...</string>
     <string name="verify_chain_integrity">Verify SHA-256 Chain Integrity</string>
     <string name="captured_records_count">Captured Records (%1$d)</string>
+    <string name="hash_chain_integrity">Hash Chain Integrity</string>
+    <string name="status_valid">VALID ✓</string>
+    <string name="status_invalid">INVALID ✗</string>
+    <string name="simulate_tampering">Simulate Tampering</string>
+    <string name="reset_hash_chain">Reset Hash Chain</string>
     <string name="no_evidence_recorded">No evidence recorded yet.\nSimulate a push notification or upload an earnings slip / PDF.</string>
     <string name="source_prefix">Source: %1$s • %2$s</string>
     <string name="integrity_hash_prefix">Integrity Hash: %1$s...</string>
@@ -103,6 +109,11 @@
     <string name="confidence_score">Confidence Score: %1$s</string>
     <string name="verification_reason">Reason: Platform notifications match bank settlement credit via Account Aggregator flow.</string>
     <string name="level_financially_corroborated_val">Level: FINANCIALLY CORROBORATED</string>
+    <string name="select_verification_level">Select Verification Level (Demo)</string>
+    <string name="level_declared_desc">Self-reported claims or manually uploaded payslips.</string>
+    <string name="level_observed_desc">Real-time push notifications observed from platform apps.</string>
+    <string name="level_corroborated_desc">Multi-platform cross-validation against historic delivery trends.</string>
+    <string name="level_financially_corroborated_desc">Income matches bank settlement credit via Account Aggregator flow within an acceptable margin across the last reconciliation period.</string>
 
     <!-- Reconciliation Screen -->
     <string name="reconciliation_engine">Reconciliation Engine</string>
@@ -110,8 +121,14 @@
     <string name="known_deductions_val">Known Deductions: ₹400 (Uniform Charge)</string>
     <string name="expected_settlement_val">Expected Settlement: ₹30,100</string>
     <string name="actual_settlement_val">Actual Bank Settlement: ₹30,100</string>
+    <string name="actual_settlement_fmt">Actual Bank Settlement: %1$s</string>
     <string name="difference_val">Difference: ₹0</string>
+    <string name="difference_fmt">Difference: %1$s</string>
     <string name="status_matched_label">Status: MATCHED</string>
+    <string name="status_unexplained_label">Status: UNEXPLAINED DIFFERENCE</string>
+    <string name="select_scenario">Select Reconciliation Scenario</string>
+    <string name="scenario_1_matched">Scenario 1: Matched (₹30,100)</string>
+    <string name="scenario_2_shortfall">Scenario 2: Shortfall (₹29,500)</string>
 
     <!-- Privacy Screen -->
     <string name="privacy_layer_control">Privacy Layer Control</string>
@@ -119,6 +136,12 @@
     <string name="privacy_item_2">2. Encrypted Local Storage: Active (Android Keystore)</string>
     <string name="privacy_item_3">3. Provenance: Local SHA-256 Tamper Detection</string>
     <string name="privacy_item_4">4. Data Sharing: Worker Consent Required</string>
+    <string name="encrypted_vault_summary">Encrypted Vault Summary</string>
+    <string name="vault_active_status">Active (Android Keystore + AES-256-GCM)</string>
+    <string name="data_sharing_controls">Data Sharing Controls</string>
+    <string name="consent_required_toggle">Require Explicit Consent for Data Sharing</string>
+    <string name="zk_disclosure_toggle">Enforce Zero-Knowledge Selective Disclosure</string>
+    <string name="local_only_toggle">Keep Raw Financial Data On-Device Only</string>
 
     <!-- Schemes Screen -->
     <string name="eligible_schemes">Eligible Schemes</string>
