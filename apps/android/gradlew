@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+if [ -f "/Users/Apoorva/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/bin/gradle" ]; then
+    exec "/Users/Apoorva/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1/bin/gradle" "$@"
+else
+    exec gradle "$@"
+fi
