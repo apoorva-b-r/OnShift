@@ -1,5 +1,6 @@
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+﻿import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { ApiError, ValidationDetail } from './apiError';
+import { isAuthEnabled } from './authMiddleware';
 
 type RequestValidator = (body: unknown) => ValidationDetail[];
 
@@ -36,6 +37,16 @@ function optionalString(body: Record<string, unknown>, field: string, details: V
   }
 }
 
+function validateWorkerIdField(data: Record<string, unknown>, details: ValidationDetail[]) {
+  // If auth is enabled, workerId in body is optional (derived from JWT).
+  // If auth is disabled (legacy test mode), workerId in body is required.
+  if (isAuthEnabled()) {
+    optionalString(data, 'workerId', details);
+  } else {
+    requiredString(data, 'workerId', details);
+  }
+}
+
 function isoDate(value: unknown): boolean {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value));
 }
@@ -53,7 +64,8 @@ function validatePayoutRequest(body: unknown): ValidationDetail[] {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
+  validateWorkerIdField(data, details);
+
   if (!Array.isArray(data.evidenceIds) || data.evidenceIds.length === 0 || !data.evidenceIds.every((id) => typeof id === 'string' && id.trim())) {
     details.push({ field: 'evidenceIds', issue: 'Must contain at least one non-empty evidence ID.' });
   }
@@ -89,7 +101,8 @@ export const validateEvidence: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
+  validateWorkerIdField(data, details);
+
   requiredString(data, 'source', details);
   if (typeof data.source === 'string' && !evidenceSources.has(data.source)) {
     details.push({ field: 'source', issue: 'Must be DECLARED, OBSERVED, or FINANCIAL.' });
@@ -116,17 +129,20 @@ export const validateCredentialIssue: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
-  if (!isRecord(data.disclosedClaims)) {
-    details.push({ field: 'disclosedClaims', issue: 'Must be an object.' });
-    return details;
-  }
-  if (typeof data.disclosedClaims.verifiedIncome !== 'number' || data.disclosedClaims.verifiedIncome < 0) {
-    details.push({ field: 'disclosedClaims.verifiedIncome', issue: 'Must be a non-negative number.' });
-  }
-  requiredString(data.disclosedClaims, 'period', details);
-  if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel)) {
-    details.push({ field: 'disclosedClaims.verificationLevel', issue: 'Must be a valid verification level.' });
+  validateWorkerIdField(data, details);
+
+  if (data.disclosedClaims !== undefined) {
+    if (!isRecord(data.disclosedClaims)) {
+      details.push({ field: 'disclosedClaims', issue: 'Must be an object.' });
+      return details;
+    }
+    if (typeof data.disclosedClaims.verifiedIncome !== 'number' || data.disclosedClaims.verifiedIncome < 0) {
+      details.push({ field: 'disclosedClaims.verifiedIncome', issue: 'Must be a non-negative number.' });
+    }
+    requiredString(data.disclosedClaims, 'period', details);
+    if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel)) {
+      details.push({ field: 'disclosedClaims.verificationLevel', issue: 'Must be a valid verification level.' });
+    }
   }
   return details;
 };
@@ -136,8 +152,6 @@ export const validateCredentialVerify: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  // Matches OnShiftIncomeCredential shape from @onshift/credential-schema:
-  // { type, workerId, issuer, issuedAt, claims, signature, publicKeyHex }
   for (const field of ['type', 'issuer', 'publicKeyHex', 'workerId', 'issuedAt', 'signature']) {
     requiredString(data, field, details);
   }
@@ -165,7 +179,7 @@ export const validateConsentRequest: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
+  validateWorkerIdField(data, details);
   optionalString(data, 'aaProvider', details);
 
   if (data.fiTypes !== undefined) {

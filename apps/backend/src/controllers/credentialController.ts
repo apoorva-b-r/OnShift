@@ -1,9 +1,11 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { issueCredential, verifyCredential } from '../services/credentialService';
 import { Credential } from '../models';
+import { getEffectiveWorkerId } from '../middleware/authMiddleware';
 
 export const handleIssueCredential = async (req: Request, res: Response) => {
-  const { workerId, disclosedClaims } = req.body;
+  const workerId = getEffectiveWorkerId(req);
+  const { disclosedClaims } = req.body;
 
   const defaultClaims = {
     verifiedIncome: 30100,
@@ -11,7 +13,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     verificationLevel: 'FINANCIALLY_CORROBORATED' as const,
   };
 
-  const credential = issueCredential(workerId || 'OS-DEMO-001', disclosedClaims || defaultClaims);
+  const credential = issueCredential(workerId, disclosedClaims || defaultClaims);
 
   try {
     await Credential.create(credential);

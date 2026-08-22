@@ -1,6 +1,7 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { Evidence } from '../models';
 import { ApiError } from '../middleware/apiError';
+import { getEffectiveWorkerId } from '../middleware/authMiddleware';
 import {
   DEMO_DECLARED_EVIDENCE,
   DEMO_OBSERVED_EVIDENCE_ZOMATO,
@@ -8,12 +9,6 @@ import {
   DEMO_FINANCIAL_EVIDENCE_SCENARIO_1,
 } from '@onshift/mock-data';
 
-/**
- * GET /evidence/worker/:workerId
- * Returns persisted evidence sorted by capturedAt. If DB unreachable or no records
- * and the worker is the demo worker, fall back to mock data with a top‑level
- * "source": "MOCK_FALLBACK" field.
- */
 export const getEvidenceByWorker = async (req: Request, res: Response) => {
   const { workerId } = req.params;
   try {
@@ -21,7 +16,6 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
     if (docs && docs.length) {
       return res.json(docs);
     }
-    // No persisted evidence
     if (workerId === 'OS-DEMO-001') {
       return res.json({
         source: 'MOCK_FALLBACK',
@@ -35,7 +29,6 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
     }
     return res.json([]);
   } catch (err) {
-    // DB error – treat like unreachable
     if (workerId === 'OS-DEMO-001') {
       return res.json({
         source: 'MOCK_FALLBACK',
@@ -52,11 +45,9 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * POST /evidence
- * Validates required fields, generates an id if missing, persists the document.
- */
 export const createEvidence = async (req: Request, res: Response) => {
+  const workerId = getEffectiveWorkerId(req);
+
   const {
     source,
     type,
@@ -73,6 +64,7 @@ export const createEvidence = async (req: Request, res: Response) => {
 
   const evidenceDoc = {
     ...rest,
+    workerId,
     source,
     type,
     platform,
@@ -94,4 +86,3 @@ export const createEvidence = async (req: Request, res: Response) => {
     throw new ApiError(500, 'DATABASE_ERROR', 'Failed to save evidence.');
   }
 };
-

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 import { getWorker, createWorker } from '../controllers/workerController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
@@ -6,7 +6,9 @@ import { getVerificationLevel } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
+import { login } from '../controllers/authController';
 import { asyncHandler } from '../middleware/apiError';
+import { authenticate, enforceWorkerOwnership, requireRole } from '../middleware/authMiddleware';
 import {
   validateConsentRequest,
   validateCredentialIssue,
@@ -21,7 +23,11 @@ import {
 
 const router = Router();
 
-// Health
+// ---------------------------------------------------------------------------
+// Public routes — no auth required
+// ---------------------------------------------------------------------------
+
+// Health check
 router.get('/health', (_req, res) => {
   res.json({
     status: 'HEALTHY',
@@ -31,29 +37,86 @@ router.get('/health', (_req, res) => {
   });
 });
 
-// Workers
-router.get('/workers/:id', asyncHandler(getWorker));
-router.post('/workers', validateRequest(validateWorker), asyncHandler(createWorker));
+// Credential verification is intentionally public — any verifier (employer,
+// lender, scheme officer) must be able to verify a credential without a worker
+// session. The credential itself carries the public key for signature checking.
+router.post(
+  '/credentials/verify',
+  validateRequest(validateCredentialVerify),
+  asyncHandler(handleVerifyCredential)
+);
 
-// Evidence
-router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
-router.post('/evidence', validateRequest(validateEvidence), asyncHandler(createEvidence));
-
-// Reconciliation & Verification
-router.post('/reconciliation/run', validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
-router.post('/verification/level', validateRequest(validateVerification), asyncHandler(getVerificationLevel));
-
-// Credentials
-router.post('/credentials/issue', validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
-router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
-
-// Government Schemes
+// Government scheme listing is public information
 router.get('/schemes', asyncHandler(getSchemes));
 router.post('/schemes/match', validateRequest(validateSchemeMatch), asyncHandler(matchSchemes));
 router.post('/schemes/recommend', asyncHandler(recommendSchemes));
 
-// Account Aggregator Consent
-router.post('/consent/request', validateRequest(validateConsentRequest), asyncHandler(requestConsent));
-router.get('/consent/status/:consentId', asyncHandler(getConsentStatus));
+// Auth — login (dev/demo only)
+router.post('/auth/login', asyncHandler(login));
+
+// ---------------------------------------------------------------------------
+// Protected routes — require valid JWT
+// ---------------------------------------------------------------------------
+
+// Workers
+router.get('/workers/:id', authenticate, asyncHandler(getWorker));
+router.post('/workers', authenticate, validateRequest(validateWorker), asyncHandler(createWorker));
+
+// Evidence
+router.get(
+  '/evidence/worker/:workerId',
+  authenticate,
+  requireRole('WORKER', 'VERIFIER', 'ADMIN'),
+  enforceWorkerOwnership,
+  asyncHandler(getEvidenceByWorker)
+);
+router.post(
+  '/evidence',
+  authenticate,
+  requireRole('WORKER'),
+  enforceWorkerOwnership,
+  validateRequest(validateEvidence),
+  asyncHandler(createEvidence)
+);
+
+// Reconciliation & Verification
+router.post(
+  '/reconciliation/run',
+  authenticate,
+  requireRole('WORKER', 'VERIFIER', 'ADMIN'),
+  enforceWorkerOwnership,
+  validateRequest(validateReconciliation),
+  asyncHandler(executeReconciliation)
+);
+router.post(
+  '/verification/level',
+  authenticate,
+  requireRole('WORKER', 'VERIFIER', 'ADMIN'),
+  enforceWorkerOwnership,
+  validateRequest(validateVerification),
+  asyncHandler(getVerificationLevel)
+);
+
+// Credentials — issuance is worker-scoped
+router.post(
+  '/credentials/issue',
+  authenticate,
+  requireRole('WORKER'),
+  enforceWorkerOwnership,
+  validateRequest(validateCredentialIssue),
+  asyncHandler(handleIssueCredential)
+);
+
+// Account Aggregator Consent — worker-scoped
+router.post(
+  '/consent/request',
+  authenticate,
+  requireRole('WORKER'),
+  enforceWorkerOwnership,
+  validateRequest(validateConsentRequest),
+  asyncHandler(requestConsent)
+);
+// Consent status
+router.get('/consent/status/:consentId', authenticate, asyncHandler(getConsentStatus));
 
 export default router;

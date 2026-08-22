@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+﻿import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
@@ -13,4 +13,15 @@ export const config = {
   ed25519PublicKeyHex:
     process.env.ED25519_PUBLIC_KEY_HEX ||
     'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
+  /**
+   * JWT_SECRET — used by authMiddleware.ts to sign and verify HS256 tokens.
+   *
+   * IMPORTANT: This must be set in the environment. The fallback below is for
+   * local development and test runs ONLY — never deploy with this value.
+   *
+   * Minimum recommended length: 32+ characters of high entropy.
+   * Generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   */
+  jwtSecret:
+    process.env.JWT_SECRET || 'onshift-dev-only-jwt-secret-do-not-use-in-production-32chars',
 };

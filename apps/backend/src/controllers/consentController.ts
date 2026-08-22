@@ -1,8 +1,11 @@
-import { Request, Response } from 'express';
+﻿import { Request, Response } from 'express';
 import { ConsentRequest } from '../models';
+import { getEffectiveWorkerId } from '../middleware/authMiddleware';
 
 export const requestConsent = async (req: Request, res: Response) => {
-  const { workerId = 'OS-DEMO-001', aaProvider = 'Setu Mock AA', fiTypes = ['DEPOSIT'] } = req.body;
+  const workerId = getEffectiveWorkerId(req);
+
+  const { aaProvider = 'Setu Mock AA', fiTypes = ['DEPOSIT'] } = req.body;
   const consentId = `AA-CONSENT-${Date.now().toString(36).toUpperCase()}`;
   const authorizationUrl = `https://aa-sandbox.onshift.org/auth/${consentId}`;
   const isMock = aaProvider.toLowerCase().includes('mock') || true;
