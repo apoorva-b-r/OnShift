@@ -36,10 +36,7 @@ fun AccountAggregatorScreen(
         if (state is AAUiState.Idle) accountAggregatorViewModel.startConsentFlow("OS-DEMO-001", listOf("DEPOSIT", "TRANSACTIONS"))
     }
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Financial verification", style = MaterialTheme.typography.headlineSmall)
-            Button(onClick = onBack) { Text("Back") }
-        }
+        Text("Financial verification", style = MaterialTheme.typography.headlineSmall)
         when (val current = state) {
             AAUiState.Idle, AAUiState.RequestingConsent, AAUiState.FetchingData ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
