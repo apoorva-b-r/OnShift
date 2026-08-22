@@ -56,7 +56,7 @@ fun AccountAggregatorScreen(
                 Button(onClick = { accountAggregatorViewModel.retry() }) { Text("Retry") }
             }
             is AAUiState.Success -> {
-                val settlement = current.transactions.filter { it.type == "CREDIT" }.maxOfOrNull { it.amount } ?: 0.0
+                val settlement = current.transactions.filter { it.narration.contains("CR", ignoreCase = true) || it.amount > 0 }.maxOfOrNull { it.amount } ?: 0.0
                 LaunchedEffect(settlement) { onReconciliationReady(settlement) }
                 if (current.isMock) {
                     Card(modifier = Modifier.fillMaxWidth(), colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
@@ -77,7 +77,7 @@ fun AccountAggregatorScreen(
 
 @Composable
 private fun AAReconciliationSummary(transactions: List<AATransaction>) {
-    val settlement = transactions.filter { it.type == "CREDIT" }.maxOfOrNull { it.amount } ?: 0.0
+    val settlement = transactions.filter { it.narration.contains("CR", ignoreCase = true) || it.amount > 0 }.maxOfOrNull { it.amount } ?: 0.0
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Reconciliation", style = MaterialTheme.typography.titleMedium)
