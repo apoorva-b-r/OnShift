@@ -41,13 +41,13 @@ const CredentialSchema = new Schema<CredentialDocument>(
       required: true,
       default: 'OnShift Proof Authority',
     },
-    publicKeyHex: {
+    issuerPublicKey: {
       type: String,
-      required: true,
+      required: false,
     },
     publicKeyHex: {
       type: String,
-      required: false,
+      required: true,
     },
     workerId: {
       type: String,
