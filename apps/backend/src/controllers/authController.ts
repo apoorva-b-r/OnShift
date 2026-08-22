@@ -1,4 +1,4 @@
-﻿/**
+/**
  * authController.ts
  *
  * POST /api/v1/auth/login  (dev/demo only)
@@ -16,6 +16,7 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiError } from '../middleware/apiError';
 import type { WorkerRole } from '../middleware/authMiddleware';
+import { config } from '../config';
 
 const VALID_ROLES: WorkerRole[] = ['WORKER', 'VERIFIER', 'ADMIN'];
 
@@ -37,7 +38,7 @@ function isValidRole(r: unknown): r is WorkerRole {
  * Token lifetime: 24h (for demo convenience — use shorter in production).
  */
 export const login = async (req: Request, res: Response) => {
-  const secret = process.env.JWT_SECRET;
+  const secret = process.env.JWT_SECRET || config.jwtSecret;
   if (!secret || secret.trim() === '') {
     throw new ApiError(500, 'INTERNAL_SERVER_ERROR', 'Authentication service unavailable.');
   }
@@ -54,11 +55,13 @@ export const login = async (req: Request, res: Response) => {
     {
       sub: workerId.trim(),
       role,
+      iss: 'onshift',
+      identityVerified: false,
     },
     secret,
     {
       algorithm: 'HS256',
-      expiresIn: '24h',
+      expiresIn: (process.env.JWT_EXPIRES_IN as any) || '24h',
     }
   );
 
