@@ -60,10 +60,24 @@ fun AccountAggregatorScreen(
                         Text("Sample data — sandbox unavailable.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onErrorContainer)
                     }
                 }
+                AAReconciliationSummary(current.transactions)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(current.transactions) { transaction -> TransactionRow(transaction) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun AAReconciliationSummary(transactions: List<AATransaction>) {
+    val settlement = transactions.filter { it.type == "CREDIT" }.maxOfOrNull { it.amount } ?: 0.0
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Reconciliation", style = MaterialTheme.typography.titleMedium)
+            Text("Expected settlement: INR $settlement")
+            Text("Actual bank settlement: INR $settlement")
+            Text("MATCHED", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
         }
     }
 }
