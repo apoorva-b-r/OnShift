@@ -1,4 +1,4 @@
-import request from 'supertest';
+﻿import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/index';
@@ -6,19 +6,21 @@ import { Evidence, Worker, VerificationRecord, Credential } from '../src/models'
 import { generateWorkerToken } from '../src/middleware/authMiddleware';
 import { verifyCredentialSignature } from '@onshift/credential-schema';
 
-describe('Authoritative Verification → Reconciliation → Credential Pipeline', () => {
+describe('Authoritative Verification â†’ Reconciliation â†’ Credential Pipeline', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
+    process.env.ENABLE_AUTH = 'true';
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
   });
 
   afterAll(async () => {
+    delete process.env.ENABLE_AUTH;
     await mongoose.disconnect();
     await mongoServer.stop();
-  });
+  }, 30000);
 
   beforeEach(async () => {
     await mongoose.connection.db?.dropDatabase();
@@ -310,3 +312,5 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
     });
   });
 });
+
+
