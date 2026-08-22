@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -18,19 +19,56 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.onshift.app.R
 import com.onshift.app.data.model.*
+import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.*
 import java.text.NumberFormat
 import java.util.Locale
+
+data class HomeData(
+    val worker: Worker,
+    val reconciliationResult: ReconciliationResult?,
+    val userPrefs: UserPreferences,
+    val verificationResult: VerificationResult?
+)
 
 @Composable
 fun HomeScreen(
     windowSizeClass: WindowSizeClass,
     worker: Worker,
     reconciliationResult: ReconciliationResult?,
-    userPrefs: UserPreferences
+    userPrefs: UserPreferences,
+    verificationResult: VerificationResult? = MockData.mockVerificationResult,
+    uiState: UiState<HomeData> = UiState.Success(HomeData(worker, reconciliationResult, userPrefs, verificationResult))
+) {
+    when (uiState) {
+        is UiState.Loading -> UiStateLoadingView()
+        is UiState.Error -> UiStateErrorView(message = uiState.message)
+        is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.awaiting_reconciliation))
+        is UiState.Success -> {
+            val data = uiState.data
+            HomeScreenContent(
+                windowSizeClass = windowSizeClass,
+                worker = data.worker,
+                reconciliationResult = data.reconciliationResult,
+                userPrefs = data.userPrefs,
+                verificationResult = data.verificationResult
+            )
+        }
+    }
+}
+
+@Composable
+fun HomeScreenContent(
+    windowSizeClass: WindowSizeClass,
+    worker: Worker,
+    reconciliationResult: ReconciliationResult?,
+    userPrefs: UserPreferences,
+    verificationResult: VerificationResult?
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
         maximumFractionDigits = 0
@@ -106,7 +144,6 @@ fun HomeScreen(
                             }
                         }
                     }
-                    // Fill empty slots in the last row to maintain alignment
                     repeat(columns - rowStats.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
@@ -120,10 +157,13 @@ fun HomeScreen(
             ReconciliationCard(reconciliationResult, currencyFormatter)
         }
 
-        // Verification Level Bar
+        // Verification Level Card
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = stringResource(R.string.verification_level), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            VerificationLevelBar(worker.verificationLevel)
+            VerificationLevelCard(
+                level = worker.verificationLevel,
+                verificationResult = verificationResult
+            )
         }
     }
 }
@@ -191,6 +231,65 @@ fun ReconciliationCard(result: ReconciliationResult?, formatter: NumberFormat) {
 }
 
 @Composable
+fun VerificationLevelCard(
+    level: VerificationLevel,
+    verificationResult: VerificationResult?
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val levelRes = when (level) {
+                    VerificationLevel.DECLARED -> R.string.level_declared
+                    VerificationLevel.OBSERVED -> R.string.level_observed
+                    VerificationLevel.CORROBORATED -> R.string.level_corroborated
+                    VerificationLevel.FINANCIALLY_CORROBORATED -> R.string.level_financially_corroborated
+                }
+                Text(
+                    text = stringResource(levelRes),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = OnSurface
+                )
+
+                val confidencePct = ((verificationResult?.confidenceScore ?: 0.96) * 100).toInt()
+                Surface(
+                    color = StatusReconciled.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        text = stringResource(R.string.confidence_percentage, confidencePct),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = StatusReconciled,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = stringResource(R.string.verification_explanation),
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            VerificationLevelBar(level)
+        }
+    }
+}
+
+@Composable
 fun VerificationLevelBar(level: VerificationLevel) {
     val levels = VerificationLevel.entries
     val currentIndex = levels.indexOf(level)
@@ -226,4 +325,68 @@ fun VerificationLevelBar(level: VerificationLevel) {
         Text(text = stringResource(R.string.level_declared), style = MaterialTheme.typography.labelSmall)
         Text(text = stringResource(R.string.level_financially_corroborated), style = MaterialTheme.typography.labelSmall)
     }
+}
+
+// Previews for all 4 states
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Preview(showBackground = true, name = "HomeScreen Loading")
+@Composable
+fun HomeScreenPreviewLoading() {
+    val dummyWindowSize = WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
+    HomeScreen(
+        windowSizeClass = dummyWindowSize,
+        worker = MockData.reconciledStateWorker,
+        reconciliationResult = MockData.scenarioMatched,
+        userPrefs = UserPreferences(),
+        uiState = UiState.Loading
+    )
+}
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Preview(showBackground = true, name = "HomeScreen Error")
+@Composable
+fun HomeScreenPreviewError() {
+    val dummyWindowSize = WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
+    HomeScreen(
+        windowSizeClass = dummyWindowSize,
+        worker = MockData.reconciledStateWorker,
+        reconciliationResult = MockData.scenarioMatched,
+        userPrefs = UserPreferences(),
+        uiState = UiState.Error("Could not reach the server, showing saved data instead")
+    )
+}
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Preview(showBackground = true, name = "HomeScreen Empty")
+@Composable
+fun HomeScreenPreviewEmpty() {
+    val dummyWindowSize = WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
+    HomeScreen(
+        windowSizeClass = dummyWindowSize,
+        worker = MockData.zeroStateWorker,
+        reconciliationResult = null,
+        userPrefs = UserPreferences(),
+        uiState = UiState.Empty
+    )
+}
+
+@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
+@Preview(showBackground = true, name = "HomeScreen Populated")
+@Composable
+fun HomeScreenPreviewPopulated() {
+    val dummyWindowSize = WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
+    HomeScreen(
+        windowSizeClass = dummyWindowSize,
+        worker = MockData.reconciledStateWorker,
+        reconciliationResult = MockData.scenarioMatched,
+        userPrefs = UserPreferences(selectedPlatforms = listOf("Zomato", "Swiggy")),
+        uiState = UiState.Success(
+            HomeData(
+                worker = MockData.reconciledStateWorker,
+                reconciliationResult = MockData.scenarioMatched,
+                userPrefs = UserPreferences(selectedPlatforms = listOf("Zomato", "Swiggy")),
+                verificationResult = MockData.mockVerificationResult
+            )
+        )
+    )
 }

@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.onshift.app.R
 
 @Composable
 fun PrivacyScreen() {
@@ -13,11 +15,11 @@ fun PrivacyScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = "Privacy Layer Control", style = MaterialTheme.typography.headlineMedium)
+        Text(text = stringResource(R.string.privacy_layer_control), style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = "1. Pseudonymous Worker ID: OS-DEMO-001")
-        Text(text = "2. Encrypted Local Storage: Active (Android Keystore)")
-        Text(text = "3. Provenance: Local SHA-256 Tamper Detection")
-        Text(text = "4. Data Sharing: Worker Consent Required")
+        Text(text = stringResource(R.string.privacy_item_1))
+        Text(text = stringResource(R.string.privacy_item_2))
+        Text(text = stringResource(R.string.privacy_item_3))
+        Text(text = stringResource(R.string.privacy_item_4))
     }
 }

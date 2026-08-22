@@ -10,8 +10,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.onshift.app.R
 import com.onshift.app.data.model.ReconciliationStatus
 import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.ui.theme.*
@@ -110,20 +112,20 @@ fun Badge(
 
 @Composable
 fun VerificationLevelBadge(level: VerificationLevel) {
-    val (color, text) = when (level) {
-        VerificationLevel.DECLARED -> LevelDeclared to "DECLARED"
-        VerificationLevel.OBSERVED -> LevelObserved to "OBSERVED"
-        VerificationLevel.CORROBORATED -> LevelCorroborated to "CORROBORATED"
-        VerificationLevel.FINANCIALLY_CORROBORATED -> LevelFinCorroborated to "FINANCIALLY CORROBORATED"
+    val (color, textRes) = when (level) {
+        VerificationLevel.DECLARED -> LevelDeclared to R.string.level_declared
+        VerificationLevel.OBSERVED -> LevelObserved to R.string.level_observed
+        VerificationLevel.CORROBORATED -> LevelCorroborated to R.string.level_corroborated
+        VerificationLevel.FINANCIALLY_CORROBORATED -> LevelFinCorroborated to R.string.level_financially_corroborated
     }
-    Badge(text = text, backgroundColor = color)
+    Badge(text = stringResource(textRes), backgroundColor = color)
 }
 
 @Composable
 fun ReconciliationStatusBadge(status: ReconciliationStatus) {
-    val (color, text) = when (status) {
-        ReconciliationStatus.MATCHED -> StatusReconciled to "MATCHED"
-        ReconciliationStatus.UNEXPLAINED_DIFFERENCE -> StatusUnreconciled to "UNEXPLAINED DIFFERENCE"
+    val (color, textRes) = when (status) {
+        ReconciliationStatus.MATCHED -> StatusReconciled to R.string.matched
+        ReconciliationStatus.UNEXPLAINED_DIFFERENCE -> StatusUnreconciled to R.string.unexplained_difference
     }
-    Badge(text = text, backgroundColor = color)
+    Badge(text = stringResource(textRes), backgroundColor = color)
 }
