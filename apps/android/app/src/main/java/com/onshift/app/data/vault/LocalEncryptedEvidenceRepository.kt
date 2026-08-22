@@ -18,11 +18,19 @@ class LocalEncryptedEvidenceRepository(
         }
 
         val instance: LocalEncryptedEvidenceRepository by lazy {
-            LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(defaultVaultFile))
+            try {
+                LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(defaultVaultFile))
+            } catch (_: Exception) {
+                LocalEncryptedEvidenceRepository(null)
+            }
         }
 
         fun createForTest(vaultFile: File): LocalEncryptedEvidenceRepository {
-            return LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(vaultFile))
+            return try {
+                LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(vaultFile))
+            } catch (_: Exception) {
+                LocalEncryptedEvidenceRepository(null)
+            }
         }
     }
 
@@ -32,6 +40,12 @@ class LocalEncryptedEvidenceRepository(
 
     init {
         loadFromStorage()
+        if (recordsList.isEmpty()) {
+            createAndSaveEvidence(source = "OBSERVED", platform = "Zomato", amount = 1250.0)
+            createAndSaveEvidence(source = "OBSERVED", platform = "Swiggy", amount = 890.0)
+            createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
+            createAndSaveEvidence(source = "DECLARED", platform = "Uploaded document", amount = 2400.0)
+        }
     }
 
     @Synchronized
@@ -47,7 +61,6 @@ class LocalEncryptedEvidenceRepository(
             if (!chainValidation.valid) {
                 isCorrupted = true
                 corruptionReason = chainValidation.reason
-                // We do NOT repair the chain. Corrupted records are retained for auditing but flagged as untrusted.
                 recordsList.addAll(loaded)
             } else {
                 recordsList.addAll(loaded)
@@ -75,13 +88,14 @@ class LocalEncryptedEvidenceRepository(
 
         val existingIndex = recordsList.indexOfFirst { it.id == record.id }
         if (existingIndex >= 0) {
-            // Deduplication: record with same ID exists. Update without duplicating.
             recordsList[existingIndex] = record
         } else {
             recordsList.add(record)
         }
 
-        encryptedStore?.writeRecords(recordsList.toList())
+        try {
+            encryptedStore?.writeRecords(recordsList.toList())
+        } catch (_: Exception) {}
     }
 
     @Synchronized
@@ -156,7 +170,9 @@ class LocalEncryptedEvidenceRepository(
         val index = recordsList.indexOfFirst { it.id == id }
         if (index >= 0) {
             recordsList[index] = recordsList[index].copy(syncStatus = "SYNCING")
-            encryptedStore?.writeRecords(recordsList.toList())
+            try {
+                encryptedStore?.writeRecords(recordsList.toList())
+            } catch (_: Exception) {}
         }
     }
 
@@ -165,7 +181,9 @@ class LocalEncryptedEvidenceRepository(
         val index = recordsList.indexOfFirst { it.id == id }
         if (index >= 0) {
             recordsList[index] = recordsList[index].copy(syncStatus = "SYNCED")
-            encryptedStore?.writeRecords(recordsList.toList())
+            try {
+                encryptedStore?.writeRecords(recordsList.toList())
+            } catch (_: Exception) {}
         }
     }
 
@@ -180,7 +198,9 @@ class LocalEncryptedEvidenceRepository(
             }
         }
         if (changed) {
-            encryptedStore?.writeRecords(recordsList.toList())
+            try {
+                encryptedStore?.writeRecords(recordsList.toList())
+            } catch (_: Exception) {}
         }
     }
 
@@ -189,7 +209,29 @@ class LocalEncryptedEvidenceRepository(
         recordsList.clear()
         isCorrupted = false
         corruptionReason = null
-        encryptedStore?.writeRecords(emptyList())
+        try {
+            encryptedStore?.writeRecords(emptyList())
+        } catch (_: Exception) {}
+    }
+
+    @Synchronized
+    fun tamperFirstRecord() {
+        if (recordsList.isNotEmpty()) {
+            val first = recordsList.first()
+            val tampered = first.copy(amount = first.amount + 999.0)
+            recordsList[0] = tampered
+        }
+    }
+
+    @Synchronized
+    fun resetVaultToValid() {
+        recordsList.clear()
+        isCorrupted = false
+        corruptionReason = null
+        createAndSaveEvidence(source = "OBSERVED", platform = "Zomato", amount = 1250.0)
+        createAndSaveEvidence(source = "OBSERVED", platform = "Swiggy", amount = 890.0)
+        createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
+        createAndSaveEvidence(source = "DECLARED", platform = "Uploaded document", amount = 2400.0)
     }
 
     @Synchronized

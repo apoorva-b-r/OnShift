@@ -169,22 +169,38 @@ export function signCredential(
  * Verify Ed25519 signature of an OnShift Credential.
  */
 export function verifyCredentialSignature(
-  credential: OnShiftIncomeCredential
+  credential: OnShiftIncomeCredential | any
 ): CredentialVerificationResult {
+  if (!credential || typeof credential !== 'object') {
+    return {
+      valid: false,
+      signatureVerified: false,
+      message: 'Invalid credential payload structure.',
+    };
+  }
+
+  const raw = credential.credential && typeof credential.credential === 'object' ? credential.credential : credential;
+  const type = raw.type || raw.credentialType || 'OnShiftIncomeCredential';
+  const publicKeyHex = raw.publicKeyHex || raw.issuerPublicKey;
+  const workerId = raw.workerId;
+  const issuer = raw.issuer;
+  const issuedAt = raw.issuedAt;
+  const validUntil = raw.validUntil;
+  const claims = raw.claims;
+  const signature = raw.signature;
+
   if (
-    !credential ||
-    typeof credential !== 'object' ||
-    !credential.signature ||
-    typeof credential.signature !== 'string' ||
-    !credential.publicKeyHex ||
-    typeof credential.publicKeyHex !== 'string' ||
-    !credential.type ||
-    !credential.workerId ||
-    !credential.issuer ||
-    !credential.issuedAt ||
-    !credential.validUntil ||
-    !credential.claims ||
-    typeof credential.claims !== 'object'
+    !signature ||
+    typeof signature !== 'string' ||
+    !publicKeyHex ||
+    typeof publicKeyHex !== 'string' ||
+    !type ||
+    !workerId ||
+    !issuer ||
+    !issuedAt ||
+    !validUntil ||
+    !claims ||
+    typeof claims !== 'object'
   ) {
     return {
       valid: false,
@@ -194,9 +210,12 @@ export function verifyCredentialSignature(
   }
 
   try {
-    const publicKeyObj = publicKeyFromHex(credential.publicKeyHex);
+    const publicKeyObj = publicKeyFromHex(publicKeyHex);
 
-    const cleanSignatureHex = credential.signature.trim();
+    let cleanSignatureHex = signature.trim();
+    if (cleanSignatureHex.startsWith('0x') || cleanSignatureHex.startsWith('0X')) {
+      cleanSignatureHex = cleanSignatureHex.slice(2);
+    }
     if (!/^[0-9a-fA-F]+$/.test(cleanSignatureHex)) {
       return {
         valid: false,
@@ -207,12 +226,12 @@ export function verifyCredentialSignature(
     const signatureBuffer = Buffer.from(cleanSignatureHex, 'hex');
 
     const payloadString = serializeCredentialPayload(
-      credential.type,
-      credential.workerId,
-      credential.issuer,
-      credential.issuedAt,
-      credential.validUntil,
-      credential.claims
+      type,
+      workerId,
+      issuer,
+      issuedAt,
+      validUntil,
+      claims
     );
 
     const isValid = cryptoVerify(
@@ -226,9 +245,9 @@ export function verifyCredentialSignature(
       return {
         valid: true,
         signatureVerified: true,
-        claims: credential.claims,
-        issuer: credential.issuer,
-        workerId: credential.workerId,
+        claims,
+        issuer,
+        workerId,
         issuerVerified: true,
         message: 'Credential signature is authentic and verified.',
       };

@@ -15,7 +15,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
   if (verificationId) {
     try {
       record = await VerificationRecord.findOne({ id: verificationId }).lean();
-    } catch (_) {}
+    } catch (_) { }
 
     if (!record) {
       throw new ApiError(404, 'VERIFICATION_NOT_FOUND', `Verification record ${verificationId} was not found.`);
@@ -46,12 +46,12 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
         };
         return res.status(200).json({ credential: credentialObj });
       }
-    } catch (_) {}
+    } catch (_) { }
   } else {
     // Legacy / fallback: Look up latest VerificationRecord for worker
     try {
       record = await VerificationRecord.findOne({ workerId: targetWorkerId }).sort({ computedAt: -1 }).lean();
-    } catch (_) {}
+    } catch (_) { }
 
     if (!record) {
       if (req.body?.disclosedClaims) {
@@ -81,8 +81,8 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     typeof record.expectedNet === 'number'
       ? record.expectedNet
       : typeof record.expectedGross === 'number'
-      ? record.expectedGross
-      : 30100;
+        ? record.expectedGross
+        : 30100;
 
   const authoritativeClaims = {
     verifiedIncome,

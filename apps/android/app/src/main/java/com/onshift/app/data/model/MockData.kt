@@ -33,13 +33,14 @@ object MockData {
         Evidence("EV-001", "Zomato", EvidenceType.OBSERVED, "2026-07-01", 1200.0),
         Evidence("EV-002", "Swiggy", EvidenceType.OBSERVED, "2026-07-05", 850.0),
         Evidence("EV-003", "Blinkit", EvidenceType.OBSERVED, "2026-07-10", 2100.0),
-        Evidence("EV-004", "Bank AA", EvidenceType.FINANCIAL, "2026-07-31", 30100.0)
+        Evidence("EV-004", "Bank AA", EvidenceType.FINANCIAL, "2026-07-31", 30100.0),
+        Evidence("EV-005", "Uploaded document", EvidenceType.DECLARED, "2026-07-15", 2400.0)
     )
 
     val mockVerificationResult = VerificationResult(
         level = VerificationLevel.FINANCIALLY_CORROBORATED,
         confidenceScore = 0.96,
-        explanation = "Income corroborated with Bank AA statements and platform data."
+        explanation = "Income matches bank settlement credit via Account Aggregator flow within an acceptable margin across the last reconciliation period."
     )
 
     val mockCredential = Credential(

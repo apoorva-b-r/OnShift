@@ -28,7 +28,7 @@ class UserPreferencesRepository(private val context: Context) {
             }
         }
         .map { preferences ->
-            val language = preferences[PreferencesKeys.LANGUAGE] ?: "en"
+            val language = preferences[PreferencesKeys.LANGUAGE] ?: ""
             val selectedPlatforms = preferences[PreferencesKeys.SELECTED_PLATFORMS]?.toList() ?: emptyList()
             val onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
             UserPreferences(language, selectedPlatforms, onboardingCompleted)
@@ -49,6 +49,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    suspend fun clearPreferences() {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
         }
     }
 }

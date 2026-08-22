@@ -123,14 +123,12 @@ export interface CredentialClaim {
 }
 
 export interface Credential {
-  type?: string;
-  credentialType?: string;
+  type: string;
   issuer: string;
-  issuerPublicKey?: string;
-  publicKeyHex?: string;
+  publicKeyHex: string;
   workerId: string;
   issuedAt: string;
-  validUntil?: string;
+  validUntil: string;
   claims: CredentialClaim;
   signature: string;
 }
