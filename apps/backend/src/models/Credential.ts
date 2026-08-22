@@ -17,9 +17,9 @@ import type { CredentialClaim } from '@onshift/shared-types';
  * would break that call or silently drop data.
  */
 export interface CredentialDocument extends Document {
-  credentialType: string;
+  type: string;
   issuer: string;
-  issuerPublicKey: string;
+  publicKeyHex: string;
   workerId: string;
   issuedAt: string;
   validUntil: string;
@@ -29,7 +29,7 @@ export interface CredentialDocument extends Document {
 
 const CredentialSchema = new Schema<CredentialDocument>(
   {
-    credentialType: {
+    type: {
       type: String,
       required: true,
       default: 'OnShiftIncomeCredential',
@@ -39,7 +39,7 @@ const CredentialSchema = new Schema<CredentialDocument>(
       required: true,
       default: 'OnShift Proof Authority',
     },
-    issuerPublicKey: {
+    publicKeyHex: {
       type: String,
       required: true,
     },
