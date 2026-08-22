@@ -32,3 +32,8 @@ app/build/
 *.sqlite
 *.sqlite-journal
 prisma/dev.db
+
+# Memory Dumps & Temporary Files
+*.hprof
+*.bak
+
