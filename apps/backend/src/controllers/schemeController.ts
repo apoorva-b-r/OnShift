@@ -105,11 +105,7 @@ function checkEligibility(
 }
 
 export const getSchemes = async (_req: Request, res: Response) => {
-  return res.json({
-    catalogueVersion: schemeCatalogue.catalogueVersion || '1.0',
-    totalSchemes: SCHEMES.length,
-    schemes: SCHEMES,
-  });
+  return res.json(SCHEMES);
 };
 
 export const matchSchemes = async (req: Request, res: Response) => {
