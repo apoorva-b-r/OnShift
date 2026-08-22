@@ -306,9 +306,11 @@ describe('Credentials', () => {
       verificationLevel: 'FINANCIALLY_CORROBORATED' as const,
     };
     const credential = issueCredential('OS-TEST-TAMPER', claims);
+    const lastChar = credential.signature.slice(-1);
+    const newChar = lastChar.toLowerCase() === 'a' ? '0' : 'a';
     const mutated = {
       ...credential,
-      signature: credential.signature.replace(/.$/, credential.signature.endsWith('A') ? 'B' : 'A'),
+      signature: credential.signature.slice(0, -1) + newChar,
     };
 
     const res = await request(app)

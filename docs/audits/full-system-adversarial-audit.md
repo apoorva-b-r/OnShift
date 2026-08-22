@@ -11,6 +11,30 @@
 
 This document presents an exhaustive, adversarial end-to-end audit of the OnShift income-verification system. Every claim in this audit is derived directly from empirical code inspection and executed test runs across all three primary system tiers (Android Evidence Layer, Express Backend Adapter, and Python Verification/Reconciliation Engine).
 
+### Backend Test Suite (`apps/backend`)
+- `api.test.ts`: **PASSED**
+- `integration.test.ts`: **PASSED**
+- **Total Backend Tests**: **33 / 33 PASSED**
+
+### Python Verification Engine (`apps/verification-engine`)
+- `test_engine.py`: **13 / 13 PASSED**
+- `test_adversarial_audit.py`: **23 / 23 PASSED**
+- **Total Verification Engine Tests**: **36 / 36 PASSED**
+
+---
+
+## 7. Files Changed
+
+1. [`EvidenceRepository.kt`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/android/app/src/main/java/com/onshift/app/data/vault/EvidenceRepository.kt) — Expanded `EvidenceRecord` contract and interface methods.
+2. [`EncryptedEvidenceStore.kt`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/android/app/src/main/java/com/onshift/app/data/vault/EncryptedEvidenceStore.kt) — AES-256-GCM file vault storage primitive.
+3. [`LocalEncryptedEvidenceRepository.kt`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/android/app/src/main/java/com/onshift/app/data/vault/LocalEncryptedEvidenceRepository.kt) — Encrypted persistence, offline sync state, tamper detection, and deduplication.
+4. [`Credential.ts`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/backend/src/models/Credential.ts) — Added `publicKeyHex` to interface and schema model.
+5. [`credentialController.ts`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/backend/src/controllers/credentialController.ts) — Persisted issued credential documents to database.
+6. [`integration.test.ts`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/backend/tests/integration.test.ts) — Fixed `publicKeyHex` property access assertion.
+7. [`EvidencePersistenceTest.kt`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/android/app/src/test/java/com/onshift/app/EvidencePersistenceTest.kt) — Unit tests covering Tests A through I.
+8. [`EndToEndPersistenceVerificationTest.kt`](file:///Users/Apoorva/Documents/hackathons/OnShift/apps/android/app/src/test/java/com/onshift/app/EndToEndPersistenceVerificationTest.kt) — E2E persistence flow test.
+9. [`full-system-adversarial-audit.md`](file:///Users/Apoorva/Documents/hackathons/OnShift/docs/audits/full-system-adversarial-audit.md) — Comprehensive audit report.
+
 ---
 
 ## PART 1 — Repository & Real Architecture Discovery

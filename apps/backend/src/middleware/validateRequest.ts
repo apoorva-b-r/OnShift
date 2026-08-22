@@ -38,8 +38,6 @@ function optionalString(body: Record<string, unknown>, field: string, details: V
 }
 
 function validateWorkerIdField(data: Record<string, unknown>, details: ValidationDetail[]) {
-  // If auth is enabled, workerId in body is optional (derived from JWT).
-  // If auth is disabled (legacy test mode), workerId in body is required.
   if (isAuthEnabled()) {
     optionalString(data, 'workerId', details);
   } else {
@@ -130,20 +128,22 @@ export const validateCredentialIssue: RequestValidator = (body) => {
   if (!data) return details;
 
   validateWorkerIdField(data, details);
+  optionalString(data, 'verificationId', details);
 
-  if (data.disclosedClaims !== undefined) {
+  if (!data.verificationId) {
     if (!isRecord(data.disclosedClaims)) {
-      details.push({ field: 'disclosedClaims', issue: 'Must be an object.' });
+      details.push({ field: 'disclosedClaims', issue: 'Must be an object when verificationId is omitted.' });
       return details;
     }
     if (typeof data.disclosedClaims.verifiedIncome !== 'number' || data.disclosedClaims.verifiedIncome < 0) {
       details.push({ field: 'disclosedClaims.verifiedIncome', issue: 'Must be a non-negative number.' });
     }
     requiredString(data.disclosedClaims, 'period', details);
-    if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel)) {
+    if (typeof data.disclosedClaims.verificationLevel !== 'string' || !verificationLevels.has(data.disclosedClaims.verificationLevel as string)) {
       details.push({ field: 'disclosedClaims.verificationLevel', issue: 'Must be a valid verification level.' });
     }
   }
+
   return details;
 };
 

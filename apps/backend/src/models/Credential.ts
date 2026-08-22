@@ -1,26 +1,14 @@
-import { Schema, model, Document } from 'mongoose';
+﻿import { Schema, model, Document } from 'mongoose';
 import type { CredentialClaim } from '@onshift/shared-types';
 
-/**
- * Credential
- * A signed, portable OnShiftIncomeCredential as issued by
- * credentialService.ts (which wraps Member 5 / Nidhi's Ed25519 signing
- * helpers from @onshift/credential-schema). Stored so it can be re-fetched
- * or audited, but the source of truth for validity is always the
- * signature itself, verified independently by the Verifier Web App.
- *
- * `claims` uses shared-types' CredentialClaim directly (not a locally
- * redeclared version) because credential-schema/src/index.ts imports
- * CredentialClaim from @onshift/shared-types and passes it straight into
- * signCredential/verifyCredentialSignature. A locally-diverged shape here
- * (e.g. optional fields, a renamed `breakdown` vs `platformBreakdown`)
- * would break that call or silently drop data.
- */
 export interface CredentialDocument extends Document {
   type: string;
+  credentialType?: string;
   issuer: string;
-  publicKeyHex: string;
+  issuerPublicKey?: string;
+  publicKeyHex?: string;
   workerId: string;
+  verificationId?: string;
   issuedAt: string;
   validUntil: string;
   claims: CredentialClaim;
@@ -34,18 +22,31 @@ const CredentialSchema = new Schema<CredentialDocument>(
       required: true,
       default: 'OnShiftIncomeCredential',
     },
+    credentialType: {
+      type: String,
+      required: false,
+    },
     issuer: {
       type: String,
       required: true,
       default: 'OnShift Proof Authority',
     },
+    issuerPublicKey: {
+      type: String,
+      required: false,
+    },
     publicKeyHex: {
       type: String,
-      required: true,
+      required: false,
     },
     workerId: {
       type: String,
       required: true,
+      index: true,
+    },
+    verificationId: {
+      type: String,
+      required: false,
       index: true,
     },
     issuedAt: {
@@ -72,7 +73,7 @@ const CredentialSchema = new Schema<CredentialDocument>(
     },
   },
   {
-    timestamps: false, // issuedAt is the canonical timestamp
+    timestamps: false,
     versionKey: false,
   }
 );

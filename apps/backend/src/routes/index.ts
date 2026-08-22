@@ -2,13 +2,13 @@
 import { getWorker, createWorker } from '../controllers/workerController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
-import { getVerificationLevel } from '../controllers/verificationController';
+import { getVerificationLevel, runVerification } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
 import { login } from '../controllers/authController';
 import { asyncHandler } from '../middleware/apiError';
-import { authenticate, enforceWorkerOwnership, requireRole } from '../middleware/authMiddleware';
+import { authenticate, enforceWorkerOwnership, requireRole, authenticateWorker } from '../middleware/authMiddleware';
 import {
   validateConsentRequest,
   validateCredentialIssue,
@@ -95,6 +95,13 @@ router.post(
   enforceWorkerOwnership,
   validateRequest(validateVerification),
   asyncHandler(getVerificationLevel)
+);
+router.post(
+  '/verification/run',
+  authenticate,
+  requireRole('WORKER', 'VERIFIER', 'ADMIN'),
+  enforceWorkerOwnership,
+  asyncHandler(runVerification)
 );
 
 // Credentials — issuance is worker-scoped
