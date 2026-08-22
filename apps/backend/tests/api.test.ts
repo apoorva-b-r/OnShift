@@ -21,7 +21,7 @@ import request from 'supertest';
 import app from '../src/index';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { VerificationRecord } from '../src/models';
+import { VerificationRecord, Credential } from '../src/models';
 import { Worker } from '../src/models/Worker';
 import { issueCredential, verifyCredential } from '../src/services/credentialService';
 
@@ -336,6 +336,36 @@ describe('Credentials', () => {
     expect(verification.signatureVerified).toBe(true);
     expect(verification.claims?.verifiedIncome).toBe(30100);
   });
+
+  it('POST /api/v1/credentials/issue returns 201 with aligned keys and persists to MongoDB', async () => {
+    const issueWorkerId = `OS-ISSUE-${Date.now()}`;
+    const res = await request(app)
+      .post('/api/v1/credentials/issue')
+      .send({
+        workerId: issueWorkerId,
+        disclosedClaims: {
+          verifiedIncome: 30100,
+          period: '01 Aug to 07 Aug 2026',
+          verificationLevel: 'FINANCIALLY_CORROBORATED',
+        },
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.credential).toBeDefined();
+    const cred = res.body.credential;
+    expect(cred.type).toBe('OnShiftIncomeCredential');
+    expect(cred.issuer).toBe('OnShift Proof Authority');
+    expect(cred.publicKeyHex).toBeDefined();
+    expect(cred.workerId).toBe(issueWorkerId);
+    expect(cred.issuedAt).toBeDefined();
+    expect(cred.validUntil).toBeDefined();
+    expect(cred.signature).toBeDefined();
+    expect(cred.claims.verifiedIncome).toBe(30100);
+
+    const savedDoc = await Credential.findOne({ workerId: issueWorkerId });
+    expect(savedDoc).not.toBeNull();
+    expect(savedDoc!.publicKeyHex).toBe(cred.publicKeyHex);
+  });
 });
 
 // =============================================================================
@@ -382,6 +412,23 @@ describe('Account Aggregator Consent Flow', () => {
     const res404 = await request(app).get('/api/v1/consent/status/nonexistent-id-12345');
     expect(res404.status).toBe(404);
     expect(res404.body.error).toBe('Consent request not found.');
+  });
+
+  it('POST /api/v1/consent/request with invalid fiTypes returns 400', async () => {
+    const res = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST-3', fiTypes: ['NOT_A_REAL_TYPE'] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'fiTypes',
+          issue: 'fiTypes must be an array of valid AA financial information types.',
+        }),
+      ])
+    );
   });
 });
 

@@ -10,6 +10,15 @@ const verificationLevels = new Set([
   'CORROBORATED',
   'FINANCIALLY_CORROBORATED',
 ]);
+const validFiTypes = new Set([
+  'DEPOSIT',
+  'TERM_DEPOSIT',
+  'RECURRING_DEPOSIT',
+  'MUTUAL_FUND',
+  'EQUITIES',
+  'INSURANCE_POLICIES',
+  'GSTR1_3B',
+]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -158,5 +167,19 @@ export const validateConsentRequest: RequestValidator = (body) => {
 
   requiredString(data, 'workerId', details);
   optionalString(data, 'aaProvider', details);
+
+  if (data.fiTypes !== undefined) {
+    if (
+      !Array.isArray(data.fiTypes) ||
+      data.fiTypes.length === 0 ||
+      !data.fiTypes.every((t) => typeof t === 'string' && validFiTypes.has(t))
+    ) {
+      details.push({
+        field: 'fiTypes',
+        issue: 'fiTypes must be an array of valid AA financial information types.',
+      });
+    }
+  }
+
   return details;
 };
