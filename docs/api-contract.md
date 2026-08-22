@@ -99,9 +99,9 @@ Base URL: `/api/v1`
 ```json
 {
   "credential": {
-    "credentialType": "OnShiftIncomeCredential",
+    "type": "OnShiftIncomeCredential",
     "issuer": "OnShift Proof Authority",
-    "issuerPublicKey": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+    "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
     "workerId": "OS-DEMO-001",
     "issuedAt": "2026-08-20T23:24:49.000Z",
     "validUntil": "2026-11-20T23:24:49.000Z",
