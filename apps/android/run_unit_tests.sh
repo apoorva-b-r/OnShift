@@ -33,11 +33,13 @@ java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR" org.jetbrains.k
   "$DIR/app/src/main/java/com/onshift/app/notifications/UberParser.kt" \
   "$DIR/app/src/main/java/com/onshift/app/notifications/GenericParser.kt" \
   "$DIR/app/src/main/java/com/onshift/app/notifications/PlatformRegistry.kt" \
+  "$DIR/app/src/main/java/com/onshift/app/data/api/BackendApiClient.kt" \
   "$DIR/app/src/test/java/com/onshift/app/HashChainTest.kt" \
   "$DIR/app/src/test/java/com/onshift/app/LiveDemoTest.kt" \
   "$DIR/app/src/test/java/com/onshift/app/NotificationParserTest.kt" \
   "$DIR/app/src/test/java/com/onshift/app/EvidencePersistenceTest.kt" \
-  "$DIR/app/src/test/java/com/onshift/app/EndToEndPersistenceVerificationTest.kt"
+  "$DIR/app/src/test/java/com/onshift/app/EndToEndPersistenceVerificationTest.kt" \
+  "$DIR/app/src/test/java/com/onshift/app/AndroidBackendIntegrationTest.kt"
 
 echo "Running JUnit tests..."
 java -cp "$BUILD_DIR/classes:$CP" org.junit.runner.JUnitCore \
@@ -45,5 +47,6 @@ java -cp "$BUILD_DIR/classes:$CP" org.junit.runner.JUnitCore \
   com.onshift.app.LiveDemoTest \
   com.onshift.app.notifications.NotificationParserTest \
   com.onshift.app.EvidencePersistenceTest \
-  com.onshift.app.EndToEndPersistenceVerificationTest
+  com.onshift.app.EndToEndPersistenceVerificationTest \
+  com.onshift.app.AndroidBackendIntegrationTest
 

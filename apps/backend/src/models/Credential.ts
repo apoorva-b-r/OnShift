@@ -37,7 +37,7 @@ const CredentialSchema = new Schema<CredentialDocument>(
     },
     publicKeyHex: {
       type: String,
-      required: false,
+      required: true,
     },
     workerId: {
       type: String,

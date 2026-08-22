@@ -40,7 +40,7 @@ class LocalEncryptedEvidenceRepository(
 
     init {
         loadFromStorage()
-        if (recordsList.isEmpty()) {
+        if (recordsList.isEmpty() && encryptedStore == null) {
             createAndSaveEvidence(source = "OBSERVED", platform = "Zomato", amount = 1250.0)
             createAndSaveEvidence(source = "OBSERVED", platform = "Swiggy", amount = 890.0)
             createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
