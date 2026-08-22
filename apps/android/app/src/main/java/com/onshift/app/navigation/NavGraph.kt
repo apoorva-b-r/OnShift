@@ -17,6 +17,8 @@ import com.onshift.app.data.UserPreferencesRepository
 import com.onshift.app.data.model.UserPreferences
 import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.data.model.Worker
+import com.onshift.app.data.model.ReconciliationResult
+import com.onshift.app.data.model.ReconciliationStatus
 import com.onshift.app.ui.screens.*
 import kotlinx.coroutines.launch
 
@@ -58,6 +60,7 @@ fun AppNavGraph(
         id = "OS-DEMO-001",
         verificationLevel = currentVerificationLevel
     )
+    var aaReconciliationResult by remember { mutableStateOf<ReconciliationResult?>(null) }
 
     NavHost(
         navController = navController,
@@ -106,13 +109,24 @@ fun AppNavGraph(
             HomeScreen(
                 windowSizeClass = effectiveWindowSizeClass,
                 worker = defaultWorker,
-                reconciliationResult = null,
+                reconciliationResult = aaReconciliationResult,
                 userPrefs = userPreferences,
                 onOpenAccountAggregator = { navController.navigate(Screen.AccountAggregator.route) }
             )
         }
         composable(Screen.AccountAggregator.route) {
-            com.onshift.app.ui.aa.AccountAggregatorScreen(onBack = { navController.popBackStack() })
+            com.onshift.app.ui.aa.AccountAggregatorScreen(
+                onBack = { navController.popBackStack() },
+                onReconciliationReady = { settlement ->
+                    aaReconciliationResult = ReconciliationResult(
+                        expected = settlement,
+                        actual = settlement,
+                        status = ReconciliationStatus.MATCHED,
+                        differenceAmount = 0.0,
+                        period = "2026-08-01 to 2026-08-31"
+                    )
+                }
+            )
         }
         composable(Screen.Identity.route) {
             IdentityScreen()

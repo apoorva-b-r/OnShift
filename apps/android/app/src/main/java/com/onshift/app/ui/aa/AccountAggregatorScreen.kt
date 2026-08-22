@@ -28,6 +28,7 @@ import com.onshift.app.data.aa.AATransaction
 @Composable
 fun AccountAggregatorScreen(
     onBack: () -> Unit,
+    onReconciliationReady: (Double) -> Unit = {},
     accountAggregatorViewModel: AccountAggregatorViewModel = viewModel()
 ) {
     val state by accountAggregatorViewModel.uiState.collectAsState()
@@ -55,6 +56,8 @@ fun AccountAggregatorScreen(
                 Button(onClick = { accountAggregatorViewModel.retry() }) { Text("Retry") }
             }
             is AAUiState.Success -> {
+                val settlement = current.transactions.filter { it.type == "CREDIT" }.maxOfOrNull { it.amount } ?: 0.0
+                LaunchedEffect(settlement) { onReconciliationReady(settlement) }
                 if (current.isMock) {
                     Card(modifier = Modifier.fillMaxWidth(), colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
                         Text("Sample data — sandbox unavailable.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onErrorContainer)
@@ -63,6 +66,9 @@ fun AccountAggregatorScreen(
                 AAReconciliationSummary(current.transactions)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(current.transactions) { transaction -> TransactionRow(transaction) }
+                }
+                Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+                    Text("Back to dashboard")
                 }
             }
         }
