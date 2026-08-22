@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.onshift.app.R
+import com.onshift.app.data.PrivacyRepository
 import com.onshift.app.data.vault.EvidenceRecord
 import com.onshift.app.data.vault.LocalEncryptedEvidenceRepository
 import com.onshift.app.notifications.PlatformType
@@ -43,7 +44,13 @@ import java.util.Locale
 fun EvidenceScreen(
     uiState: UiState<List<EvidenceRecord>>? = null
 ) {
-    val repository = remember { LocalEncryptedEvidenceRepository.instance }
+    val repository = remember {
+        try {
+            LocalEncryptedEvidenceRepository.instance
+        } catch (_: Exception) {
+            LocalEncryptedEvidenceRepository(null)
+        }
+    }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val userPrefsRepo = remember { com.onshift.app.data.UserPreferencesRepository(context.applicationContext) }
@@ -51,10 +58,12 @@ fun EvidenceScreen(
     val selectedPlatforms = userPrefs.selectedPlatforms
 
     var evidenceList by remember { mutableStateOf(repository.getAllEvidence()) }
+    var integrityResult by remember { mutableStateOf(repository.verifyIntegrity()) }
     var isScanning by remember { mutableStateOf(false) }
 
     fun refreshList() {
         evidenceList = repository.getAllEvidence()
+        integrityResult = repository.verifyIntegrity()
     }
 
     val filteredEvidenceList = remember(evidenceList, selectedPlatforms) {
@@ -78,17 +87,12 @@ fun EvidenceScreen(
             is UiState.Success -> EvidenceScreenContent(
                 evidenceList = uiState.data,
                 isScanning = isScanning,
-                onSimulatePush = {
-                    val samplePlatforms = listOf("Zomato", "Swiggy", "Blinkit")
-                    val sampleAmounts = listOf(245.0, 312.5, 180.0, 450.0, 620.0)
-                    repository.createAndSaveEvidence(
-                        source = "OBSERVED",
-                        platform = samplePlatforms.random(),
-                        amount = sampleAmounts.random()
-                    )
-                    refreshList()
-                },
-                onPickDocument = { }
+                isIntegrityValid = true,
+                integrityReason = null,
+                onSimulatePush = { },
+                onPickDocument = { },
+                onSimulateTampering = { },
+                onResetHashChain = { }
             )
         }
     } else {
@@ -130,6 +134,8 @@ fun EvidenceScreen(
         EvidenceScreenContent(
             evidenceList = filteredEvidenceList,
             isScanning = isScanning,
+            isIntegrityValid = integrityResult.valid,
+            integrityReason = integrityResult.reason,
             onSimulatePush = {
                 val samplePlatforms = listOf("Zomato", "Swiggy", "Blinkit")
                 val sampleAmounts = listOf(245.0, 312.5, 180.0, 450.0, 620.0)
@@ -142,6 +148,16 @@ fun EvidenceScreen(
             },
             onPickDocument = {
                 pickDocumentLauncher.launch(arrayOf("image/*", "application/pdf"))
+            },
+            onSimulateTampering = {
+                repository.tamperFirstRecord()
+                PrivacyRepository.tamperData()
+                refreshList()
+            },
+            onResetHashChain = {
+                repository.resetVaultToValid()
+                PrivacyRepository.resetHashChain()
+                refreshList()
             }
         )
     }
@@ -151,8 +167,12 @@ fun EvidenceScreen(
 fun EvidenceScreenContent(
     evidenceList: List<EvidenceRecord>,
     isScanning: Boolean,
+    isIntegrityValid: Boolean,
+    integrityReason: String?,
     onSimulatePush: () -> Unit,
-    onPickDocument: () -> Unit
+    onPickDocument: () -> Unit,
+    onSimulateTampering: () -> Unit,
+    onResetHashChain: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -208,7 +228,96 @@ fun EvidenceScreenContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Hash Chain Integrity Verification Card & Demo Controls
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.hash_chain_integrity),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSurface
+                    )
+
+                    Surface(
+                        color = if (isIntegrityValid) StatusReconciled.copy(alpha = 0.15f) else StatusUnreconciled.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text(
+                            text = if (isIntegrityValid) stringResource(R.string.status_valid) else stringResource(R.string.status_invalid),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isIntegrityValid) StatusReconciled else StatusUnreconciled,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                if (!isIntegrityValid && !integrityReason.isNullOrBlank()) {
+                    Text(
+                        text = integrityReason,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusUnreconciled
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onSimulateTampering,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = StatusUnreconciled,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.simulate_tampering),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = onResetHashChain,
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.reset_hash_chain),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = StatusReconciled,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Header
         Text(

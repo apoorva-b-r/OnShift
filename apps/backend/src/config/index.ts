@@ -13,4 +13,5 @@ export const config = {
   ed25519PublicKeyHex:
     process.env.ED25519_PUBLIC_KEY_HEX ||
     'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
+  jwtSecret: process.env.JWT_SECRET || 'onshift_default_jwt_secret_key_2026_dev_demo_only',
 };

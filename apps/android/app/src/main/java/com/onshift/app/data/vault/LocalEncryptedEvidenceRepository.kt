@@ -215,6 +215,26 @@ class LocalEncryptedEvidenceRepository(
     }
 
     @Synchronized
+    fun tamperFirstRecord() {
+        if (recordsList.isNotEmpty()) {
+            val first = recordsList.first()
+            val tampered = first.copy(amount = first.amount + 999.0)
+            recordsList[0] = tampered
+        }
+    }
+
+    @Synchronized
+    fun resetVaultToValid() {
+        recordsList.clear()
+        isCorrupted = false
+        corruptionReason = null
+        createAndSaveEvidence(source = "OBSERVED", platform = "Zomato", amount = 1250.0)
+        createAndSaveEvidence(source = "OBSERVED", platform = "Swiggy", amount = 890.0)
+        createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
+        createAndSaveEvidence(source = "DECLARED", platform = "Uploaded document", amount = 2400.0)
+    }
+
+    @Synchronized
     override fun verifyIntegrity(): HashChainValidationResult {
         if (isCorrupted) {
             return HashChainValidationResult(

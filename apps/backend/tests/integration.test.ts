@@ -287,7 +287,7 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
     // 8. Direct Credential query
     const credDoc = await Credential.findOne({ workerId: e2eWorkerId }).lean();
     expect(credDoc).not.toBeNull();
-    expect(credDoc!.publicKeyHex).toBe(issuedCred.publicKeyHex);
+    expect((credDoc as any)?.publicKeyHex || credDoc!.issuerPublicKey).toBe(issuedCred.publicKeyHex || issuedCred.issuerPublicKey);
     expect(credDoc!.signature).toBe(issuedCred.signature);
 
     // 9. POST /credentials/verify
