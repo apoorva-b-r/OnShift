@@ -3,6 +3,7 @@ import app from '../src/index';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { validateAndNormalizeEvidence } from '../src/services/evidenceAdapter';
+import { Worker, Evidence, VerificationRecord, Credential } from '../src/models';
 
 let mongod: MongoMemoryServer;
 
@@ -181,4 +182,179 @@ describe('OnShift Pre-Integration & Evidence Adapter Test Suite', () => {
     expect(resVer.body.level).toBe('FINANCIALLY_CORROBORATED');
   });
 
+});
+
+// =============================================================================
+// DAY 3: End-to-End Worker Journey & Fallback Consistency Test Suite
+// =============================================================================
+describe('End-to-End Worker Journey & Fallback Consistency', () => {
+  const e2eWorkerId = `OS-E2E-${Date.now()}`;
+  const fallbackWorkerId = `OS-FALLBACK-${Date.now()}`;
+
+  afterAll(async () => {
+    await Worker.deleteMany({ id: { $in: [e2eWorkerId, fallbackWorkerId] } });
+    await Evidence.deleteMany({ workerId: { $in: [e2eWorkerId, fallbackWorkerId] } });
+    await VerificationRecord.deleteMany({ workerId: { $in: [e2eWorkerId, fallbackWorkerId] } });
+    await Credential.deleteMany({ workerId: { $in: [e2eWorkerId, fallbackWorkerId] } });
+  });
+
+  it('chained end-to-end worker flow: worker -> evidence -> recon -> verif -> db check -> credential issue -> credential verify -> scheme match', async () => {
+    // 1. POST /workers
+    const createWorkerRes = await request(app)
+      .post('/api/v1/workers')
+      .send({
+        id: e2eWorkerId,
+        name: 'E2E Test Worker',
+        workerCategory: 'Delivery Partner',
+        location: 'Pune, Maharashtra',
+      });
+    expect(createWorkerRes.status).toBe(201);
+    expect(createWorkerRes.body.id).toBe(e2eWorkerId);
+
+    // 2. POST /evidence
+    const evidenceId = `ev-e2e-${Date.now()}`;
+    const createEvidenceRes = await request(app)
+      .post('/api/v1/evidence')
+      .send({
+        id: evidenceId,
+        workerId: e2eWorkerId,
+        source: 'FINANCIAL',
+        type: 'AA_BANK_SETTLEMENT',
+        platform: 'HDFC Bank',
+        amount: 30100,
+        currency: 'INR',
+        reference: 'TXN-E2E-001',
+        timestamp: '2026-08-07T12:00:00Z',
+        capturedAt: new Date().toISOString(),
+        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
+        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+      });
+    expect(createEvidenceRes.status).toBe(201);
+    expect(createEvidenceRes.body.id).toBe(evidenceId);
+
+    // 3. GET /evidence/worker/:workerId
+    const getEvidenceRes = await request(app).get(`/api/v1/evidence/worker/${e2eWorkerId}`);
+    expect(getEvidenceRes.status).toBe(200);
+    expect(Array.isArray(getEvidenceRes.body)).toBe(true);
+    expect(getEvidenceRes.body.some((e: any) => e.id === evidenceId)).toBe(true);
+
+    // 4. POST /reconciliation/run
+    const payoutPeriod = { startDate: '2026-08-01', endDate: '2026-08-07' };
+    const reconRes = await request(app)
+      .post('/api/v1/reconciliation/run')
+      .send({
+        workerId: e2eWorkerId,
+        payoutPeriod,
+        evidenceIds: [evidenceId],
+      });
+    expect(reconRes.status).toBe(200);
+    expect(reconRes.body.status).toBeDefined();
+
+    // 5. POST /verification/level
+    const verRes = await request(app)
+      .post('/api/v1/verification/level')
+      .send({
+        workerId: e2eWorkerId,
+        payoutPeriod,
+        evidenceIds: [evidenceId],
+      });
+    expect(verRes.status).toBe(200);
+    expect(verRes.body.level).toBeDefined();
+    expect(typeof verRes.body.confidence).toBe('number');
+
+    // 6. Direct VerificationRecord query
+    const verRecord = await VerificationRecord.findOne({ workerId: e2eWorkerId }).lean();
+    expect(verRecord).not.toBeNull();
+    expect(verRecord!.level).toBe(verRes.body.level);
+
+    // 7. POST /credentials/issue
+    const issueRes = await request(app)
+      .post('/api/v1/credentials/issue')
+      .send({
+        workerId: e2eWorkerId,
+        disclosedClaims: {
+          verifiedIncome: 30100,
+          period: '01 Aug to 07 Aug 2026',
+          verificationLevel: verRes.body.level,
+        },
+      });
+    expect(issueRes.status).toBe(201);
+    expect(issueRes.body.credential).toBeDefined();
+    expect(issueRes.body.credential.workerId).toBe(e2eWorkerId);
+
+    const issuedCred = issueRes.body.credential;
+
+    // 8. Direct Credential query
+    const credDoc = await Credential.findOne({ workerId: e2eWorkerId }).lean();
+    expect(credDoc).not.toBeNull();
+    expect(credDoc!.publicKeyHex).toBe(issuedCred.publicKeyHex);
+    expect(credDoc!.signature).toBe(issuedCred.signature);
+
+    // 9. POST /credentials/verify
+    const verifyCredRes = await request(app)
+      .post('/api/v1/credentials/verify')
+      .send(issuedCred);
+    expect(verifyCredRes.status).toBe(200);
+    expect(verifyCredRes.body.valid).toBe(true);
+
+    // 10. POST /schemes/match
+    const schemeMatchRes = await request(app)
+      .post('/api/v1/schemes/match')
+      .send({
+        monthlyIncome: 30100,
+        workerCategory: 'Delivery Partner',
+        location: 'Pune, Maharashtra',
+      });
+    expect(schemeMatchRes.status).toBe(200);
+    expect(Array.isArray(schemeMatchRes.body)).toBe(true);
+  });
+
+  it('Full flow degrades gracefully when verification engine is unreachable', async () => {
+    // Create worker
+    await request(app)
+      .post('/api/v1/workers')
+      .send({ id: fallbackWorkerId, name: 'Fallback Worker' });
+
+    const markerEvidenceId = 'ev-fin-hdfc-002';
+
+    const originalEngineUrl = process.env.VERIFICATION_ENGINE_URL;
+    process.env.VERIFICATION_ENGINE_URL = 'http://localhost:9999';
+
+    try {
+      const reconRes = await request(app)
+        .post('/api/v1/reconciliation/run')
+        .send({
+          workerId: fallbackWorkerId,
+          payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: [markerEvidenceId],
+        });
+
+      const verRes = await request(app)
+        .post('/api/v1/verification/level')
+        .send({
+          workerId: fallbackWorkerId,
+          payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: [markerEvidenceId],
+        });
+
+      // Both should degrade gracefully to Scenario 2 mock fallback
+      expect(reconRes.status).toBe(200);
+      expect(reconRes.body.status).toBe('UNEXPLAINED_DIFFERENCE');
+
+      expect(verRes.status).toBe(200);
+      expect(verRes.body.level).toBe('CORROBORATED');
+      expect(typeof verRes.body.confidence).toBe('number');
+    } finally {
+      if (originalEngineUrl !== undefined) {
+        process.env.VERIFICATION_ENGINE_URL = originalEngineUrl;
+      } else {
+        delete process.env.VERIFICATION_ENGINE_URL;
+      }
+    }
+
+    // Verify system works normally after engine URL restoration
+    const workerCheck = await request(app).get(`/api/v1/workers/${fallbackWorkerId}`);
+    expect(workerCheck.status).toBe(200);
+    expect(workerCheck.body.id).toBe(fallbackWorkerId);
+  });
 });
