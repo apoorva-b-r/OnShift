@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,7 +33,11 @@ import com.onshift.app.data.model.PrivacyRecord
 import com.onshift.app.data.model.UserPreferences
 import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ProfileScreen(
@@ -50,8 +55,10 @@ fun ProfileScreen(
                 privacyRecord = uiState.data,
                 currentLanguage = "en",
                 selectedPlatforms = listOf("Zomato", "Swiggy"),
+                lastBackedUpAt = null,
                 onUpdateLanguage = { },
                 onUpdatePlatforms = { },
+                onUpdateLastBackedUpAt = { },
                 onTamperDemo = onTamperDemo,
                 onResetHash = onResetHash,
                 onRestartDemo = onRestartDemo
@@ -66,11 +73,13 @@ fun ProfileScreen(
         val userPreferences by repository.userPreferencesFlow.collectAsState(initial = UserPreferences())
         val currentLanguage = userPreferences.language
         val selectedPlatforms = userPreferences.selectedPlatforms
+        val lastBackedUpAt = userPreferences.lastBackedUpAt
 
         ProfileContent(
             privacyRecord = privacyRecord,
             currentLanguage = currentLanguage,
             selectedPlatforms = selectedPlatforms,
+            lastBackedUpAt = lastBackedUpAt,
             onUpdateLanguage = { newLang ->
                 coroutineScope.launch {
                     repository.updateLanguage(newLang)
@@ -82,6 +91,11 @@ fun ProfileScreen(
             onUpdatePlatforms = { platforms ->
                 coroutineScope.launch {
                     repository.updateSelectedPlatforms(platforms)
+                }
+            },
+            onUpdateLastBackedUpAt = { timestamp ->
+                coroutineScope.launch {
+                    repository.updateLastBackedUpAt(timestamp)
                 }
             },
             onTamperDemo = onTamperDemo,
@@ -104,14 +118,28 @@ fun ProfileContent(
     privacyRecord: PrivacyRecord,
     currentLanguage: String,
     selectedPlatforms: List<String>,
+    lastBackedUpAt: Long?,
     onUpdateLanguage: (String) -> Unit,
     onUpdatePlatforms: (List<String>) -> Unit,
+    onUpdateLastBackedUpAt: (Long) -> Unit,
     onTamperDemo: () -> Unit,
     onResetHash: () -> Unit,
     onRestartDemo: () -> Unit
 ) {
     var showPlatformEditDialog by remember { mutableStateOf(false) }
+    var isBackingUp by remember { mutableStateOf(false) }
+    var backupProgress by remember { mutableIntStateOf(0) }
+    val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    val formattedLastBackedUp = remember(lastBackedUpAt) {
+        if (lastBackedUpAt != null) {
+            val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+            sdf.format(Date(lastBackedUpAt))
+        } else {
+            null
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -216,6 +244,88 @@ fun ProfileContent(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Backup & Restore Card (Positioned below Platforms, above Tampering Demo)
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.backup_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = OnSurface
+                )
+
+                Text(
+                    text = stringResource(R.string.backup_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+
+                if (isBackingUp) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        LinearProgressIndicator(
+                            progress = { backupProgress / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp),
+                            color = Primary,
+                            trackColor = Color.LightGray.copy(alpha = 0.3f),
+                            strokeCap = StrokeCap.Round
+                        )
+                        Text(
+                            text = stringResource(R.string.backed_up_pct, backupProgress),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                if (formattedLastBackedUp != null && !isBackingUp) {
+                    Text(
+                        text = stringResource(R.string.last_backed_up, formattedLastBackedUp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = StatusReconciled,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        if (!isBackingUp) {
+                            isBackingUp = true
+                            backupProgress = 0
+                            coroutineScope.launch {
+                                for (p in 0..100 step 2) {
+                                    delay(40L)
+                                    backupProgress = p
+                                }
+                                backupProgress = 100
+                                isBackingUp = false
+                                onUpdateLastBackedUpAt(System.currentTimeMillis())
+                            }
+                        }
+                    },
+                    enabled = !isBackingUp,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = if (formattedLastBackedUp != null) stringResource(R.string.back_up_again) else stringResource(R.string.back_up_now),
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

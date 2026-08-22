@@ -17,7 +17,9 @@ import com.onshift.app.data.UserPreferencesRepository
 import com.onshift.app.data.model.UserPreferences
 import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.data.model.Worker
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.onshift.app.ui.screens.*
+import com.onshift.app.ui.viewmodel.GovernmentSchemesViewModel
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
@@ -131,8 +133,12 @@ fun AppNavGraph(
             )
         }
         composable(Screen.GovernmentSchemes.route) {
+            val schemesViewModel: GovernmentSchemesViewModel = viewModel()
+            LaunchedEffect(Unit) {
+                schemesViewModel.fetchRecommendations()
+            }
             GovernmentSchemesScreen(
-                schemeMatches = com.onshift.app.data.model.MockData.mockSchemeMatches,
+                viewModel = schemesViewModel,
                 onRestartDemo = {
                     coroutineScope.launch {
                         repository.clearPreferences()

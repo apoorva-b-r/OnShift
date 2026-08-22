@@ -20,6 +20,8 @@ import {
   LogIn,
   UserPlus,
   X,
+  UserCheck,
+  Cpu,
 } from 'lucide-react';
 
 import type { CredentialVerificationResult } from './credentialTypes';
@@ -31,8 +33,10 @@ interface LenderUser {
   institution: string;
   role: string;
 }
+import { WorkerStudio } from './WorkerStudio';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'worker' | 'verifier' | 'architecture'>('worker');
   const [jsonInput, setJsonInput] = useState('');
   const [result, setResult] = useState<CredentialVerificationResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -182,6 +186,12 @@ export default function App() {
     runVerification(formattedText);
   };
 
+  const handleSendCredentialToVerifier = (credentialJson: string) => {
+    ingestCredentialText(credentialJson, 'Issued Worker Credential (Direct)');
+    setActiveTab('verifier');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setJsonInput(text);
@@ -243,11 +253,6 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const scrollToStudio = () => {
-    const el = document.getElementById('verifier-studio');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const claimEntries = result?.claims ? Object.entries(result.claims).filter(([, v]) => v !== undefined) : [];
 
   return (
@@ -265,22 +270,31 @@ export default function App() {
             />
             <div className="brand-text">
               <span className="brand-name">OnShift</span>
-              <span className="brand-tag">LENDER & VERIFIER PORTAL</span>
+              <span className="brand-tag">INCOME VERIFICATION SYSTEM</span>
             </div>
           </div>
 
           <nav className="nav-links">
-            <a
-              href="#verifier-studio"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToStudio();
-              }}
+            <button
+              className={`nav-tab-btn ${activeTab === 'worker' ? 'active' : ''}`}
+              onClick={() => setActiveTab('worker')}
             >
-              Verify Credential
-            </a>
-            <a href="#trust-architecture">Trust Architecture</a>
-            <a href="#schemes-preview">Scheme Signals</a>
+              <UserCheck size={16} /> Worker Studio
+            </button>
+
+            <button
+              className={`nav-tab-btn ${activeTab === 'verifier' ? 'active' : ''}`}
+              onClick={() => setActiveTab('verifier')}
+            >
+              <Building2 size={16} /> Lender Verifier
+            </button>
+
+            <button
+              className={`nav-tab-btn ${activeTab === 'architecture' ? 'active' : ''}`}
+              onClick={() => setActiveTab('architecture')}
+            >
+              <Cpu size={16} /> Trust Architecture
+            </button>
           </nav>
 
           <div className="nav-actions">
@@ -332,285 +346,286 @@ export default function App() {
                 </button>
               </div>
             )}
+            <span className="portal-badge">
+              {activeTab === 'worker' ? (
+                <>
+                  <UserCheck size={15} /> Worker Pipeline Mode
+                </>
+              ) : (
+                <>
+                  <Building2 size={15} /> Verifier Portal
+                </>
+              )}
+            </span>
           </div>
         </div>
       </header>
 
-      <section className="hero">
-        <div className="hero-container">
-          <div className="eyebrow">
-            <Sparkles size={16} /> Worker-owned proof for lender review
-          </div>
-          <h1>Verify Gig Income Credentials Before Lending Decisions</h1>
-          <p className="hero-subtitle">
-            OnShift lets banks, NBFCs, landlords, and benefit desks validate only the worker-disclosed
-            income claims they need, backed by Ed25519 signatures and bank-settlement corroboration.
-          </p>
-
-          <div className="hero-buttons">
-            <button className="btn-primary" onClick={scrollToStudio}>
-              Verify a Credential <ArrowRight size={18} />
-            </button>
-            <a href="#trust-architecture" className="btn-secondary">
-              Review Trust Model
-            </a>
-          </div>
-
-          <div className="stats-ribbon">
-            <div className="stat-item">
-              <span className="stat-number">Ed25519</span>
-              <span className="stat-label">Signature Verification</span>
+      {/* Main Content Areas based on Active Tab */}
+      {activeTab === 'worker' && (
+        <section className="worker-section-wrapper">
+          <div className="section-container">
+            <div className="section-header text-center">
+              <h2>Worker Verification & Credential Pipeline</h2>
+              <p>
+                Connects directly to Express API Gateway (`http://localhost:4000/api/v1`) and Python Reconciliation Engine.
+              </p>
             </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-number">&lt; 10ms</span>
-              <span className="stat-label">Verification Latency</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-number">Selective</span>
-              <span className="stat-label">Claim Disclosure</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat-item">
-              <span className="stat-number">30</span>
-              <span className="stat-label">Scheme Eligibility Signals</span>
-            </div>
+            <WorkerStudio onSendCredentialToVerifier={handleSendCredentialToVerifier} />
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section id="verifier-studio" className="studio-section">
-        <div className="section-container">
-          <div className="section-header text-center">
-            <h2>Lender Credential Verification</h2>
-            <p>
-              Drag & drop or browse the JSON credential shared by the worker. Verification runs locally in your
-              browser using Ed25519 — no backend call is required.
-            </p>
-          </div>
-
-          <div className="verification-console">
-            <div className="upload-panel">
-              <div
-                className={`upload-box ${isDragging ? 'drag-active' : ''}`}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <label htmlFor="file-input-id" className="upload-inner">
-                  <span className="upload-icon-wrap">
-                    <UploadCloud size={34} />
-                  </span>
-                  <div>
-                    <span className="upload-main-text">
-                      {isDragging ? 'Drop Credential JSON Here' : 'Drag & Drop Credential JSON Here'}
-                    </span>
-                    <span className="upload-sub-text">
-                      Or click to browse files. Accepts any worker-exported .json credential.
-                    </span>
-                  </div>
-                  <span className="browse-pill">Browse File</span>
-                  <input
-                    id="file-input-id"
-                    type="file"
-                    accept=".json,application/json"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+      {activeTab === 'verifier' && (
+        <>
+          <section className="hero">
+            <div className="hero-container">
+              <div className="eyebrow">
+                <Sparkles size={16} /> Worker-owned proof for lender review
               </div>
+              <h1>Verify Gig Income Credentials Before Lending Decisions</h1>
+              <p className="hero-subtitle">
+                OnShift lets banks, NBFCs, landlords, and benefit desks validate only the worker-disclosed
+                income claims they need, backed by Ed25519 signatures and bank-settlement corroboration.
+              </p>
 
-              <div className="upload-status-row">
-                <span>
-                  <FileCheck size={17} /> {uploadedFileName}
-                </span>
-                <span>
-                  <RefreshCw size={15} className={loading ? 'spin-icon' : ''} />{' '}
-                  {loading ? 'Verifying credential…' : lastVerifiedAt ? `Checked at ${lastVerifiedAt}` : 'Awaiting credential'}
-                </span>
-              </div>
-
-              <div className="verify-action-row">
-                <button type="button" className="btn-primary verify-btn" onClick={handleVerifyClick} disabled={loading}>
-                  {loading ? 'Verifying…' : 'Verify Credential'}
-                </button>
-              </div>
-            </div>
-
-            <div className="review-panel">
-              <h3>Review Checklist</h3>
-              <div className="review-items">
-                <div className="review-item">
-                  <CheckCircle2 size={17} /> Signature must verify against the embedded issuer public key.
+              <div className="stats-ribbon">
+                <div className="stat-item">
+                  <span className="stat-number">Ed25519</span>
+                  <span className="stat-label">Signature Verification</span>
                 </div>
-                <div className="review-item">
-                  <CheckCircle2 size={17} /> Issuer identity should match your trusted OnShift authority.
+                <div className="stat-divider"></div>
+                <div className="stat-item">
+                  <span className="stat-number">&lt; 10ms</span>
+                  <span className="stat-label">Verification Latency</span>
                 </div>
-                <div className="review-item">
-                  <CheckCircle2 size={17} /> Credential must be within its validUntil window.
+                <div className="stat-divider"></div>
+                <div className="stat-item">
+                  <span className="stat-number">Selective</span>
+                  <span className="stat-label">Claim Disclosure</span>
                 </div>
-                <div className="review-item">
-                  <Lock size={17} /> Only worker-disclosed claims are visible to this portal.
+                <div className="stat-divider"></div>
+                <div className="stat-item">
+                  <span className="stat-number">30</span>
+                  <span className="stat-label">Scheme Signals</span>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {!hasAttemptedVerification && (
-            <div className="empty-state-panel">
-              <FileCheck size={40} />
-              <h3>No credential loaded yet</h3>
-              <p>Upload a worker-shared JSON credential or paste one below, then click Verify Credential.</p>
-            </div>
-          )}
-
-          {hasAttemptedVerification && result && (
-            <div className={`result-display ${result.valid ? 'border-pass' : 'border-fail'}`}>
-              <div className="result-banner-top">
-                <div className="banner-left">
-                  {result.valid ? <ShieldCheck size={32} color="#047857" /> : <ShieldAlert size={32} color="#E11D48" />}
-                  <div>
-                    <span className={result.valid ? 'title-pass' : 'title-fail'}>
-                      {result.valid ? 'VERIFIED VALID' : result.signatureVerified ? 'CREDENTIAL ISSUE' : 'VERIFICATION FAILED'}
-                    </span>
-                    {(result.issuer || result.workerId) && (
-                      <div className="issuer-tag">
-                        {result.issuer && (
-                          <>
-                            Issuer: <strong>{result.issuer}</strong>
-                          </>
-                        )}
-                        {result.issuer && result.workerId && ' | '}
-                        {result.workerId && (
-                          <>
-                            Worker ID: <strong>{result.workerId}</strong>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <span className={`verdict-pill ${result.valid ? 'pill-pass' : 'pill-fail'}`}>
-                  {result.valid
-                    ? 'CRYPTOGRAPHICALLY AUTHENTIC'
-                    : result.signatureVerified
-                      ? 'SIGNATURE OK — OTHER ISSUE'
-                      : 'SIGNATURE INVALID / ALTERED'}
-                </span>
+          <section id="verifier-studio" className="studio-section">
+            <div className="section-container">
+              <div className="section-header text-center">
+                <h2>Lender Credential Verification</h2>
+                <p>
+                  Drag & drop or browse the JSON credential shared by the worker. Verification runs locally in your
+                  browser using Ed25519 — no backend call is required.
+                </p>
               </div>
 
-              <div className="result-explanation-box">{result.message}</div>
-
-              {(result.issuedAt || result.validUntil) && (
-                <div className="validity-row">
-                  {result.issuedAt && <span>Issued: {new Date(result.issuedAt).toLocaleString('en-IN')}</span>}
-                  {result.validUntil && <span>Valid until: {new Date(result.validUntil).toLocaleString('en-IN')}</span>}
-                </div>
-              )}
-
-              {claimEntries.length > 0 && (
-                <div className="claims-panel">
-                  <h4>Disclosed Credential Claims</h4>
-                  <div className="claims-cards">
-                    {claimEntries.map(([key, value]) => (
-                      <div className="claim-card" key={key}>
-                        <span className="c-label">{formatClaimLabel(key)}</span>
-                        <span className={`c-val ${key === 'verifiedIncome' ? 'income-highlight' : key === 'verificationLevel' ? 'level-highlight' : ''}`}>
-                          {key === 'verificationLevel' && result.valid && <CheckCircle2 size={16} />}{' '}
-                          {formatClaimValue(key, value)}
+              <div className="verification-console">
+                <div className="upload-panel">
+                  <div
+                    className={`upload-box ${isDragging ? 'drag-active' : ''}`}
+                    onDragEnter={handleDragEnter}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <label htmlFor="file-input-id" className="upload-inner">
+                      <span className="upload-icon-wrap">
+                        <UploadCloud size={34} />
+                      </span>
+                      <div>
+                        <span className="upload-main-text">
+                          {isDragging ? 'Drop Credential JSON Here' : 'Drag & Drop Credential JSON Here'}
+                        </span>
+                        <span className="upload-sub-text">
+                          Or click to browse files. Accepts any worker-exported .json credential.
                         </span>
                       </div>
-                    ))}
+                      <span className="browse-pill">Browse File</span>
+                      <input
+                        id="file-input-id"
+                        type="file"
+                        accept=".json,application/json"
+                        onChange={handleFileUpload}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="upload-status-row">
+                    <span>
+                      <FileCheck size={17} /> {uploadedFileName}
+                    </span>
+                    <span>
+                      <RefreshCw size={15} className={loading ? 'spin-icon' : ''} />{' '}
+                      {loading ? 'Verifying credential…' : lastVerifiedAt ? `Checked at ${lastVerifiedAt}` : 'Awaiting credential'}
+                    </span>
+                  </div>
+
+                  <div className="verify-action-row">
+                    <button type="button" className="btn-primary verify-btn" onClick={handleVerifyClick} disabled={loading}>
+                      {loading ? 'Verifying…' : 'Verify Credential'}
+                    </button>
                   </div>
                 </div>
+
+                <div className="review-panel">
+                  <h3>Review Checklist</h3>
+                  <div className="review-items">
+                    <div className="review-item">
+                      <CheckCircle2 size={17} /> Signature must verify against the embedded issuer public key.
+                    </div>
+                    <div className="review-item">
+                      <CheckCircle2 size={17} /> Issuer identity should match your trusted OnShift authority.
+                    </div>
+                    <div className="review-item">
+                      <CheckCircle2 size={17} /> Credential must be within its validUntil window.
+                    </div>
+                    <div className="review-item">
+                      <Lock size={17} /> Only worker-disclosed claims are visible to this portal.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!hasAttemptedVerification && (
+                <div className="empty-state-panel">
+                  <FileCheck size={40} />
+                  <h3>No credential loaded yet</h3>
+                  <p>Upload a worker-shared JSON credential or paste one below, then click Verify Credential.</p>
+                </div>
               )}
-            </div>
-          )}
 
-          <div className="advanced-accordion">
-            <div className="accordion-trigger" onClick={() => setShowTechnicalJson(!showTechnicalJson)}>
-              <span className="trigger-title">
-                <FileCode size={18} /> Paste Raw Credential JSON
-              </span>
-              {showTechnicalJson ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </div>
+              {hasAttemptedVerification && result && (
+                <div className={`result-display ${result.valid ? 'border-pass' : 'border-fail'}`}>
+                  <div className="result-banner-top">
+                    <div className="banner-left">
+                      {result.valid ? <ShieldCheck size={32} color="#047857" /> : <ShieldAlert size={32} color="#E11D48" />}
+                      <div>
+                        <span className={result.valid ? 'title-pass' : 'title-fail'}>
+                          {result.valid ? 'VERIFIED VALID' : result.signatureVerified ? 'CREDENTIAL ISSUE' : 'VERIFICATION FAILED'}
+                        </span>
+                        {(result.issuer || result.workerId) && (
+                          <div className="issuer-tag">
+                            {result.issuer && (
+                              <>
+                                Issuer: <strong>{result.issuer}</strong>
+                              </>
+                            )}
+                            {result.issuer && result.workerId && ' | '}
+                            {result.workerId && (
+                              <>
+                                Worker ID: <strong>{result.workerId}</strong>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-            {showTechnicalJson && (
-              <div className="accordion-body">
-                <p className="code-instruction">
-                  Paste or edit raw credential JSON below. Edits verify live instantly.
-                </p>
-                <textarea
-                  className="code-textarea"
-                  value={jsonInput}
-                  onChange={handleTextareaChange}
-                  placeholder='{"type":"OnShiftIncomeCredential","workerId":"...","issuer":"...","issuedAt":"...","validUntil":"...","claims":{...},"signature":"...","publicKeyHex":"..."}'
-                />
+                    <span className={`verdict-pill ${result.valid ? 'pill-pass' : 'pill-fail'}`}>
+                      {result.valid
+                        ? 'CRYPTOGRAPHICALLY AUTHENTIC'
+                        : result.signatureVerified
+                          ? 'SIGNATURE OK — OTHER ISSUE'
+                          : 'SIGNATURE INVALID / ALTERED'}
+                    </span>
+                  </div>
+
+                  <div className="result-explanation-box">{result.message}</div>
+
+                  {(result.issuedAt || result.validUntil) && (
+                    <div className="validity-row">
+                      {result.issuedAt && <span>Issued: {new Date(result.issuedAt).toLocaleString('en-IN')}</span>}
+                      {result.validUntil && <span>Valid until: {new Date(result.validUntil).toLocaleString('en-IN')}</span>}
+                    </div>
+                  )}
+
+                  {claimEntries.length > 0 && (
+                    <div className="claims-panel">
+                      <h4>Disclosed Credential Claims</h4>
+                      <div className="claims-cards">
+                        {claimEntries.map(([key, value]) => (
+                          <div className="claim-card" key={key}>
+                            <span className="c-label">{formatClaimLabel(key)}</span>
+                            <span className={`c-val ${key === 'verifiedIncome' ? 'income-highlight' : key === 'verificationLevel' ? 'level-highlight' : ''}`}>
+                              {key === 'verificationLevel' && result.valid && <CheckCircle2 size={16} />}{' '}
+                              {formatClaimValue(key, value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="advanced-accordion">
+                <div className="accordion-trigger" onClick={() => setShowTechnicalJson(!showTechnicalJson)}>
+                  <span className="trigger-title">
+                    <FileCode size={18} /> Paste Raw Credential JSON
+                  </span>
+                  {showTechnicalJson ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </div>
+
+                {showTechnicalJson && (
+                  <div className="accordion-body">
+                    <p className="code-instruction">
+                      Paste or edit raw credential JSON below. Edits verify live instantly.
+                    </p>
+                    <textarea
+                      className="code-textarea"
+                      value={jsonInput}
+                      onChange={handleTextareaChange}
+                      placeholder='{"type":"OnShiftIncomeCredential","workerId":"...","issuer":"...","issuedAt":"...","validUntil":"...","claims":{...},"signature":"...","publicKeyHex":"..."}'
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          </section>
+        </>
+      )}
+
+      {activeTab === 'architecture' && (
+        <section id="trust-architecture" className="architecture-section">
+          <div className="section-container">
+            <div className="section-header text-center">
+              <h2>Institutional Trust Architecture</h2>
+              <p>How OnShift gives lenders a tamper-evident proof without exposing a worker's full financial trail.</p>
+            </div>
+
+            <div className="features-grid">
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <Lock size={24} />
+                </div>
+                <h3>Ed25519 Cryptographic Signatures</h3>
+                <p>Private Ed25519 keypairs ensure that any payload modification invalidates the signature.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <CheckCircle2 size={24} />
+                </div>
+                <h3>Evidence Corroboration Engine</h3>
+                <p>Python FastAPI engine reconciles platform notification logs, work session activity, and bank statement settlements.</p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-icon">
+                  <Building2 size={24} />
+                </div>
+                <h3>Lender-ready Decision Signal</h3>
+                <p>Shows verified income, payout period, and verification level without requiring editable PDFs.</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-
-      <section id="trust-architecture" className="architecture-section">
-        <div className="section-container">
-          <div className="section-header text-center">
-            <h2>Institutional Trust Architecture</h2>
-            <p>How OnShift gives lenders a tamper-evident proof without exposing a worker's full financial trail.</p>
-          </div>
-
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Lock size={24} />
-              </div>
-              <h3>Ed25519 Signatures</h3>
-              <p>Cryptographic keypairs ensure that any payload modification invalidates the signature.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <CheckCircle2 size={24} />
-              </div>
-              <h3>Evidence Corroboration</h3>
-              <p>Combines platform notification logs, work session activity, and bank statement settlements.</p>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon">
-                <Building2 size={24} />
-              </div>
-              <h3>Lender-ready Decision Signal</h3>
-              <p>Shows verified income, payout period, and verification level without requiring editable PDFs.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="schemes-preview" className="schemes-section">
-        <div className="section-container">
-          <div className="schemes-banner">
-            <div className="schemes-content">
-              <span className="schemes-tag">OPTIONAL ELIGIBILITY LAYER</span>
-              <h2>Scheme and Benefit Matching Signals</h2>
-              <p>
-                When a verifier is a scheme provider, the same verified credential can support eligibility
-                checks against central and state welfare programs.
-              </p>
-              <div className="schemes-chips">
-                <span className="chip">PM-SYM Pension</span>
-                <span className="chip">Atal Pension Yojana (APY)</span>
-                <span className="chip">PM-SVANidhi</span>
-                <span className="chip">e-Shram Social Security</span>
-                <span className="chip">+26 More Schemes</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <footer className="footer">
         <div className="footer-container">
@@ -626,12 +641,11 @@ export default function App() {
               />
               <div className="brand-text">
                 <span className="brand-name">OnShift</span>
-                <span className="brand-tag">VERIFIER PORTAL</span>
+                <span className="brand-tag">INCOME VERIFICATION SYSTEM</span>
               </div>
             </div>
             <p className="footer-desc">
-              External verification portal for lenders, banks, landlords, and scheme providers. Powered by
-              Ed25519 cryptography and worker-controlled selective disclosure.
+              Authoritative Income Verification Pipeline for Gig Workers. Powered by Python Reconciliation Engine and Ed25519 W3C Verifiable Credentials.
             </p>
           </div>
         </div>

@@ -147,6 +147,10 @@
     <string name="eligible_schemes">Eligible Schemes</string>
     <string name="apply_now">Apply Now</string>
     <string name="no_matching_schemes">No matching schemes found yet</string>
+    <string name="consulting_ai_engine">Consulting AI engine...</string>
+    <string name="engine_source_nemotron">Nemotron Ultra 3 AI</string>
+    <string name="engine_source_deterministic">Deterministic engine</string>
+    <string name="retry">Retry</string>
     <string name="scheme_pm_svanidhi_name">PM-SVANidhi</string>
     <string name="scheme_pm_svanidhi_desc">Micro-credit for street vendors</string>
     <string name="scheme_ayushman_bharat_name">Ayushman Bharat</string>
@@ -168,6 +172,12 @@
     <string name="no_platforms_selected">No platforms selected</string>
     <string name="reset_all_data_demo">Reset All Data (Demo)</string>
     <string name="cancel">Cancel</string>
+    <string name="backup_title">Data Backup</string>
+    <string name="backup_desc">Backing up your evidence records, verification history, and preferences.</string>
+    <string name="backed_up_pct">%1$d%% backed up</string>
+    <string name="last_backed_up">Last backed up: %1$s</string>
+    <string name="back_up_now">Back up now</string>
+    <string name="back_up_again">Back up again</string>
 
     <!-- UiState Strings -->
     <string name="loading_data">Loading your data...</string>
