@@ -1,34 +1,38 @@
 import { Request, Response } from 'express';
 import { ConsentRequest } from '../models';
+import { getAccountAggregatorProvider } from '../services/aa/getAccountAggregatorProvider';
 
 export const requestConsent = async (req: Request, res: Response) => {
-  const { workerId = 'OS-DEMO-001', aaProvider = 'Setu Mock AA', fiTypes = ['DEPOSIT'] } = req.body;
-  const consentId = `AA-CONSENT-${Date.now().toString(36).toUpperCase()}`;
-  const authorizationUrl = `https://aa-sandbox.onshift.org/auth/${consentId}`;
-  const isMock = aaProvider.toLowerCase().includes('mock') || true;
+  const { workerId = 'OS-DEMO-001', fiTypes = ['DEPOSIT'] } = req.body;
+  const consent = await getAccountAggregatorProvider().requestConsent({
+    customerId: workerId,
+    purpose: 'OnShift income verification',
+    fiTypes,
+    dataRange: req.body.dataRange ?? {
+      from: new Date(0).toISOString(),
+      to: new Date().toISOString(),
+    },
+  });
 
   try {
     await ConsentRequest.create({
-      consentId,
+      consentId: consent.consentId,
       workerId,
       fiTypes,
-      status: 'PENDING',
-      consentUrl: authorizationUrl,
-      isMock,
+      status: consent.status === 'REJECTED' ? 'EXPIRED' : consent.status,
+      consentUrl: consent.redirectUrl,
+      isMock: consent.isMock === true,
     });
-  } catch (err) {
-    console.warn('Failed to persist consent request to MongoDB, returning mock response.');
+  } catch (_error) {
+    console.warn('Failed to persist consent request to MongoDB.');
   }
 
-  return res.status(201).json({
-    consentId,
-    workerId,
-    aaProvider,
-    status: 'PENDING',
-    authorizationUrl,
-    isMock,
-    createdAt: new Date().toISOString(),
-  });
+  return res.status(201).json(consent);
+};
+
+export const fetchFinancialData = async (req: Request, res: Response) => {
+  const transactions = await getAccountAggregatorProvider().fetchFinancialData(req.params.consentId);
+  return res.status(200).json(transactions);
 };
 
 export const getConsentStatus = async (req: Request, res: Response) => {

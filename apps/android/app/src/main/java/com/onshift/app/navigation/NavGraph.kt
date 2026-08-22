@@ -31,6 +31,7 @@ sealed class Screen(val route: String) {
     object Privacy : Screen("privacy")
     object Verification : Screen("verification")
     object Profile : Screen("profile")
+    object AccountAggregator : Screen("account_aggregator")
     object LanguageSelection : Screen("language_selection")
     object PlatformSelection : Screen("platform_selection")
     object IdentityOnboarding : Screen("identity_onboarding")
@@ -106,8 +107,12 @@ fun AppNavGraph(
                 windowSizeClass = effectiveWindowSizeClass,
                 worker = defaultWorker,
                 reconciliationResult = null,
-                userPrefs = userPreferences
+                userPrefs = userPreferences,
+                onOpenAccountAggregator = { navController.navigate(Screen.AccountAggregator.route) }
             )
+        }
+        composable(Screen.AccountAggregator.route) {
+            com.onshift.app.ui.aa.AccountAggregatorScreen(onBack = { navController.popBackStack() })
         }
         composable(Screen.Identity.route) {
             IdentityScreen()

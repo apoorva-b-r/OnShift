@@ -5,7 +5,7 @@ import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel, runVerification } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
-import { requestConsent, getConsentStatus } from '../controllers/consentController';
+import { requestConsent, getConsentStatus, fetchFinancialData } from '../controllers/consentController';
 import { asyncHandler } from '../middleware/apiError';
 import { authenticateWorker } from '../middleware/authMiddleware';
 import {
@@ -57,5 +57,6 @@ router.post('/schemes/recommend', asyncHandler(recommendSchemes));
 // Account Aggregator Consent
 router.post('/consent/request', validateRequest(validateConsentRequest), asyncHandler(requestConsent));
 router.get('/consent/status/:consentId', asyncHandler(getConsentStatus));
+router.get('/consent/data/:consentId', asyncHandler(fetchFinancialData));
 
 export default router;
