@@ -1,5 +1,7 @@
 package com.onshift.app.ui.screens
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,6 +27,20 @@ import com.onshift.app.ui.theme.Primary
 import com.onshift.app.ui.theme.StatusReconciled
 import com.onshift.app.ui.theme.Surface
 import com.onshift.app.ui.theme.TextSecondary
+
+/** Swap this for the real verifier host once the backend team confirms it. */
+private const val VERIFICATION_BASE_URL = "https://PLACEHOLDER_DOMAIN"
+
+fun shareCredential(context: Context, credentialId: String) {
+    val shareText =
+        "Here is my verified income credential from OnShift. View and verify it here: " +
+            "$VERIFICATION_BASE_URL/verify/$credentialId"
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+    context.startActivity(Intent.createChooser(sendIntent, "Share with lender"))
+}
 
 @Composable
 fun CredentialScreen(
@@ -50,6 +67,7 @@ fun CredentialContent(
     credential: Credential,
     disclosedClaims: List<String>? = null
 ) {
+    val context = LocalContext.current
     val claimsToDisplay = disclosedClaims ?: credential.includedClaims
 
     val showIdentity = claimsToDisplay.isEmpty() || claimsToDisplay.any { it.contains("Identity", ignoreCase = true) || it.contains("Name", ignoreCase = true) }
@@ -192,7 +210,7 @@ fun CredentialContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { },
+            onClick = { shareCredential(context, credential.workerId) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {

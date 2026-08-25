@@ -36,7 +36,7 @@ interface LenderUser {
 import { WorkerStudio } from './WorkerStudio';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'worker' | 'verifier' | 'architecture'>('worker');
+  const [activeTab, setActiveTab] = useState<'worker' | 'verifier' | 'architecture'>('verifier');
   const [jsonInput, setJsonInput] = useState('');
   const [result, setResult] = useState<CredentialVerificationResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -275,12 +275,15 @@ export default function App() {
           </div>
 
           <nav className="nav-links">
+            {/* Worker Studio tab hidden from lender website */}
+            {false && (
             <button
               className={`nav-tab-btn ${activeTab === 'worker' ? 'active' : ''}`}
               onClick={() => setActiveTab('worker')}
             >
               <UserCheck size={16} /> Worker Studio
             </button>
+            )}
 
             <button
               className={`nav-tab-btn ${activeTab === 'verifier' ? 'active' : ''}`}
@@ -347,22 +350,16 @@ export default function App() {
               </div>
             )}
             <span className="portal-badge">
-              {activeTab === 'worker' ? (
-                <>
-                  <UserCheck size={15} /> Worker Pipeline Mode
-                </>
-              ) : (
-                <>
-                  <Building2 size={15} /> Verifier Portal
-                </>
-              )}
+              {/* Worker Pipeline Mode badge hidden — always show Verifier Portal */}
+              <Building2 size={15} /> Verifier Portal
             </span>
           </div>
         </div>
       </header>
 
       {/* Main Content Areas based on Active Tab */}
-      {activeTab === 'worker' && (
+      {/* Worker Studio section hidden from lender website */}
+      {false && activeTab === 'worker' && (
         <section className="worker-section-wrapper">
           <div className="section-container">
             <div className="section-header text-center">
