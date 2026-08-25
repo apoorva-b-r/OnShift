@@ -76,6 +76,7 @@ const CredentialSchema = new Schema<CredentialDocument>(
         enum: ['DECLARED', 'OBSERVED', 'CORROBORATED', 'FINANCIALLY_CORROBORATED'],
       },
       platformBreakdown: { type: Schema.Types.Mixed, required: false },
+      identityVerified: { type: Boolean, required: false },
     },
     signature: {
       type: String,

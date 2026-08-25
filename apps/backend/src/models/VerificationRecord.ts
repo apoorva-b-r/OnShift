@@ -33,6 +33,7 @@ export interface VerificationRecordDocument extends Document {
   supportingEvidence: string[];
   limitations: string;
   evidenceIds: string[]; // the exact evidenceIds sent in the originating request
+  identityVerified?: boolean;
   reconciliationStatus?: string; // MATCHED | EXPLAINED_DIFFERENCE | UNEXPLAINED_DIFFERENCE | INSUFFICIENT_EVIDENCE
   expectedGross?: number;
   authorizedDeductions?: number;
@@ -96,6 +97,11 @@ const VerificationRecordSchema = new Schema<VerificationRecordDocument>(
       type: [String],
       required: true,
       default: [],
+    },
+    identityVerified: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     reconciliationStatus: {
       type: String,

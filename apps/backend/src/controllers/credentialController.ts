@@ -2,12 +2,27 @@ import { Request, Response } from 'express';
 import { issueCredential, verifyCredential } from '../services/credentialService';
 import { Credential, VerificationRecord } from '../models';
 import { ApiError } from '../middleware/apiError';
+import { requireIdentityVerification } from '../services/identityGate';
 
 export const handleIssueCredential = async (req: Request, res: Response) => {
-  const targetWorkerId = req.user?.workerId || req.body?.workerId;
-  if (!targetWorkerId) {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
+
+  // Enforce body workerId match if explicitly passed by client
+  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
+    throw new ApiError(
+      403,
+      'FORBIDDEN_WORKER_MISMATCH',
+      `Authenticated worker identity (${authWorkerId}) does not match requested workerId (${req.body.workerId}).`
+    );
+  }
+
+  const targetWorkerId = authWorkerId;
+
+  // Server-side Identity Gate: Worker identity MUST be VERIFIED in MongoDB via DigiLocker
+  await requireIdentityVerification(targetWorkerId);
 
   const { verificationId } = req.body;
   let record: any = null;
@@ -88,6 +103,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     verifiedIncome,
     period: periodStr,
     verificationLevel: record.level,
+    identityVerified: true,
   };
 
   const credential = issueCredential(targetWorkerId, authoritativeClaims);

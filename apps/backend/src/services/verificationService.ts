@@ -7,6 +7,8 @@ import { config } from '../config';
 import { VerificationRecord, Evidence, VerificationRecordDocument } from '../models';
 import { ApiError } from '../middleware/apiError';
 import { validateAndNormalizeEvidence, CanonicalEvidenceInput } from './evidenceAdapter';
+import { isIdentityVerified } from './identityGate';
+
 
 export async function runAuthoritativeVerificationPipeline(
   workerId: string,
@@ -102,6 +104,7 @@ export async function runAuthoritativeVerificationPipeline(
     verResult = isScenario2 ? DEMO_VERIFICATION_SCENARIO_2 : DEMO_VERIFICATION_SCENARIO_1;
   }
 
+  const idVerified = await isIdentityVerified(workerId);
   const verificationId = `vr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
   const recordData = {
     id: verificationId,
@@ -113,6 +116,7 @@ export async function runAuthoritativeVerificationPipeline(
     supportingEvidence: verResult.supportingEvidence || [],
     limitations: verResult.limitations || '',
     evidenceIds,
+    identityVerified: idVerified,
     reconciliationStatus: reconResult?.status || (verResult.level === 'FINANCIALLY_CORROBORATED' ? 'MATCHED' : 'UNEXPLAINED_DIFFERENCE'),
     expectedGross: reconResult?.expectedGross ?? (verResult.level === 'FINANCIALLY_CORROBORATED' ? 30100 : 0),
     authorizedDeductions: reconResult?.authorizedDeductions ?? 0,

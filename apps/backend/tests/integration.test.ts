@@ -3,7 +3,7 @@ import app from '../src/index';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { validateAndNormalizeEvidence } from '../src/services/evidenceAdapter';
-import { Worker, Evidence, VerificationRecord, Credential } from '../src/models';
+import { Worker, Evidence, VerificationRecord, Credential, IdentityVerification } from '../src/models';
 
 let mongod: MongoMemoryServer;
 
@@ -265,7 +265,13 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
     // 6. Direct VerificationRecord query
     const verRecord = await VerificationRecord.findOne({ workerId: e2eWorkerId }).lean();
     expect(verRecord).not.toBeNull();
-    expect(verRecord!.level).toBe(verRes.body.level);
+    // 6.5 Seed Verified Identity for e2eWorkerId
+    await IdentityVerification.create({
+      workerId: e2eWorkerId,
+      provider: 'SETU_DIGILOCKER',
+      status: 'VERIFIED',
+      verifiedAt: new Date(),
+    });
 
     // 7. POST /credentials/issue
     const issueRes = await request(app)

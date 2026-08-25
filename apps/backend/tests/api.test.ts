@@ -21,7 +21,7 @@ import request from 'supertest';
 import app from '../src/index';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { VerificationRecord, Credential } from '../src/models';
+import { VerificationRecord, Credential, IdentityVerification } from '../src/models';
 import { Worker } from '../src/models/Worker';
 import { issueCredential, verifyCredential } from '../src/services/credentialService';
 
@@ -341,6 +341,12 @@ describe('Credentials', () => {
 
   it('POST /api/v1/credentials/issue returns 201 with aligned keys and persists to MongoDB', async () => {
     const issueWorkerId = `OS-ISSUE-${Date.now()}`;
+    await IdentityVerification.create({
+      workerId: issueWorkerId,
+      provider: 'SETU_DIGILOCKER',
+      status: 'VERIFIED',
+      verifiedAt: new Date(),
+    });
     const res = await request(app)
       .post('/api/v1/credentials/issue')
       .send({

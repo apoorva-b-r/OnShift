@@ -16,6 +16,7 @@
     "test:backend": "npm --prefix apps/backend run test",
     "test:engine": "cd apps/verification-engine && pytest",
     "dev:backend": "npm --prefix apps/backend run dev",
+    "dev:identity-demo": "npm --prefix apps/identity-demo run dev",
     "dev:web": "npm --prefix apps/verifier-web run dev",
     "dev:engine": "cd apps/verification-engine && uvicorn app.main:app --reload --port 8000"
   },

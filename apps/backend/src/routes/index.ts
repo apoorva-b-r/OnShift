@@ -6,6 +6,12 @@ import { getVerificationLevel, runVerification } from '../controllers/verificati
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus } from '../controllers/consentController';
+import {
+  initiateDigiLocker,
+  getDigiLockerStatus,
+  verifyDigiLocker,
+  handleDigiLockerCallback,
+} from '../controllers/identityController';
 import { asyncHandler } from '../middleware/apiError';
 import { authenticateWorker } from '../middleware/authMiddleware';
 import {
@@ -35,6 +41,12 @@ router.get('/health', (_req, res) => {
 // Workers
 router.get('/workers/:id', asyncHandler(getWorker));
 router.post('/workers', validateRequest(validateWorker), asyncHandler(createWorker));
+
+// Identity Verification (Setu DigiLocker)
+router.get('/identity/digilocker/callback', asyncHandler(handleDigiLockerCallback));
+router.post('/identity/digilocker/initiate', authenticateWorker, asyncHandler(initiateDigiLocker));
+router.get('/identity/digilocker/status', authenticateWorker, asyncHandler(getDigiLockerStatus));
+router.post('/identity/digilocker/verify', authenticateWorker, asyncHandler(verifyDigiLocker));
 
 // Evidence
 router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
