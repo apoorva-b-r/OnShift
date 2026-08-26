@@ -51,6 +51,7 @@ data class EvidenceRecord(
 interface EvidenceRepository {
     fun saveEvidence(record: EvidenceRecord)
     fun getAllEvidence(): List<EvidenceRecord>
+    fun getEvidenceForWorker(workerId: String): List<EvidenceRecord> = getAllEvidence()
     fun getEvidenceById(id: String): EvidenceRecord?
     fun getUnsyncedEvidence(): List<EvidenceRecord>
     fun markSyncing(id: String)

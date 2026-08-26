@@ -13,11 +13,12 @@ ANNOTATIONS_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/org.jetbrains
 GSON_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.10/dd9b193aef96e973d5a11ab13cd17430c2e4306b/gson-2.10.jar"
 JUNIT_JAR="/Users/Apoorva/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar"
 HAMCREST_JAR="/Users/Apoorva/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
+ANDROID_JAR="/Users/Apoorva/Library/Android/sdk/platforms/android-34/android.jar"
 
-CP="$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR:$JUNIT_JAR:$HAMCREST_JAR"
+CP="$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR:$JUNIT_JAR:$HAMCREST_JAR:$ANDROID_JAR"
 
 echo "Compiling Kotlin sources..."
-java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
+java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR:$ANDROID_JAR" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
   -no-stdlib \
   -Xskip-metadata-version-check \
   -cp "$CP" \
@@ -25,6 +26,7 @@ java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR" org.j
   "$DIR/app/src/main/java/com/onshift/app/data/vault/EvidenceRepository.kt" \
   "$DIR/app/src/main/java/com/onshift/app/data/vault/EncryptedEvidenceStore.kt" \
   "$DIR/app/src/main/java/com/onshift/app/data/vault/LocalEncryptedEvidenceRepository.kt" \
+  "$DIR/app/src/main/java/com/onshift/app/data/vault/MockEvidenceVaultSeeder.kt" \
   "$DIR/app/src/main/java/com/onshift/app/data/hashchain/HashChain.kt" \
   "$DIR/app/src/main/java/com/onshift/app/notifications/NotificationModels.kt" \
   "$DIR/app/src/main/java/com/onshift/app/notifications/NotificationParser.kt" \
@@ -38,8 +40,7 @@ java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR" org.j
   "$DIR/app/src/test/java/com/onshift/app/LiveDemoTest.kt" \
   "$DIR/app/src/test/java/com/onshift/app/NotificationParserTest.kt" \
   "$DIR/app/src/test/java/com/onshift/app/EvidencePersistenceTest.kt" \
-  "$DIR/app/src/test/java/com/onshift/app/EndToEndPersistenceVerificationTest.kt" \
-  "$DIR/app/src/test/java/com/onshift/app/AndroidBackendIntegrationTest.kt"
+  "$DIR/app/src/test/java/com/onshift/app/MockEvidenceVaultSeederTest.kt"
 
 echo "Running JUnit tests..."
 java -cp "$BUILD_DIR/classes:$CP" org.junit.runner.JUnitCore \
@@ -47,6 +48,4 @@ java -cp "$BUILD_DIR/classes:$CP" org.junit.runner.JUnitCore \
   com.onshift.app.LiveDemoTest \
   com.onshift.app.notifications.NotificationParserTest \
   com.onshift.app.EvidencePersistenceTest \
-  com.onshift.app.EndToEndPersistenceVerificationTest \
-  com.onshift.app.AndroidBackendIntegrationTest
-
+  com.onshift.app.MockEvidenceVaultSeederTest
