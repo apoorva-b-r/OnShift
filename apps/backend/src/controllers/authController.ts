@@ -17,6 +17,7 @@ import jwt from 'jsonwebtoken';
 import { ApiError } from '../middleware/apiError';
 import type { WorkerRole } from '../middleware/authMiddleware';
 import { config } from '../config';
+import { Worker } from '../models/Worker';
 
 const VALID_ROLES: WorkerRole[] = ['WORKER', 'VERIFIER', 'ADMIN'];
 
@@ -50,10 +51,31 @@ export const login = async (req: Request, res: Response) => {
   }
 
   const role: WorkerRole = isValidRole(rawRole) ? rawRole : 'WORKER';
+  const cleanWorkerId = workerId.trim();
+
+  // Persist / upsert Worker document in MongoDB if database connection is active
+  if (config.nodeEnv !== 'test' || process.env.MONGODB_URI) {
+    try {
+      await Worker.findOneAndUpdate(
+        { id: cleanWorkerId },
+        {
+          $setOnInsert: {
+            id: cleanWorkerId,
+            name: req.body.name || `Worker ${cleanWorkerId}`,
+            workerCategory: req.body.workerCategory || 'Delivery Partner',
+          },
+        },
+        { upsert: true, new: true }
+      );
+    } catch (err) {
+      // Non-blocking warning in dev/demo if database write encounters an issue
+      console.warn(`[Auth] Note: MongoDB Worker persistence for ${cleanWorkerId}:`, err);
+    }
+  }
 
   const token = jwt.sign(
     {
-      sub: workerId.trim(),
+      sub: cleanWorkerId,
       role,
       iss: 'onshift',
       identityVerified: false,
@@ -68,7 +90,7 @@ export const login = async (req: Request, res: Response) => {
   return res.status(200).json({
     token,
     expiresIn: '24h',
-    workerId: workerId.trim(),
+    workerId: cleanWorkerId,
     role,
     _warning:
       'DEV/DEMO ONLY. This endpoint issues tokens without external identity verification. ' +
