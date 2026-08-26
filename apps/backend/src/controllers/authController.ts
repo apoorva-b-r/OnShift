@@ -14,6 +14,7 @@
 
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { ApiError } from '../middleware/apiError';
 import type { WorkerRole } from '../middleware/authMiddleware';
 import { config } from '../config';
@@ -44,7 +45,8 @@ export const login = async (req: Request, res: Response) => {
     throw new ApiError(500, 'INTERNAL_SERVER_ERROR', 'Authentication service unavailable.');
   }
 
-  const { workerId, role: rawRole } = req.body;
+  const body = req.body || {};
+  const { workerId, role: rawRole } = body;
 
   if (typeof workerId !== 'string' || !workerId.trim()) {
     throw new ApiError(400, 'VALIDATION_ERROR', 'workerId is required and must be a non-empty string.');
@@ -54,9 +56,9 @@ export const login = async (req: Request, res: Response) => {
   const cleanWorkerId = workerId.trim();
 
   // Persist / upsert Worker document in MongoDB if database connection is active
-  if (config.nodeEnv !== 'test' || process.env.MONGODB_URI) {
+  if (mongoose.connection.readyState === 1) {
     try {
-      const { name, phoneNumber, email, dateOfBirth, gender, state, city, workerCategory } = req.body;
+      const { name, phoneNumber, email, dateOfBirth, gender, state, city, workerCategory } = body;
 
       const setOnInsertPayload: Record<string, any> = {
         id: cleanWorkerId,
@@ -82,6 +84,9 @@ export const login = async (req: Request, res: Response) => {
       if (typeof gender === 'string' && gender.trim()) setPayload.gender = gender.trim();
       if (typeof state === 'string' && state.trim()) setPayload.state = state.trim();
       if (typeof city === 'string' && city.trim()) setPayload.city = city.trim();
+      if (typeof city === 'string' && city.trim() && typeof state === 'string' && state.trim()) {
+        setPayload.location = `${city.trim()}, ${state.trim()}`;
+      }
 
       const updateQuery: Record<string, any> = { $setOnInsert: setOnInsertPayload };
       if (Object.keys(setPayload).length > 0) {
@@ -93,8 +98,8 @@ export const login = async (req: Request, res: Response) => {
         updateQuery,
         { upsert: true, new: true }
       );
+      console.log(`[Auth] MongoDB Worker document persisted for ${cleanWorkerId}`);
     } catch (err) {
-      // Non-blocking warning in dev/demo if database write encounters an issue
       console.warn(`[Auth] Note: MongoDB Worker persistence for ${cleanWorkerId}:`, err);
     }
   }

@@ -123,7 +123,29 @@ fun AppNavGraph(
                                             repository.updateAuthToken(serverToken)
                                         }
                                     }
-                                    android.util.Log.i("BackendIntegration", "Backend login & Worker profile upsert succeeded for $generatedWorkerId")
+                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for $generatedWorkerId")
+
+                                    com.onshift.app.data.api.BackendApiClient.createWorker(
+                                        id = generatedWorkerId,
+                                        name = fullName,
+                                        category = "Delivery Partner",
+                                        location = "$city, $state",
+                                        phoneNumber = phone,
+                                        email = email,
+                                        dateOfBirth = dob,
+                                        gender = gender,
+                                        state = state,
+                                        city = city,
+                                        callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                                            override fun onSuccess(res: com.google.gson.JsonObject) {
+                                                android.util.Log.i("BackendIntegration", "Worker document created in MongoDB for $generatedWorkerId")
+                                            }
+
+                                            override fun onError(error: String) {
+                                                android.util.Log.w("BackendIntegration", "POST /workers call failed for $generatedWorkerId: $error")
+                                            }
+                                        }
+                                    )
                                 }
 
                                 override fun onError(error: String) {
