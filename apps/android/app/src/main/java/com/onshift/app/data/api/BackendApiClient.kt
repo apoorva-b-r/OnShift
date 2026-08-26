@@ -13,6 +13,17 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import java.util.Base64
 
+data class SendOtpResponse(
+    val status: String,
+    val validForSeconds: Int,
+    val demoHint: String? = null
+)
+
+data class VerifyOtpResponse(
+    val status: String,
+    val phoneVerified: Boolean
+)
+
 object BackendApiClient {
     private var baseUrl: String = "http://localhost:4000/api/v1"
     private var authToken: String? = null
@@ -47,6 +58,49 @@ object BackendApiClient {
     }
 
     fun getWorkerId(): String = workerId
+
+    fun sendOtp(
+        phoneNumber: String,
+        callback: ApiCallback<SendOtpResponse>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("phoneNumber", phoneNumber)
+
+        makeRequest("/auth/otp/send", "POST", payload, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val validForSeconds = result.get("validForSeconds")?.asInt ?: 300
+                val demoHint = result.get("demoHint")?.asString
+                callback.onSuccess(SendOtpResponse(status, validForSeconds, demoHint))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun verifyOtp(
+        phoneNumber: String,
+        otp: String,
+        callback: ApiCallback<VerifyOtpResponse>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("phoneNumber", phoneNumber)
+        payload.addProperty("otp", otp)
+
+        makeRequest("/auth/otp/verify", "POST", payload, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val phoneVerified = result.get("phoneVerified")?.asBoolean ?: false
+                callback.onSuccess(VerifyOtpResponse(status, phoneVerified))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
 
     fun login(
         id: String = workerId,

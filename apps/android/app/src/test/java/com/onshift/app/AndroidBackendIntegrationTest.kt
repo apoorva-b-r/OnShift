@@ -252,4 +252,44 @@ class AndroidBackendIntegrationTest {
         assertNotNull("Client must report error when backend is unreachable", errorMsg)
         assertTrue("Error should mention network issue", errorMsg!!.contains("Network error") || errorMsg!!.contains("Connection refused"))
     }
+
+    // =========================================================================
+    // 7. Mock OTP Send & Verify API Handling
+    // =========================================================================
+    @Test
+    fun test07_MockOtpSendAndVerifyApiHandling() {
+        BackendApiClient.configure("http://localhost:59999/api/v1", "OS-DEMO-001")
+
+        val sendLatch = CountDownLatch(1)
+        var sendError: String? = null
+        BackendApiClient.sendOtp("+919876543210", object : BackendApiClient.ApiCallback<com.onshift.app.data.api.SendOtpResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.SendOtpResponse) {
+                sendLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                sendError = error
+                sendLatch.countDown()
+            }
+        })
+        sendLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report network error when server unreachable", sendError)
+        assertTrue("Network error reported for sendOtp", sendError!!.contains("Network error") || sendError!!.contains("Connection refused"))
+
+        val verifyLatch = CountDownLatch(1)
+        var verifyError: String? = null
+        BackendApiClient.verifyOtp("+919876543210", "123456", object : BackendApiClient.ApiCallback<com.onshift.app.data.api.VerifyOtpResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.VerifyOtpResponse) {
+                verifyLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                verifyError = error
+                verifyLatch.countDown()
+            }
+        })
+        verifyLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report network error when server unreachable", verifyError)
+        assertTrue("Network error reported for verifyOtp", verifyError!!.contains("Network error") || verifyError!!.contains("Connection refused"))
+    }
 }

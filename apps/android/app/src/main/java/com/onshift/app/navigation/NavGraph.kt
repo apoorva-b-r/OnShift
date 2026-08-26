@@ -37,6 +37,7 @@ sealed class Screen(val route: String) {
     object LanguageSelection : Screen("language_selection")
     object SignUp : Screen("sign_up")
     object SignIn : Screen("sign_in")
+    object PhoneOtp : Screen("phone_otp")
     object PlatformSelection : Screen("platform_selection")
     object IdentityOnboarding : Screen("identity_onboarding")
 }
@@ -68,7 +69,7 @@ fun AppNavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Onboarding Sequence: Language -> SignUp -> SignIn -> Identity -> Platform Selection -> Home
+        // Onboarding Sequence: Language -> SignUp -> SignIn -> PhoneOtp -> Identity -> Platform Selection -> Home
         composable(Screen.LanguageSelection.route) {
             LanguageSelectionScreen(
                 onLanguageSelected = { lang ->
@@ -162,11 +163,86 @@ fun AppNavGraph(
                             }
                         )
 
-                        navController.navigate(Screen.IdentityOnboarding.route)
+                        if (userPreferences.isPhoneVerified) {
+                            navController.navigate(Screen.IdentityOnboarding.route)
+                        } else {
+                            navController.navigate(Screen.PhoneOtp.route)
+                        }
                     }
                 },
                 onNavigateToSignUp = {
                     navController.navigate(Screen.SignUp.route)
+                }
+            )
+        }
+        composable(Screen.PhoneOtp.route) {
+            var isVerifying by remember { mutableStateOf(false) }
+            var errorMessage by remember { mutableStateOf<String?>(null) }
+            val phoneNumber = if (userPreferences.phoneNumber.isNotBlank()) userPreferences.phoneNumber else "+91 98765 43210"
+
+            LaunchedEffect(phoneNumber) {
+                com.onshift.app.data.api.BackendApiClient.sendOtp(
+                    phoneNumber = phoneNumber,
+                    callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.onshift.app.data.api.SendOtpResponse> {
+                        override fun onSuccess(result: com.onshift.app.data.api.SendOtpResponse) {
+                            android.util.Log.i("PhoneOtp", "Initial sendOtp triggered successfully")
+                        }
+
+                        override fun onError(error: String) {
+                            android.util.Log.w("PhoneOtp", "Initial sendOtp notice: $error")
+                        }
+                    }
+                )
+            }
+
+            PhoneOtpScreen(
+                phoneNumber = phoneNumber,
+                isVerifying = isVerifying,
+                errorMessage = errorMessage,
+                onVerify = { otp ->
+                    isVerifying = true
+                    errorMessage = null
+                    com.onshift.app.data.api.BackendApiClient.verifyOtp(
+                        phoneNumber = phoneNumber,
+                        otp = otp,
+                        callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.onshift.app.data.api.VerifyOtpResponse> {
+                            override fun onSuccess(result: com.onshift.app.data.api.VerifyOtpResponse) {
+                                isVerifying = false
+                                if (result.phoneVerified) {
+                                    coroutineScope.launch {
+                                        repository.updatePhoneVerified(true)
+                                        navController.navigate(Screen.IdentityOnboarding.route) {
+                                            popUpTo(Screen.PhoneOtp.route) { inclusive = true }
+                                        }
+                                    }
+                                } else {
+                                    errorMessage = "Verification failed. Please check the OTP and try again."
+                                }
+                            }
+
+                            override fun onError(error: String) {
+                                isVerifying = false
+                                errorMessage = error
+                            }
+                        }
+                    )
+                },
+                onResend = {
+                    if (!isVerifying) {
+                        errorMessage = null
+                        com.onshift.app.data.api.BackendApiClient.sendOtp(
+                            phoneNumber = phoneNumber,
+                            callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.onshift.app.data.api.SendOtpResponse> {
+                                override fun onSuccess(result: com.onshift.app.data.api.SendOtpResponse) {
+                                    android.util.Log.i("PhoneOtp", "Resend OTP triggered successfully")
+                                }
+
+                                override fun onError(error: String) {
+                                    errorMessage = error
+                                }
+                            }
+                        )
+                    }
                 }
             )
         }
