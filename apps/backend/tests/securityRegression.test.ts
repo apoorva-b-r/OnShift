@@ -7,6 +7,7 @@ import { validateCredentialIssue } from '../src/middleware/validateRequest';
 import { calculateVerificationLevel } from '../src/services/verificationService';
 import { runReconciliation } from '../src/services/reconciliationService';
 import { VerificationRecord, IdentityVerification, Credential } from '../src/models';
+import { config } from '../src/config';
 
 describe('critical trust-boundary regressions', () => {
   let mongoServer: MongoMemoryServer;
@@ -41,6 +42,8 @@ describe('critical trust-boundary regressions', () => {
 
   it('returns 503 when the verification engine is unavailable', async () => {
     const originalFetch = global.fetch;
+    const originalDemoMode = config.demoMode;
+    config.demoMode = false; // force non-demo so 503 is thrown instead of fixture
     global.fetch = jest.fn().mockRejectedValue(new Error('engine offline')) as typeof fetch;
 
     await expect(calculateVerificationLevel(
@@ -53,10 +56,13 @@ describe('critical trust-boundary regressions', () => {
     });
 
     global.fetch = originalFetch;
+    config.demoMode = originalDemoMode;
   });
 
   it('returns 503 instead of a fixture when reconciliation is unavailable', async () => {
     const originalFetch = global.fetch;
+    const originalDemoMode = config.demoMode;
+    config.demoMode = false; // force non-demo so 503 is thrown instead of fixture
     global.fetch = jest.fn().mockRejectedValue(new Error('engine offline')) as typeof fetch;
 
     await expect(runReconciliation(
@@ -69,6 +75,7 @@ describe('critical trust-boundary regressions', () => {
     });
 
     global.fetch = originalFetch;
+    config.demoMode = originalDemoMode;
   });
 
   // Task 3 Security Regression Suite for Credential Issuance
@@ -152,6 +159,9 @@ describe('critical trust-boundary regressions', () => {
     });
 
     it('demo VerificationRecord -> 409 NON_AUTHORITATIVE_VERIFICATION', async () => {
+      const originalDemoMode = config.demoMode;
+      config.demoMode = false; // force non-demo: demo records must be rejected
+
       const vrDemo = await VerificationRecord.create({
         id: 'vr-demo-456',
         workerId,
@@ -172,6 +182,7 @@ describe('critical trust-boundary regressions', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({ verificationId: vrDemo.id });
 
+      config.demoMode = originalDemoMode; // restore
       expect(res.status).toBe(409);
       expect(res.body.error).toBe('NON_AUTHORITATIVE_VERIFICATION');
     });

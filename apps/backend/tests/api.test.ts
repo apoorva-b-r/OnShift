@@ -306,14 +306,16 @@ describe('Verification fallback (engine unreachable)', () => {
   it('VerificationRecord is persisted with engineSource MOCK_FALLBACK', async () => {
     const persistTestWorkerId = `OS-PERSIST-${Date.now()}`;
     const token = generateWorkerToken(persistTestWorkerId);
-    await request(app)
-      .post('/api/v1/verification/level')
+    const res = await request(app)
+      .post('/api/v1/verification/run')
       .set('Authorization', `Bearer ${token}`)
       .send({
         workerId: persistTestWorkerId,
         payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
         evidenceIds: ['ev-decl-001', 'ev-obs-zomato-001'],
       });
+
+    expect(res.status).toBe(200);
 
     const record = await VerificationRecord.findOne({ workerId: persistTestWorkerId }).lean();
     expect(record).not.toBeNull();

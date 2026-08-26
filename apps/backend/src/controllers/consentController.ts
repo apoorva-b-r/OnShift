@@ -28,6 +28,7 @@ export const requestConsent = async (req: Request, res: Response) => {
     fiTypes,
     status: 'PENDING' as const,
     consentUrl: authorizationUrl,
+    authorizationUrl,
     isMock,
   };
 

@@ -165,20 +165,25 @@ describe('enforceWorkerOwnership', () => {
   const tokenB = makeToken(workerBId);
 
   it('allows token=A to submit evidence with no body.workerId (derives from token)', async () => {
+    const id = `ev-auth-1-${Date.now()}`;
+    const ts = '2026-08-07T12:00:00.000Z';
+    const prev = 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000';
+    const hash = require('crypto').createHash('sha256').update(`${id}|${workerAId}|DECLARED|ZOMATO|100|${ts}|${prev}`).digest('hex');
     const res = await request(app)
       .post('/api/v1/evidence')
       .set(authHeader(tokenA))
       .send({
+        id,
         source: 'DECLARED',
         type: 'SELF_DECLARED',
         platform: 'ZOMATO',
         amount: 100,
         currency: 'INR',
         reference: 'REF-001',
-        timestamp: new Date().toISOString(),
-        capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
-        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+        timestamp: ts,
+        capturedAt: ts,
+        previousHash: prev,
+        integrityHash: hash,
       });
     expect(res.status).toBe(201);
     // workerId in response must come from token A, not from body
@@ -186,24 +191,32 @@ describe('enforceWorkerOwnership', () => {
   });
 
   it('allows token=A with body.workerId=A (matching)', async () => {
+    // Use a fresh worker so hash chain starts at GENESIS (independent of test 1)
+    const workerAId2 = `OS-AUTH-A2-${Date.now()}`;
+    const tokenA2 = makeToken(workerAId2);
+    const id = `ev-auth-2-${Date.now()}`;
+    const ts = '2026-08-07T12:00:00.000Z';
+    const prev = 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000';
+    const hash = require('crypto').createHash('sha256').update(`${id}|${workerAId2}|DECLARED|ZOMATO|100|${ts}|${prev}`).digest('hex');
     const res = await request(app)
       .post('/api/v1/evidence')
-      .set(authHeader(tokenA))
+      .set(authHeader(tokenA2))
       .send({
-        workerId: workerAId,
+        id,
+        workerId: workerAId2,
         source: 'DECLARED',
         type: 'SELF_DECLARED',
         platform: 'ZOMATO',
         amount: 100,
         currency: 'INR',
         reference: 'REF-002',
-        timestamp: new Date().toISOString(),
-        capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
-        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+        timestamp: ts,
+        capturedAt: ts,
+        previousHash: prev,
+        integrityHash: hash,
       });
     expect(res.status).toBe(201);
-    expect(res.body.workerId).toBe(workerAId);
+    expect(res.body.workerId).toBe(workerAId2);
   });
 
   it('rejects token=A with body.workerId=B → 403', async () => {
@@ -382,10 +395,15 @@ describe('E2E Auth: Worker A scoped journey + cross-worker rejection', () => {
   });
 
   it('Step 2: Worker A submits evidence (workerId derived from JWT, not body)', async () => {
+    const id = `ev-auth-e2e-${Date.now()}`;
+    const ts = '2026-08-07T12:00:00Z';
+    const prev = 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000';
+    const hash = require('crypto').createHash('sha256').update(`${id}|${e2eWorkerId}|FINANCIAL|HDFC Bank|30100|${ts}|${prev}`).digest('hex');
     const res = await request(app)
       .post('/api/v1/evidence')
       .set(authHeader(e2eToken))
       .send({
+        id,
         // NO workerId in body — should be derived from JWT
         source: 'FINANCIAL',
         type: 'AA_BANK_SETTLEMENT',
@@ -393,10 +411,10 @@ describe('E2E Auth: Worker A scoped journey + cross-worker rejection', () => {
         amount: 30100,
         currency: 'INR',
         reference: 'TXN-E2E-AUTH-001',
-        timestamp: '2026-08-07T12:00:00Z',
+        timestamp: ts,
         capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
-        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+        previousHash: prev,
+        integrityHash: hash,
       });
     expect(res.status).toBe(201);
     expect(res.body.workerId).toBe(e2eWorkerId); // must come from JWT
@@ -421,28 +439,24 @@ describe('E2E Auth: Worker A scoped journey + cross-worker rejection', () => {
     expect(res.body.status).toBeDefined();
   });
 
-  it('Step 5: Worker A triggers verification (workerId from JWT)', async () => {
-    const res = await request(app)
-      .post('/api/v1/verification/level')
+  it('Step 5+6: Worker A runs authoritative verification, then issues a credential', async () => {
+    // Run /verification/run to persist a VerificationRecord and obtain verificationId
+    const runRes = await request(app)
+      .post('/api/v1/verification/run')
       .set(authHeader(e2eToken))
       .send({
         payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
         evidenceIds: ['ev-decl-001', 'ev-obs-zomato-001'],
       });
-    expect(res.status).toBe(200);
-    expect(res.body.level).toBeDefined();
-  });
+    expect(runRes.status).toBe(200);
+    expect(runRes.body.id).toBeDefined();
+    const verificationId = runRes.body.id;
 
-  it('Step 6: Worker A issues a credential (workerId from JWT)', async () => {
     const res = await request(app)
       .post('/api/v1/credentials/issue')
       .set(authHeader(e2eToken))
       .send({
-        disclosedClaims: {
-          verifiedIncome: 30100,
-          period: '01 Aug to 07 Aug 2026',
-          verificationLevel: 'FINANCIALLY_CORROBORATED',
-        },
+        verificationId,
       });
     expect(res.status).toBe(201);
     expect(res.body.credential).toBeDefined();
@@ -467,16 +481,23 @@ describe('E2E Auth: Worker A scoped journey + cross-worker rejection', () => {
   });
 
   it('Step 8: token=cross with body.workerId=crossWorker → allowed (B can act as B)', async () => {
+    // First obtain a verificationId for crossWorker
+    const runRes = await request(app)
+      .post('/api/v1/verification/run')
+      .set(authHeader(crossToken))
+      .send({
+        payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+        evidenceIds: ['ev-decl-001'],
+      });
+    expect(runRes.status).toBe(200);
+    const crossVerificationId = runRes.body.id;
+
     const res = await request(app)
       .post('/api/v1/credentials/issue')
       .set(authHeader(crossToken))
       .send({
         workerId: crossWorkerId, // B acting as B — should succeed
-        disclosedClaims: {
-          verifiedIncome: 30100,
-          period: '01 Aug to 07 Aug 2026',
-          verificationLevel: 'FINANCIALLY_CORROBORATED',
-        },
+        verificationId: crossVerificationId,
       });
     expect(res.status).toBe(201);
     expect(res.body.credential.workerId).toBe(crossWorkerId);

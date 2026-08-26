@@ -113,6 +113,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
           workerId,
           verificationLevel: 'FINANCIALLY_CORROBORATED', // Client attempt to dictate level
           payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: ['ev-decl-001'],
         });
 
       expect(res.status).toBe(200);
@@ -132,6 +133,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         .send({
           workerId,
           payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: ['ev-decl-001'],
         });
 
       expect(res.status).toBe(200);

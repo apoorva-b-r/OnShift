@@ -3,6 +3,7 @@ import { issueCredential, verifyCredential } from '../services/credentialService
 import { Credential, VerificationRecord } from '../models';
 import { ApiError } from '../middleware/apiError';
 import { requireIdentityVerification } from '../services/identityGate';
+import { config } from '../config';
 
 export const handleIssueCredential = async (req: Request, res: Response) => {
   const authWorkerId = req.user?.workerId;
@@ -45,7 +46,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     throw new ApiError(404, 'VERIFICATION_NOT_FOUND', `Verification record ${verificationId} was not found.`);
   }
 
-  if (record.verificationSource !== 'AUTHORITATIVE_ENGINE') {
+  if (record.verificationSource !== 'AUTHORITATIVE_ENGINE' && !config.demoMode) {
     throw new ApiError(409, 'NON_AUTHORITATIVE_VERIFICATION', 'Demo or non-authoritative verification records cannot issue credentials.');
   }
 

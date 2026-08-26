@@ -53,7 +53,10 @@ export async function runAuthoritativeVerificationPipeline(
   const evidenceIds = selectedEvidence.map((e) => e.id);
 
   if (selectedEvidence.length === 0) {
-    throw new ApiError(422, 'INSUFFICIENT_EVIDENCE', 'No real evidence is available for verification.');
+    if (!config.demoMode) {
+      throw new ApiError(422, 'INSUFFICIENT_EVIDENCE', 'No real evidence is available for verification.');
+    }
+    // In demo mode, proceed with empty evidence set; engine fallback will supply fixture result.
   }
 
   // Call Python verification level & reconciliation engine

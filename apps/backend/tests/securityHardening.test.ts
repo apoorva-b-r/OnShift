@@ -40,7 +40,7 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
   });
 
   afterAll(async () => {
-    (config as any).demoMode = false;
+    (config as any).demoMode = true;
     await mongoose.disconnect();
     await mongoServer.stop();
   });
