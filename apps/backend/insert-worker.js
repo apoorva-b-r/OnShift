@@ -1,7 +1,5 @@
 const { MongoClient } = require('mongodb');
 
-const ATLAS_URI = 'mongodb+srv://apoorvabrajpurohit_db_user:bHKjxHP4BipA6P8E@onshift.ilcwc11.mongodb.net/onshift';
-
 async function main() {
   console.log('Connecting to Atlas...');
   const client = new MongoClient(ATLAS_URI);
