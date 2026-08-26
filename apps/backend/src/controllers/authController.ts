@@ -56,15 +56,41 @@ export const login = async (req: Request, res: Response) => {
   // Persist / upsert Worker document in MongoDB if database connection is active
   if (config.nodeEnv !== 'test' || process.env.MONGODB_URI) {
     try {
+      const { name, phoneNumber, email, dateOfBirth, gender, state, city, workerCategory } = req.body;
+
+      const setOnInsertPayload: Record<string, any> = {
+        id: cleanWorkerId,
+      };
+
+      const setPayload: Record<string, any> = {};
+
+      if (typeof name === 'string' && name.trim()) {
+        setPayload.name = name.trim();
+      } else {
+        setOnInsertPayload.name = `Worker ${cleanWorkerId}`;
+      }
+
+      if (typeof workerCategory === 'string' && workerCategory.trim()) {
+        setPayload.workerCategory = workerCategory.trim();
+      } else {
+        setOnInsertPayload.workerCategory = 'Delivery Partner';
+      }
+
+      if (typeof phoneNumber === 'string' && phoneNumber.trim()) setPayload.phoneNumber = phoneNumber.trim();
+      if (typeof email === 'string' && email.trim()) setPayload.email = email.trim();
+      if (typeof dateOfBirth === 'string' && dateOfBirth.trim()) setPayload.dateOfBirth = dateOfBirth.trim();
+      if (typeof gender === 'string' && gender.trim()) setPayload.gender = gender.trim();
+      if (typeof state === 'string' && state.trim()) setPayload.state = state.trim();
+      if (typeof city === 'string' && city.trim()) setPayload.city = city.trim();
+
+      const updateQuery: Record<string, any> = { $setOnInsert: setOnInsertPayload };
+      if (Object.keys(setPayload).length > 0) {
+        updateQuery.$set = setPayload;
+      }
+
       await Worker.findOneAndUpdate(
         { id: cleanWorkerId },
-        {
-          $setOnInsert: {
-            id: cleanWorkerId,
-            name: req.body.name || `Worker ${cleanWorkerId}`,
-            workerCategory: req.body.workerCategory || 'Delivery Partner',
-          },
-        },
+        updateQuery,
         { upsert: true, new: true }
       );
     } catch (err) {

@@ -19,8 +19,14 @@ import { Schema, model, Document } from 'mongoose';
 export interface WorkerDocument extends Document {
   id: string;
   name?: string;
+  phoneNumber?: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  state?: string;
+  city?: string;
   workerCategory?: string; // e.g. "Delivery Partner", "Rideshare Driver", "Task Worker"
-  location?: string; // e.g. "Pune, Maharashtra" - used by deterministic scheme filter
+  location?: string; // e.g. "Mumbai, Maharashtra"
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +41,36 @@ const WorkerSchema = new Schema<WorkerDocument>(
       trim: true,
     },
     name: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    dateOfBirth: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    gender: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    city: {
       type: String,
       required: false,
       trim: true,

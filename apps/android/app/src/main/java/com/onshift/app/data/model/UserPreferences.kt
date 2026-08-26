@@ -16,7 +16,8 @@ data class UserPreferences(
     val isPhoneVerified: Boolean = false,
     val isIdentityVerified: Boolean = false,
     val passwordHash: String = "",
-    val workerId: String = "OS-DEMO-001"
+    val workerId: String = "OS-DEMO-001",
+    val authToken: String = ""
 )
 
 

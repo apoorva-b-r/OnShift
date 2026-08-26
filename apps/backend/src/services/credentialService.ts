@@ -34,7 +34,7 @@ export function issueCredential(workerId: string, claims: CredentialClaim): OnSh
  */
 export function verifyCredential(credential: OnShiftIncomeCredential | any): CredentialVerificationResult {
   return verifyCredentialSignature(credential as any, {
-    issuer: config.trustedIssuer,
-    publicKeyHex: config.trustedIssuerPublicKeyHex,
+    issuer: config.issuerName,
+    publicKeyHex: config.ed25519PublicKeyHex,
   });
 }
