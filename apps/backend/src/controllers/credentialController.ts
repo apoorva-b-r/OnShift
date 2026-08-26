@@ -2,36 +2,54 @@ import { Request, Response } from 'express';
 import { issueCredential, verifyCredential } from '../services/credentialService';
 import { Credential, VerificationRecord } from '../models';
 import { ApiError } from '../middleware/apiError';
+import { requireIdentityVerification } from '../services/identityGate';
 
 export const handleIssueCredential = async (req: Request, res: Response) => {
-  const targetWorkerId = req.user?.workerId || req.body?.workerId;
-  if (!targetWorkerId) {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
+
+  // Enforce body workerId match if explicitly passed by client
+  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
+    throw new ApiError(
+      403,
+      'WORKER_ID_MISMATCH',
+      `Authenticated worker identity (${authWorkerId}) does not match requested workerId (${req.body.workerId}).`
+    );
+  }
+
+  const targetWorkerId = authWorkerId;
+
+  // Server-side Identity Gate: Worker identity MUST be VERIFIED in MongoDB via DigiLocker
+  await requireIdentityVerification(targetWorkerId);
 
   const { verificationId } = req.body;
   let record: any = null;
 
   if (verificationId) {
     try {
-      record = await VerificationRecord.findOne({ id: verificationId }).lean();
+      record = await VerificationRecord.findOne({ id: verificationId, workerId: targetWorkerId }).lean();
     } catch (_) { }
 
     if (!record) {
+      let otherWorkerRecord: any = null;
+      try {
+        otherWorkerRecord = await VerificationRecord.findOne({ id: verificationId }).lean();
+      } catch (_) {}
+      if (otherWorkerRecord && otherWorkerRecord.workerId !== targetWorkerId) {
+        throw new ApiError(
+          403,
+          'FORBIDDEN_WORKER_MISMATCH',
+          `Verification record ${verificationId} belongs to worker ${otherWorkerRecord.workerId}, not authenticated worker ${targetWorkerId}.`
+        );
+      }
       throw new ApiError(404, 'VERIFICATION_NOT_FOUND', `Verification record ${verificationId} was not found.`);
-    }
-
-    if (record.workerId !== targetWorkerId) {
-      throw new ApiError(
-        403,
-        'FORBIDDEN_WORKER_MISMATCH',
-        `Verification record ${verificationId} belongs to worker ${record.workerId}, not authenticated worker ${targetWorkerId}.`
-      );
     }
 
     // Idempotency check: If credential was already issued for this verificationId, return existing
     try {
-      const existingCred = await Credential.findOne({ verificationId }).lean();
+      const existingCred = await Credential.findOne({ verificationId, workerId: targetWorkerId }).lean();
       if (existingCred) {
         const credentialObj = {
           type: existingCred.type || (existingCred as any).credentialType || 'OnShiftIncomeCredential',
@@ -88,6 +106,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     verifiedIncome,
     period: periodStr,
     verificationLevel: record.level,
+    identityVerified: true,
   };
 
   const credential = issueCredential(targetWorkerId, authoritativeClaims);

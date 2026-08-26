@@ -1,24 +1,26 @@
-import request from 'supertest';
+﻿import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/index';
-import { Evidence, Worker, VerificationRecord, Credential } from '../src/models';
+import { Evidence, Worker, VerificationRecord, Credential, IdentityVerification } from '../src/models';
 import { generateWorkerToken } from '../src/middleware/authMiddleware';
 import { verifyCredentialSignature } from '@onshift/credential-schema';
 
-describe('Authoritative Verification → Reconciliation → Credential Pipeline', () => {
+describe('Authoritative Verification â†’ Reconciliation â†’ Credential Pipeline', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
+    process.env.ENABLE_AUTH = 'true';
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
   });
 
   afterAll(async () => {
+    delete process.env.ENABLE_AUTH;
     await mongoose.disconnect();
     await mongoServer.stop();
-  });
+  }, 30000);
 
   beforeEach(async () => {
     await mongoose.connection.db?.dropDatabase();
@@ -147,7 +149,14 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
   // ===========================================================================
   describe('4. Credential Eligibility & Gating', () => {
     it('rejects credential issuance for non-existent verificationId with 404', async () => {
-      const token = generateWorkerToken('OS-WORKER-CRED-404');
+      const workerId = 'OS-WORKER-CRED-404';
+      await IdentityVerification.create({
+        workerId,
+        provider: 'SETU_DIGILOCKER',
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+      });
+      const token = generateWorkerToken(workerId);
       const res = await request(app)
         .post('/api/v1/credentials/issue')
         .set('Authorization', `Bearer ${token}`)
@@ -160,6 +169,12 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
     });
 
     it('rejects Worker A attempting to issue credential using Worker B verificationId with 403', async () => {
+      await IdentityVerification.create({
+        workerId: 'OS-WORKER-A',
+        provider: 'SETU_DIGILOCKER',
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+      });
       // Create VerificationRecord for Worker B
       const recB = await VerificationRecord.create({
         id: 'vr-worker-b-100',
@@ -190,6 +205,12 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
 
     it('ensures credential issuance is idempotent for the same verificationId', async () => {
       const workerId = 'OS-WORKER-IDEM';
+      await IdentityVerification.create({
+        workerId,
+        provider: 'SETU_DIGILOCKER',
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+      });
       const token = generateWorkerToken(workerId);
 
       const rec = await VerificationRecord.create({
@@ -235,6 +256,12 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
   describe('5. Complete E2E Integration Pipeline', () => {
     it('executes full pipeline: evidence -> verification -> record -> VC -> Ed25519 verification', async () => {
       const workerId = 'OS-WORKER-E2E-PIPE';
+      await IdentityVerification.create({
+        workerId,
+        provider: 'SETU_DIGILOCKER',
+        status: 'VERIFIED',
+        verifiedAt: new Date(),
+      });
       const token = generateWorkerToken(workerId);
 
       // 1. Create worker profile
@@ -310,3 +337,5 @@ describe('Authoritative Verification → Reconciliation → Credential Pipeline'
     });
   });
 });
+
+

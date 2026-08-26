@@ -10,14 +10,14 @@ COMPILER_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/org.jetbrains.ko
 TROVE_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/org.jetbrains.intellij.deps/trove4j/1.0.20200330/3afb14d5f9ceb459d724e907a21145e8ff394f02/trove4j-1.0.20200330.jar"
 STDLIB_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.3.0/ebc4eb2b6e6c91b6c844c1e3183920d86f2ef656/kotlin-stdlib-2.3.0.jar"
 ANNOTATIONS_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/13.0/919f0dfe192fb4e063e7dacadee7f8bb9a2672a9/annotations-13.0.jar"
-GSON_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.11.0/527175ca6d81050b53bdd4c457a6d6e017626b0e/gson-2.11.0.jar"
+GSON_JAR="/Users/Apoorva/.gradle/caches/modules-2/files-2.1/com.google.code.gson/gson/2.10/dd9b193aef96e973d5a11ab13cd17430c2e4306b/gson-2.10.jar"
 JUNIT_JAR="/Users/Apoorva/.m2/repository/junit/junit/4.13.2/junit-4.13.2.jar"
 HAMCREST_JAR="/Users/Apoorva/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar"
 
 CP="$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR:$JUNIT_JAR:$HAMCREST_JAR"
 
 echo "Compiling Kotlin sources..."
-java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
+java -cp "$COMPILER_JAR:$TROVE_JAR:$STDLIB_JAR:$ANNOTATIONS_JAR:$GSON_JAR" org.jetbrains.kotlin.cli.jvm.K2JVMCompiler \
   -no-stdlib \
   -Xskip-metadata-version-check \
   -cp "$CP" \

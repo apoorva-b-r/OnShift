@@ -242,6 +242,33 @@ export function verifyCredentialSignature(
     );
 
     if (isValid) {
+      // Signature is cryptographically valid. Now enforce the validity window.
+      if (validUntil) {
+        const expiry = new Date(validUntil);
+        if (Number.isNaN(expiry.getTime())) {
+          return {
+            valid: false,
+            signatureVerified: true,
+            claims,
+            issuer,
+            workerId,
+            issuerVerified: true,
+            message: 'Credential signature is valid, but validUntil is not a valid ISO timestamp.',
+          };
+        }
+        if (expiry.getTime() < Date.now()) {
+          return {
+            valid: false,
+            signatureVerified: true,
+            claims,
+            issuer,
+            workerId,
+            issuerVerified: true,
+            message: `Credential signature is authentic, but this credential expired on ${expiry.toISOString()}. Code: CREDENTIAL_EXPIRED.`,
+          };
+        }
+      }
+
       return {
         valid: true,
         signatureVerified: true,

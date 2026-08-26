@@ -25,20 +25,28 @@ function workerResponse(worker: {
 }
 
 export const getWorker = async (req: Request, res: Response) => {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
+    throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker identity required.');
+  }
+
   const { id } = req.params;
+  if (id !== authWorkerId) {
+    throw new ApiError(403, 'WORKER_ID_MISMATCH', `Authenticated identity (${authWorkerId}) does not match requested worker ID (${id}).`);
+  }
 
   if (mongoose.connection.readyState === 1) {
-    const worker = await Worker.findOne({ id }).lean();
+    const worker = await Worker.findOne({ id: authWorkerId }).lean();
     if (worker) {
       return res.json(workerResponse(worker));
     }
   }
 
-  if (id === DEMO_WORKER.id || id === 'demo') {
+  if (authWorkerId === DEMO_WORKER.id || authWorkerId === 'demo') {
     return res.json(DEMO_WORKER);
   }
   return res.json({
-    id,
+    id: authWorkerId,
     name: 'Gig Delivery Partner',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -46,8 +54,17 @@ export const getWorker = async (req: Request, res: Response) => {
 };
 
 export const createWorker = async (req: Request, res: Response) => {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
+    throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker identity required.');
+  }
+
   const { id, name, workerCategory, location } = req.body;
-  const workerId = id || `OS-WORKER-${Date.now().toString(36).toUpperCase()}`;
+  if (id && id !== authWorkerId) {
+    throw new ApiError(403, 'WORKER_ID_MISMATCH', `Authenticated identity (${authWorkerId}) does not match body worker ID (${id}).`);
+  }
+
+  const workerId = authWorkerId;
 
   if (mongoose.connection.readyState === 1) {
     try {

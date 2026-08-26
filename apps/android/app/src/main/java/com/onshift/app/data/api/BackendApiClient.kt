@@ -9,17 +9,36 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
+import java.util.Base64
 
 object BackendApiClient {
-    private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
+    private var baseUrl: String = "http://localhost:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
 
+    fun createJwtToken(sub: String, secret: String = "24bb3889a3eb46f539d326b55ea6a58ea92b8bc37d0299a2f44b5be691af4b57"): String {
+        val encoder = Base64.getUrlEncoder().withoutPadding()
+        val header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"
+        val now = System.currentTimeMillis() / 1000
+        val exp = now + 86400
+        val payload = "{\"sub\":\"$sub\",\"workerId\":\"$sub\",\"role\":\"WORKER\",\"iat\":$now,\"exp\":$exp}"
+        val encodedHeader = encoder.encodeToString(header.toByteArray(Charsets.UTF_8))
+        val encodedPayload = encoder.encodeToString(payload.toByteArray(Charsets.UTF_8))
+        val data = "$encodedHeader.$encodedPayload"
+
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        val signature = encoder.encodeToString(mac.doFinal(data.toByteArray(Charsets.UTF_8)))
+        return "$data.$signature"
+    }
+
     fun configure(url: String = "http://10.0.2.2:4000/api/v1", id: String = "OS-DEMO-001") {
         this.baseUrl = url.trimEnd('/')
         this.workerId = id
-        this.authToken = id // Dev token fallback
+        this.authToken = createJwtToken(id)
     }
 
     fun setAuth(id: String, token: String) {
@@ -51,7 +70,7 @@ object BackendApiClient {
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.setRequestProperty("Accept", "application/json")
 
-                val token = authToken ?: workerId
+                val token = authToken ?: createJwtToken(workerId)
                 conn.setRequestProperty("Authorization", "Bearer $token")
                 conn.setRequestProperty("x-worker-id", workerId)
 
@@ -100,7 +119,8 @@ object BackendApiClient {
                 conn.requestMethod = "GET"
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
-                conn.setRequestProperty("Authorization", "Bearer ${authToken ?: id}")
+                val token = authToken ?: createJwtToken(id)
+                conn.setRequestProperty("Authorization", "Bearer $token")
                 conn.setRequestProperty("x-worker-id", id)
 
                 val responseCode = conn.responseCode

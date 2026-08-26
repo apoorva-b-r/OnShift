@@ -1,13 +1,20 @@
 import { Router } from 'express';
 import { getWorker, createWorker } from '../controllers/workerController';
+import { login } from '../controllers/authController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel, runVerification } from '../controllers/verificationController';
 import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
-import { requestConsent, getConsentStatus, fetchFinancialData } from '../controllers/consentController';
+import { requestConsent, getConsentStatus } from '../controllers/consentController';
+import {
+  initiateDigiLocker,
+  getDigiLockerStatus,
+  verifyDigiLocker,
+  handleDigiLockerCallback,
+} from '../controllers/identityController';
 import { asyncHandler } from '../middleware/apiError';
-import { authenticateWorker } from '../middleware/authMiddleware';
+import { authenticateWorker, requireRole } from '../middleware/authMiddleware';
 import {
   validateConsentRequest,
   validateCredentialIssue,
@@ -19,10 +26,24 @@ import {
   validateVerification,
   validateWorker,
 } from '../middleware/validateRequest';
+import { ApiError } from '../middleware/apiError';
 
 const router = Router();
 
-// Health
+const workerAuth = [authenticateWorker, requireRole('WORKER')];
+
+// Development/demo token issuance only. Production must use a real identity
+// provider and must not expose an endpoint that accepts a worker ID directly.
+// Check at request time so tests and local development can enable the endpoint
+// without changing the router module's initialisation order.
+const requireDemoAuth: import('express').RequestHandler = (_req, _res, next) => {
+  if (process.env.ENABLE_AUTH !== 'true' || process.env.NODE_ENV === 'production') {
+    return next(new ApiError(404, 'NOT_FOUND', 'Route not found.'));
+  }
+  return next();
+};
+
+// Health (Public)
 router.get('/health', (_req, res) => {
   res.json({
     status: 'HEALTHY',
@@ -32,31 +53,38 @@ router.get('/health', (_req, res) => {
   });
 });
 
-// Workers
-router.get('/workers/:id', asyncHandler(getWorker));
-router.post('/workers', validateRequest(validateWorker), asyncHandler(createWorker));
+router.post('/auth/login', requireDemoAuth, asyncHandler(login));
 
-// Evidence
-router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
-router.post('/evidence', authenticateWorker, validateRequest(validateEvidence), asyncHandler(createEvidence));
+// Workers (Protected)
+router.get('/workers/:id', workerAuth, asyncHandler(getWorker));
+router.post('/workers', workerAuth, validateRequest(validateWorker), asyncHandler(createWorker));
 
-// Reconciliation & Verification
-router.post('/reconciliation/run', authenticateWorker, validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
-router.post('/verification/level', validateRequest(validateVerification), asyncHandler(getVerificationLevel));
-router.post('/verification/run', authenticateWorker, asyncHandler(runVerification));
+// Identity Verification (Setu DigiLocker)
+router.get('/identity/digilocker/callback', asyncHandler(handleDigiLockerCallback));
+router.post('/identity/digilocker/initiate', workerAuth, asyncHandler(initiateDigiLocker));
+router.get('/identity/digilocker/status', workerAuth, asyncHandler(getDigiLockerStatus));
+router.post('/identity/digilocker/verify', workerAuth, asyncHandler(verifyDigiLocker));
+
+// Evidence (Protected)
+router.get('/evidence/worker/:workerId', workerAuth, asyncHandler(getEvidenceByWorker));
+router.post('/evidence', workerAuth, validateRequest(validateEvidence), asyncHandler(createEvidence));
+
+// Reconciliation & Verification (Protected)
+router.post('/reconciliation/run', workerAuth, validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
+router.post('/verification/level', workerAuth, validateRequest(validateVerification), asyncHandler(getVerificationLevel));
+router.post('/verification/run', workerAuth, asyncHandler(runVerification));
 
 // Credentials
-router.post('/credentials/issue', authenticateWorker, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
+router.post('/credentials/issue', workerAuth, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
 router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
 
-// Government Schemes
+// Government Schemes (Public)
 router.get('/schemes', asyncHandler(getSchemes));
 router.post('/schemes/match', validateRequest(validateSchemeMatch), asyncHandler(matchSchemes));
 router.post('/schemes/recommend', asyncHandler(recommendSchemes));
 
-// Account Aggregator Consent
-router.post('/consent/request', validateRequest(validateConsentRequest), asyncHandler(requestConsent));
-router.get('/consent/status/:consentId', asyncHandler(getConsentStatus));
-router.get('/consent/data/:consentId', asyncHandler(fetchFinancialData));
+// Account Aggregator Consent (Protected)
+router.post('/consent/request', workerAuth, validateRequest(validateConsentRequest), asyncHandler(requestConsent));
+router.get('/consent/status/:consentId', workerAuth, asyncHandler(getConsentStatus));
 
 export default router;
