@@ -3,11 +3,18 @@ import assert from 'node:assert/strict';
 import {
   generateEd25519KeyPair,
   signCredential,
-  verifyCredentialSignature,
+  verifyCredentialSignature as verifyCredentialWithTrust,
   buildSelectiveDisclosureCredential,
   CredentialClaim,
   OnShiftIncomeCredential,
 } from './index.js';
+
+function verifyCredentialSignature(credential: OnShiftIncomeCredential) {
+  return verifyCredentialWithTrust(credential, {
+    issuer: credential.issuer,
+    publicKeyHex: credential.publicKeyHex,
+  });
+}
 
 test('Test 1 — Key generation returns non-empty valid hex strings', () => {
   const keyPair = generateEd25519KeyPair();
@@ -331,6 +338,43 @@ test('Test 15 — Required Test: Malformed public key fails safely', () => {
   const result = verifyCredentialSignature(malformedCred);
   assert.equal(result.valid, false);
   assert.equal(result.signatureVerified, false);
+});
+
+test('Security — attacker key cannot impersonate the configured issuer', () => {
+  const official = generateEd25519KeyPair();
+  const attacker = generateEd25519KeyPair();
+  const trustedIssuer = { issuer: 'OnShift', publicKeyHex: official.publicKeyHex };
+  const forged = signCredential(
+    'OS-ATTACKER',
+    { verifiedIncome: 999999, period: '2026-08', verificationLevel: 'FINANCIALLY_CORROBORATED' },
+    attacker.privateKeyHex,
+    attacker.publicKeyHex,
+    'OnShift'
+  );
+
+  const result = verifyCredentialWithTrust(forged, trustedIssuer);
+  assert.equal(result.valid, false);
+  assert.equal(result.signatureVerified, false);
+  assert.equal(result.issuerVerified, false);
+});
+
+test('Security — fake issuer is rejected even with a valid signature', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-ATTACKER',
+    { verifiedIncome: 999999, period: '2026-08', verificationLevel: 'FINANCIALLY_CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'FakeOnShift'
+  );
+
+  const result = verifyCredentialWithTrust(credential, {
+    issuer: 'OnShift',
+    publicKeyHex: keyPair.publicKeyHex,
+  });
+  assert.equal(result.valid, false);
+  assert.equal(result.signatureVerified, false);
+  assert.equal(result.issuerVerified, false);
 });
 
 // ==================================================

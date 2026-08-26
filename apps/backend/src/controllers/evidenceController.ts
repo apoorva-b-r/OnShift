@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { createHash } from 'crypto';
 import { Evidence } from '../models';
 import { ApiError } from '../middleware/apiError';
+import { config } from '../config';
 import {
   DEMO_DECLARED_EVIDENCE,
   DEMO_OBSERVED_EVIDENCE_ZOMATO,
@@ -52,33 +53,26 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
     if (docs && docs.length) {
       return res.json(docs);
     }
-    // No persisted evidence fallback for demo worker
-    if (authWorkerId === 'OS-DEMO-001') {
-      return res.json({
-        source: 'MOCK_FALLBACK',
-        evidence: [
-          DEMO_DECLARED_EVIDENCE,
-          DEMO_OBSERVED_EVIDENCE_ZOMATO,
-          DEMO_OBSERVED_EVIDENCE_SWIGGY,
-          DEMO_FINANCIAL_EVIDENCE_SCENARIO_1,
-        ],
-      });
+    if (config.demoMode && authWorkerId === 'OS-DEMO-001') {
+      return res.json([
+        DEMO_DECLARED_EVIDENCE,
+        DEMO_OBSERVED_EVIDENCE_ZOMATO,
+        DEMO_OBSERVED_EVIDENCE_SWIGGY,
+        DEMO_FINANCIAL_EVIDENCE_SCENARIO_1,
+      ]);
     }
     return res.json([]);
   } catch (err) {
-    if (authWorkerId === 'OS-DEMO-001') {
-      return res.json({
-        source: 'MOCK_FALLBACK',
-        evidence: [
-          DEMO_DECLARED_EVIDENCE,
-          DEMO_OBSERVED_EVIDENCE_ZOMATO,
-          DEMO_OBSERVED_EVIDENCE_SWIGGY,
-          DEMO_FINANCIAL_EVIDENCE_SCENARIO_1,
-        ],
-      });
+    if (config.demoMode && authWorkerId === 'OS-DEMO-001') {
+      return res.json([
+        DEMO_DECLARED_EVIDENCE,
+        DEMO_OBSERVED_EVIDENCE_ZOMATO,
+        DEMO_OBSERVED_EVIDENCE_SWIGGY,
+        DEMO_FINANCIAL_EVIDENCE_SCENARIO_1,
+      ]);
     }
     console.warn('Failed to query Evidence collection.');
-    return res.status(500).json({ error: 'Database query failed.' });
+    throw new ApiError(503, 'EVIDENCE_DATABASE_UNAVAILABLE', 'Evidence data is temporarily unavailable.');
   }
 };
 

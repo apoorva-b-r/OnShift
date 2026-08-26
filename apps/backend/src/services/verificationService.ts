@@ -19,7 +19,7 @@ export async function runAuthoritativeVerificationPipeline(
   try {
     dbEvidenceRecords = await Evidence.find({ workerId }).lean();
   } catch (err) {
-    console.warn('Failed to query evidence records from MongoDB, proceeding with empty/fallback array.');
+    throw new ApiError(503, 'VERIFICATION_DATABASE_UNAVAILABLE', 'Verification evidence is temporarily unavailable.');
   }
 
   // Validate ownership if specific evidenceIds were requested
@@ -51,6 +51,10 @@ export async function runAuthoritativeVerificationPipeline(
 
   const normalizedEvidences: CanonicalEvidenceInput[] = selectedEvidence.map(validateAndNormalizeEvidence);
   const evidenceIds = selectedEvidence.map((e) => e.id);
+
+  if (selectedEvidence.length === 0) {
+    throw new ApiError(422, 'INSUFFICIENT_EVIDENCE', 'No real evidence is available for verification.');
+  }
 
   // Call Python verification level & reconciliation engine
   const controller = new AbortController();
@@ -87,21 +91,38 @@ export async function runAuthoritativeVerificationPipeline(
     ]);
     clearTimeout(timeoutId);
 
-    if (verRes.ok) {
-      verResult = (await verRes.json()) as VerificationResult;
-      engineSource = 'PYTHON_VERIFICATION_ENGINE';
+    if (!verRes.ok || !reconRes.ok) {
+      throw new Error('Authoritative verification engine returned a non-success response.');
     }
-    if (reconRes.ok) {
-      reconResult = await reconRes.json();
+    verResult = (await verRes.json()) as VerificationResult;
+    reconResult = await reconRes.json();
+    if (
+      !verResult ||
+      !['DECLARED', 'OBSERVED', 'CORROBORATED', 'FINANCIALLY_CORROBORATED'].includes(verResult.level) ||
+      typeof verResult.confidence !== 'number' ||
+      !verResult.reason ||
+      !reconResult ||
+      typeof reconResult.status !== 'string'
+    ) {
+      throw new Error('Authoritative verification engine returned an invalid result.');
     }
+    engineSource = 'PYTHON_VERIFICATION_ENGINE';
   } catch (err) {
     clearTimeout(timeoutId);
-    console.warn('Verification/Reconciliation engine unreachable, using fallback.');
+    if (!config.demoMode) {
+      throw new ApiError(503, 'VERIFICATION_SERVICE_UNAVAILABLE', 'Authoritative verification service is unavailable.');
+    }
+    console.warn('Verification engine unavailable; explicit demo mode is enabled.');
   }
 
   if (!verResult) {
+    if (!config.demoMode) {
+      throw new ApiError(503, 'VERIFICATION_SERVICE_UNAVAILABLE', 'Authoritative verification result is unavailable.');
+    }
     const isScenario2 = evidenceIds.includes('ev-fin-hdfc-002');
     verResult = isScenario2 ? DEMO_VERIFICATION_SCENARIO_2 : DEMO_VERIFICATION_SCENARIO_1;
+    reconResult = reconResult || {};
+    engineSource = 'MOCK_FALLBACK';
   }
 
   const idVerified = await isIdentityVerified(workerId);
@@ -123,6 +144,7 @@ export async function runAuthoritativeVerificationPipeline(
     expectedNet: reconResult?.expectedNet ?? (verResult.level === 'FINANCIALLY_CORROBORATED' ? 30100 : 0),
     actualSettlement: reconResult?.actualSettlement ?? (verResult.level === 'FINANCIALLY_CORROBORATED' ? 30100 : 0),
     engineSource,
+    verificationSource: engineSource === 'PYTHON_VERIFICATION_ENGINE' ? 'AUTHORITATIVE_ENGINE' : 'DEMO_FIXTURE',
     verificationEngineVersion: '1.0.0',
     computedAt: new Date().toISOString(),
   };
@@ -131,34 +153,7 @@ export async function runAuthoritativeVerificationPipeline(
     const record = await VerificationRecord.create(recordData);
     return record;
   } catch (err) {
-    console.warn('Failed to persist VerificationRecord to DB, returning in-memory document.');
-    return recordData as any;
-  }
-}
-
-async function persistRecord(
-  workerId: string,
-  payoutPeriod: PayoutPeriod,
-  evidenceIds: string[],
-  result: VerificationResult,
-  engineSource: string
-): Promise<void> {
-  try {
-    await VerificationRecord.create({
-      id: `vr-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
-      workerId,
-      payoutPeriod,
-      level: result.level,
-      confidence: result.confidence,
-      reason: result.reason,
-      supportingEvidence: result.supportingEvidence || [],
-      limitations: result.limitations || '',
-      evidenceIds,
-      engineSource,
-      computedAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.warn('Failed to persist verification record to database.');
+    throw new ApiError(503, 'VERIFICATION_DATABASE_UNAVAILABLE', 'Verification result could not be persisted.');
   }
 }
 
@@ -177,8 +172,6 @@ export async function calculateVerificationLevel(
   }
 
   let result: VerificationResult | null = null;
-  let engineSource = 'MOCK_FALLBACK';
-
   try {
     const res = await fetch(`${config.verificationEngineUrl}/verification/level`, {
       method: 'POST',
@@ -193,23 +186,33 @@ export async function calculateVerificationLevel(
     });
     clearTimeout(timeoutId);
 
-    if (res.ok) {
-      result = (await res.json()) as VerificationResult;
-      engineSource = 'PYTHON_VERIFICATION_ENGINE';
-    } else {
-      console.warn('Verification engine returned non-200 status, using mock fallback.');
+    if (!res.ok) {
+      throw new Error('Verification engine returned a non-success response.');
+    }
+    result = (await res.json()) as VerificationResult;
+    if (
+      !result ||
+      !['DECLARED', 'OBSERVED', 'CORROBORATED', 'FINANCIALLY_CORROBORATED'].includes(result.level) ||
+      typeof result.confidence !== 'number' ||
+      !result.reason
+    ) {
+      throw new Error('Verification engine returned an invalid result.');
     }
   } catch (err) {
     clearTimeout(timeoutId);
-    console.warn('Verification engine unreachable, using mock fallback.');
+    if (!config.demoMode) {
+      throw new ApiError(503, 'VERIFICATION_SERVICE_UNAVAILABLE', 'Authoritative verification service is unavailable.');
+    }
+    console.warn('Verification engine unavailable; explicit demo mode is enabled.');
   }
 
   if (!result) {
+    if (!config.demoMode) {
+      throw new ApiError(503, 'VERIFICATION_SERVICE_UNAVAILABLE', 'Authoritative verification result is unavailable.');
+    }
     const isScenario2 = evidenceIds.includes('ev-fin-hdfc-002');
     result = isScenario2 ? DEMO_VERIFICATION_SCENARIO_2 : DEMO_VERIFICATION_SCENARIO_1;
   }
-
-  await persistRecord(workerId, payoutPeriod, evidenceIds, result, engineSource);
 
   return result;
 }

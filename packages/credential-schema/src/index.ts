@@ -29,6 +29,11 @@ export interface CredentialVerificationResult {
   message?: string;
 }
 
+export interface TrustedIssuerConfig {
+  issuer: string;
+  publicKeyHex: string;
+}
+
 export interface SelectiveDisclosureOptions {
   includeVerifiedIncome: boolean;
   includePeriod: boolean;
@@ -169,7 +174,8 @@ export function signCredential(
  * Verify Ed25519 signature of an OnShift Credential.
  */
 export function verifyCredentialSignature(
-  credential: OnShiftIncomeCredential | any
+  credential: OnShiftIncomeCredential | any,
+  trustedIssuer?: TrustedIssuerConfig
 ): CredentialVerificationResult {
   if (!credential || typeof credential !== 'object') {
     return {
@@ -209,8 +215,52 @@ export function verifyCredentialSignature(
     };
   }
 
+  if (type !== 'OnShiftIncomeCredential') {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuer,
+      workerId,
+      issuerVerified: false,
+      message: 'Unsupported credential type.',
+    };
+  }
+
+  if (!trustedIssuer || typeof trustedIssuer.issuer !== 'string' || typeof trustedIssuer.publicKeyHex !== 'string') {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuer,
+      workerId,
+      issuerVerified: false,
+      message: 'No trusted issuer configuration was supplied.',
+    };
+  }
+
+  if (issuer !== trustedIssuer.issuer) {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuer,
+      workerId,
+      issuerVerified: false,
+      message: 'Credential issuer does not match the trusted OnShift issuer.',
+    };
+  }
+
+  if (publicKeyHex.trim().toLowerCase() !== trustedIssuer.publicKeyHex.trim().toLowerCase()) {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuer,
+      workerId,
+      issuerVerified: false,
+      message: 'Credential public key does not match the trusted OnShift issuer key.',
+    };
+  }
+
   try {
-    const publicKeyObj = publicKeyFromHex(publicKeyHex);
+    const publicKeyObj = publicKeyFromHex(trustedIssuer.publicKeyHex);
 
     let cleanSignatureHex = signature.trim();
     if (cleanSignatureHex.startsWith('0x') || cleanSignatureHex.startsWith('0X')) {

@@ -1,4 +1,4 @@
-﻿import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import type { CredentialClaim } from '@onshift/shared-types';
 
 export interface CredentialDocument extends Document {
@@ -79,4 +79,8 @@ const CredentialSchema = new Schema<CredentialDocument>(
   }
 );
 
+// Enforce idempotency: A worker can only have one credential issued per verificationId
+CredentialSchema.index({ workerId: 1, verificationId: 1 }, { unique: true, sparse: true });
+
 export const Credential = model<CredentialDocument>('Credential', CredentialSchema);
+

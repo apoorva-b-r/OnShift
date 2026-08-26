@@ -9,7 +9,7 @@ import { AATransaction } from '../src/services/aa/types';
 const consentRequest = {
   customerId: 'OS-AA-TEST',
   purpose: 'Income verification',
-  fiTypes: ['DEPOSIT', 'TRANSACTIONS'] as const,
+  fiTypes: ['DEPOSIT', 'TRANSACTIONS'] as any,
   dataRange: { from: '2026-08-01', to: '2026-08-31' },
 };
 

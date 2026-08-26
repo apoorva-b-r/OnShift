@@ -40,6 +40,7 @@ export interface VerificationRecordDocument extends Document {
   expectedNet?: number;
   actualSettlement?: number;
   engineSource: string; // e.g. "PYTHON_VERIFICATION_ENGINE" or "MOCK_FALLBACK"
+  verificationSource: 'AUTHORITATIVE_ENGINE' | 'DEMO_FIXTURE';
   verificationEngineVersion?: string;
   computedAt: string;
 }
@@ -127,6 +128,11 @@ const VerificationRecordSchema = new Schema<VerificationRecordDocument>(
       type: String,
       required: true,
       default: 'PYTHON_VERIFICATION_ENGINE',
+    },
+    verificationSource: {
+      type: String,
+      required: true,
+      enum: ['AUTHORITATIVE_ENGINE', 'DEMO_FIXTURE'],
     },
     verificationEngineVersion: {
       type: String,
