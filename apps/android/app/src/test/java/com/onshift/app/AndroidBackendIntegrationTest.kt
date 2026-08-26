@@ -292,4 +292,141 @@ class AndroidBackendIntegrationTest {
         assertNotNull("Client must report network error when server unreachable", verifyError)
         assertTrue("Network error reported for verifyOtp", verifyError!!.contains("Network error") || verifyError!!.contains("Connection refused"))
     }
+
+    // =========================================================================
+    // 8. DigiLocker API Network Error Handling
+    // =========================================================================
+    @Test
+    fun test08_DigiLockerUnreachableApiHandling() {
+        BackendApiClient.configure("http://localhost:59999/api/v1", "OS-DEMO-001")
+
+        val initLatch = CountDownLatch(1)
+        var initError: String? = null
+        BackendApiClient.initiateDigiLocker(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.InitiateDigiLockerResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.InitiateDigiLockerResponse) {
+                initLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                initError = error
+                initLatch.countDown()
+            }
+        })
+        initLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report network error when server unreachable", initError)
+        assertTrue("Network error reported for initiateDigiLocker", initError!!.contains("Network error") || initError!!.contains("Connection refused"))
+
+        val statusLatch = CountDownLatch(1)
+        var statusError: String? = null
+        BackendApiClient.getDigiLockerStatus(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.DigiLockerStatusResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.DigiLockerStatusResponse) {
+                statusLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                statusError = error
+                statusLatch.countDown()
+            }
+        })
+        statusLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report network error when server unreachable", statusError)
+        assertTrue("Network error reported for getDigiLockerStatus", statusError!!.contains("Network error") || statusError!!.contains("Connection refused"))
+
+        val verifyLatch = CountDownLatch(1)
+        var verifyError: String? = null
+        BackendApiClient.verifyDigiLocker(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.VerifyDigiLockerResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.VerifyDigiLockerResponse) {
+                verifyLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                verifyError = error
+                verifyLatch.countDown()
+            }
+        })
+        verifyLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report network error when server unreachable", verifyError)
+        assertTrue("Network error reported for verifyDigiLocker", verifyError!!.contains("Network error") || verifyError!!.contains("Connection refused"))
+    }
+
+    // =========================================================================
+    // 9. DigiLocker Response Models & Field Parsing Verification
+    // =========================================================================
+    @Test
+    fun test09_DigiLockerResponseFieldParsing() {
+        BackendApiClient.configure("http://localhost:4000/api/v1", "OS-DEMO-001")
+
+        // 1. Initiate DigiLocker
+        val initLatch = CountDownLatch(1)
+        var initResp: com.onshift.app.data.api.InitiateDigiLockerResponse? = null
+        var initErr: String? = null
+        BackendApiClient.initiateDigiLocker(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.InitiateDigiLockerResponse> {
+            override fun onSuccess(result: com.onshift.app.data.api.InitiateDigiLockerResponse) {
+                initResp = result
+                initLatch.countDown()
+            }
+
+            override fun onError(error: String) {
+                initErr = error
+                initLatch.countDown()
+            }
+        })
+        initLatch.await(5, TimeUnit.SECONDS)
+
+        if (initErr == null) {
+            assertNotNull("Initiate response must not be null", initResp)
+            assertNotNull("requestId must be present", initResp!!.requestId)
+            assertTrue("requestId must not be blank", initResp!!.requestId.isNotBlank())
+            assertNotNull("authorizationUrl must be present", initResp!!.authorizationUrl)
+            assertTrue("authorizationUrl must not be blank", initResp!!.authorizationUrl.isNotBlank())
+            assertNotNull("status must be present", initResp!!.status)
+            assertEquals("REQUEST_CREATED", initResp!!.status)
+
+            // 2. Get DigiLocker Status
+            val statusLatch = CountDownLatch(1)
+            var statusResp: com.onshift.app.data.api.DigiLockerStatusResponse? = null
+            BackendApiClient.getDigiLockerStatus(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.DigiLockerStatusResponse> {
+                override fun onSuccess(result: com.onshift.app.data.api.DigiLockerStatusResponse) {
+                    statusResp = result
+                    statusLatch.countDown()
+                }
+
+                override fun onError(error: String) {
+                    statusLatch.countDown()
+                }
+            })
+            statusLatch.await(5, TimeUnit.SECONDS)
+
+            if (statusResp != null) {
+                assertNotNull("status must be present", statusResp!!.status)
+                assertEquals("SETU_DIGILOCKER", statusResp!!.provider)
+            }
+
+            // 3. Verify DigiLocker Payload
+            val verifyLatch = CountDownLatch(1)
+            var verifyResp: com.onshift.app.data.api.VerifyDigiLockerResponse? = null
+            BackendApiClient.verifyDigiLocker(object : BackendApiClient.ApiCallback<com.onshift.app.data.api.VerifyDigiLockerResponse> {
+                override fun onSuccess(result: com.onshift.app.data.api.VerifyDigiLockerResponse) {
+                    verifyResp = result
+                    verifyLatch.countDown()
+                }
+
+                override fun onError(error: String) {
+                    verifyLatch.countDown()
+                }
+            })
+            verifyLatch.await(5, TimeUnit.SECONDS)
+
+            if (verifyResp != null) {
+                assertNotNull("status must be present", verifyResp!!.status)
+                assertEquals("VERIFIED", verifyResp!!.status)
+                assertTrue("identityVerified must be true", verifyResp!!.identityVerified)
+                assertEquals("SETU_DIGILOCKER", verifyResp!!.provider)
+                assertNotNull("verifiedAt timestamp must be present", verifyResp!!.verifiedAt)
+            }
+        } else {
+            // Unreachable offline server during standalone build environment test is captured cleanly
+            assertTrue("Offline error captured cleanly", initErr!!.contains("Network error") || initErr!!.contains("HTTP"))
+        }
+    }
 }

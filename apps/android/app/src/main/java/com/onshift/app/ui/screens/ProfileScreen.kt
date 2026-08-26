@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import java.util.Locale
 
 @Composable
 fun ProfileScreen(
+    onNavigateToIdentity: () -> Unit = {},
     onTamperDemo: () -> Unit = {},
     onResetHash: () -> Unit = {},
     onRestartDemo: () -> Unit = {},
@@ -59,6 +61,7 @@ fun ProfileScreen(
                 currentLanguage = "en",
                 selectedPlatforms = listOf("Zomato", "Swiggy"),
                 lastBackedUpAt = null,
+                onNavigateToIdentity = onNavigateToIdentity,
                 onUpdatePersonalDetails = { _, _, _, _, _, _ -> },
                 onUpdateLanguage = { },
                 onUpdatePlatforms = { },
@@ -86,6 +89,7 @@ fun ProfileScreen(
             currentLanguage = currentLanguage,
             selectedPlatforms = selectedPlatforms,
             lastBackedUpAt = lastBackedUpAt,
+            onNavigateToIdentity = onNavigateToIdentity,
             onUpdatePersonalDetails = { name, phone, dob, gender, state, city ->
                 coroutineScope.launch {
                     // No backend worker-update endpoint currently exists (confirmed via investigation), this is a local-only save until one is added.
@@ -138,6 +142,7 @@ fun ProfileContent(
     currentLanguage: String,
     selectedPlatforms: List<String>,
     lastBackedUpAt: Long?,
+    onNavigateToIdentity: () -> Unit,
     onUpdatePersonalDetails: (String, String, String, String, String, String) -> Unit,
     onUpdateLanguage: (String) -> Unit,
     onUpdatePlatforms: (List<String>) -> Unit,
@@ -194,11 +199,62 @@ fun ProfileContent(
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = stringResource(R.string.worker_id_label, "OS-82F91A"),
+            text = stringResource(R.string.worker_id_label, if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-82F91A"),
             style = MaterialTheme.typography.titleMedium,
             color = TextSecondary
         )
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Identity Verification Card
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.identity_verification),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (userPreferences.isIdentityVerified) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = StatusReconciled,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.identity_verified),
+                                color = StatusReconciled,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        TextButton(onClick = onNavigateToIdentity) {
+                            Text(text = stringResource(R.string.verify_with_digilocker), color = Primary)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                ProfileDetailRow(
+                    label = "Status",
+                    value = if (userPreferences.isIdentityVerified) "Verified via DigiLocker" else "Not verified"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Personal Details Card
         Card(

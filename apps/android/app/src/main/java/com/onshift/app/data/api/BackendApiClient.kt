@@ -24,6 +24,27 @@ data class VerifyOtpResponse(
     val phoneVerified: Boolean
 )
 
+data class InitiateDigiLockerResponse(
+    val requestId: String,
+    val authorizationUrl: String,
+    val status: String,
+    val validUpto: String? = null
+)
+
+data class DigiLockerStatusResponse(
+    val status: String,
+    val identityVerified: Boolean,
+    val provider: String = "SETU_DIGILOCKER",
+    val verifiedAt: String? = null
+)
+
+data class VerifyDigiLockerResponse(
+    val status: String,
+    val identityVerified: Boolean,
+    val provider: String = "SETU_DIGILOCKER",
+    val verifiedAt: String? = null
+)
+
 object BackendApiClient {
     private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
     private var authToken: String? = null
@@ -58,6 +79,60 @@ object BackendApiClient {
     }
 
     fun getWorkerId(): String = workerId
+
+    fun initiateDigiLocker(
+        callback: ApiCallback<InitiateDigiLockerResponse>
+    ) {
+        makeRequest("/identity/digilocker/initiate", "POST", JsonObject(), object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val requestId = result.get("requestId")?.asString ?: ""
+                val authorizationUrl = result.get("authorizationUrl")?.asString ?: ""
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val validUpto = result.get("validUpto")?.asString
+                callback.onSuccess(InitiateDigiLockerResponse(requestId, authorizationUrl, status, validUpto))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun getDigiLockerStatus(
+        callback: ApiCallback<DigiLockerStatusResponse>
+    ) {
+        makeRequest("/identity/digilocker/status", "GET", null, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val identityVerified = result.get("identityVerified")?.asBoolean ?: false
+                val provider = result.get("provider")?.asString ?: "SETU_DIGILOCKER"
+                val verifiedAt = result.get("verifiedAt")?.asString
+                callback.onSuccess(DigiLockerStatusResponse(status, identityVerified, provider, verifiedAt))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun verifyDigiLocker(
+        callback: ApiCallback<VerifyDigiLockerResponse>
+    ) {
+        makeRequest("/identity/digilocker/verify", "POST", JsonObject(), object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val identityVerified = result.get("identityVerified")?.asBoolean ?: false
+                val provider = result.get("provider")?.asString ?: "SETU_DIGILOCKER"
+                val verifiedAt = result.get("verifiedAt")?.asString
+                callback.onSuccess(VerifyDigiLockerResponse(status, identityVerified, provider, verifiedAt))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
 
     fun sendOtp(
         phoneNumber: String,

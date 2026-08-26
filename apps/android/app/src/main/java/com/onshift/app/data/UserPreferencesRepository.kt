@@ -27,6 +27,7 @@ class UserPreferencesRepository(private val context: Context) {
         val EMAIL = stringPreferencesKey("email")
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         val IS_PHONE_VERIFIED = booleanPreferencesKey("is_phone_verified")
+        val IS_IDENTITY_VERIFIED = booleanPreferencesKey("is_identity_verified")
         val PASSWORD_HASH = stringPreferencesKey("password_hash")
         val WORKER_ID = stringPreferencesKey("worker_id")
     }
@@ -53,6 +54,7 @@ class UserPreferencesRepository(private val context: Context) {
             val email = preferences[PreferencesKeys.EMAIL] ?: "vikram.malhotra@example.com"
             val isLoggedIn = preferences[PreferencesKeys.IS_LOGGED_IN] ?: false
             val isPhoneVerified = preferences[PreferencesKeys.IS_PHONE_VERIFIED] ?: false
+            val isIdentityVerified = preferences[PreferencesKeys.IS_IDENTITY_VERIFIED] ?: false
             val passwordHash = preferences[PreferencesKeys.PASSWORD_HASH] ?: ""
             val workerId = preferences[PreferencesKeys.WORKER_ID] ?: "OS-DEMO-001"
             UserPreferences(
@@ -69,6 +71,7 @@ class UserPreferencesRepository(private val context: Context) {
                 email = email,
                 isLoggedIn = isLoggedIn,
                 isPhoneVerified = isPhoneVerified,
+                isIdentityVerified = isIdentityVerified,
                 passwordHash = passwordHash,
                 workerId = workerId
             )
@@ -101,6 +104,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun updatePhoneVerified(verified: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.IS_PHONE_VERIFIED] = verified
+        }
+    }
+
+    suspend fun updateIdentityVerified(verified: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.IS_IDENTITY_VERIFIED] = verified
         }
     }
 

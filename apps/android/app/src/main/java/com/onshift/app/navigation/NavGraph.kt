@@ -249,6 +249,17 @@ fun AppNavGraph(
         composable(Screen.IdentityOnboarding.route) {
             IdentityScreen(
                 isOnboarding = true,
+                isIdentityVerified = userPreferences.isIdentityVerified,
+                workerId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-DEMO-001",
+                workerName = if (userPreferences.fullName.isNotBlank()) userPreferences.fullName else "Vikram Malhotra",
+                onVerifySuccess = {
+                    coroutineScope.launch {
+                        repository.updateIdentityVerified(true)
+                    }
+                },
+                onSkip = {
+                    navController.navigate(Screen.PlatformSelection.route)
+                },
                 onCompleteOnboarding = {
                     navController.navigate(Screen.PlatformSelection.route)
                 }
@@ -282,7 +293,20 @@ fun AppNavGraph(
             )
         }
         composable(Screen.Identity.route) {
-            IdentityScreen()
+            IdentityScreen(
+                isOnboarding = false,
+                isIdentityVerified = userPreferences.isIdentityVerified,
+                workerId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-DEMO-001",
+                workerName = if (userPreferences.fullName.isNotBlank()) userPreferences.fullName else "Vikram Malhotra",
+                onVerifySuccess = {
+                    coroutineScope.launch {
+                        repository.updateIdentityVerified(true)
+                    }
+                },
+                onSkip = {
+                    navController.popBackStack()
+                }
+            )
         }
         composable(Screen.Evidence.route) {
             EvidenceScreen()
@@ -338,6 +362,9 @@ fun AppNavGraph(
         }
         composable(Screen.Profile.route) {
             ProfileScreen(
+                onNavigateToIdentity = {
+                    navController.navigate(Screen.Identity.route)
+                },
                 onRestartDemo = {
                     coroutineScope.launch {
                         PrivacyRepository.resetHashChain()
