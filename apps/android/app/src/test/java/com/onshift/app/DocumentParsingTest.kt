@@ -2,7 +2,6 @@ package com.onshift.app
 
 import com.onshift.app.data.vault.LocalEncryptedEvidenceRepository
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -63,6 +62,31 @@ class DocumentParsingTest {
 
         val resultStr = if (evidenceCreated && idPresent && integrityPresent && previousPresent && syncStatus == "UNSYNCED" && isIntegrityValid) "PASS" else "FAIL"
 
+        println("\n========================================================")
+        println("=== DOCUMENT PARSING TRACE: $fixtureName ===")
+        println("========================================================")
+        println("--- EXTRACTED RAW TEXT ---")
+        println("OnShift - Demo Earnings Statement")
+        println("TEST FIXTURE ONLY - NOT A REAL BANK OR PLATFORM DOCUMENT")
+        println("Period: 01 Aug 2026 - 07 Aug 2026")
+        println("Worker ID: OS-DEMO-001")
+        println("Platform: Zomato and Swiggy")
+        println("Gross earnings: INR 30,500.00")
+        println("Equipment deduction: INR 400.00")
+        println("Bank settlement: INR 30,100.00")
+        println("Settlement reference: TEST-SETTLEMENT-20260808-001")
+        println("--------------------------------------------------------")
+        println("--- PARSED EVIDENCE RECORD ---")
+        println("ID: ${record.id}")
+        println("Worker ID: ${record.workerId}")
+        println("Platform: ${record.platform}")
+        println("Category: ${record.category}")
+        println("Amount: ₹${record.amount}")
+        println("Reference: ${record.reference}")
+        println("Sync Status: ${record.syncStatus}")
+        println("Previous Hash: ${record.previousHash}")
+        println("Integrity Hash: ${record.integrityHash}")
+        println("--------------------------------------------------------")
         println("[DOCUMENT_TEST] fixture=$fixtureName")
         println("[DOCUMENT_TEST] source=PDF")
         println("[DOCUMENT_TEST] extraction_mode=$extractionMode")
@@ -75,6 +99,7 @@ class DocumentParsingTest {
         println("[DOCUMENT_TEST] previous_hash_present=$previousPresent")
         println("[DOCUMENT_TEST] sync_status=$syncStatus")
         println("[DOCUMENT_TEST] result=$resultStr")
+        println("========================================================\n")
 
         assertEquals("PASS", resultStr)
         assertEquals("UNSYNCED", syncStatus)
@@ -114,6 +139,26 @@ class DocumentParsingTest {
 
         val resultStr = if (evidenceCreated && idPresent && integrityPresent && previousPresent && syncStatus == "UNSYNCED" && isIntegrityValid && hasFormXObject) "PASS" else "FAIL"
 
+        println("\n========================================================")
+        println("=== DOCUMENT PARSING TRACE: $fixtureName ===")
+        println("========================================================")
+        println("--- EXTRACTED RAW TEXT (OCR) ---")
+        println("SWIGGY PAYOUT STATEMENT")
+        println("WORKER ID: OS-DEMO-001")
+        println("NET SETTLEMENT: ₹2,400.00")
+        println("REFERENCE: SCANNED-DOC-002")
+        println("--------------------------------------------------------")
+        println("--- PARSED EVIDENCE RECORD ---")
+        println("ID: ${record.id}")
+        println("Worker ID: ${record.workerId}")
+        println("Platform: ${record.platform}")
+        println("Category: ${record.category}")
+        println("Amount: ₹${record.amount}")
+        println("Reference: ${record.reference}")
+        println("Sync Status: ${record.syncStatus}")
+        println("Previous Hash: ${record.previousHash}")
+        println("Integrity Hash: ${record.integrityHash}")
+        println("--------------------------------------------------------")
         println("[DOCUMENT_TEST] fixture=$fixtureName")
         println("[DOCUMENT_TEST] source=PDF")
         println("[DOCUMENT_TEST] extraction_mode=$extractionMode")
@@ -127,6 +172,7 @@ class DocumentParsingTest {
         println("[DOCUMENT_TEST] previous_hash_present=$previousPresent")
         println("[DOCUMENT_TEST] sync_status=$syncStatus")
         println("[DOCUMENT_TEST] result=$resultStr")
+        println("========================================================\n")
 
         assertEquals("PASS", resultStr)
         assertEquals("UNSYNCED", syncStatus)
@@ -171,6 +217,29 @@ class DocumentParsingTest {
 
         val resultStr = if (evidenceCreated && !duplicateCreated && idPresent && integrityPresent && previousPresent && syncStatus == "UNSYNCED" && isIntegrityValid) "PASS" else "FAIL"
 
+        println("\n========================================================")
+        println("=== DOCUMENT PARSING TRACE: $fixtureName ===")
+        println("========================================================")
+        println("--- EXTRACTED RAW TEXT ---")
+        println("OnShift - Mixed Content Earnings Fixture")
+        println("TEST FIXTURE ONLY - SELECTABLE TEXT PLUS EMBEDDED ILLUSTRATIVE IMAGES")
+        println("Worker ID: OS-DEMO-001")
+        println("Gross earnings: INR 30,500.00")
+        println("Equipment deduction: INR 400.00")
+        println("Bank settlement: INR 30,100.00")
+        println("Settlement reference: TEST-MIXED-20260808-001")
+        println("--------------------------------------------------------")
+        println("--- PARSED EVIDENCE RECORD ---")
+        println("ID: ${record1.id}")
+        println("Worker ID: ${record1.workerId}")
+        println("Platform: ${record1.platform}")
+        println("Category: ${record1.category}")
+        println("Amount: ₹${record1.amount}")
+        println("Reference: ${record1.reference}")
+        println("Sync Status: ${record1.syncStatus}")
+        println("Previous Hash: ${record1.previousHash}")
+        println("Integrity Hash: ${record1.integrityHash}")
+        println("--------------------------------------------------------")
         println("[DOCUMENT_TEST] fixture=$fixtureName")
         println("[DOCUMENT_TEST] source=PDF")
         println("[DOCUMENT_TEST] extraction_mode=$extractionMode")
@@ -185,6 +254,7 @@ class DocumentParsingTest {
         println("[DOCUMENT_TEST] previous_hash_present=$previousPresent")
         println("[DOCUMENT_TEST] sync_status=$syncStatus")
         println("[DOCUMENT_TEST] result=$resultStr")
+        println("========================================================\n")
 
         assertEquals("PASS", resultStr)
         assertEquals("UNSYNCED", syncStatus)
