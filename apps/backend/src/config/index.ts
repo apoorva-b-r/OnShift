@@ -38,4 +38,6 @@ export const config = {
     process.env.SETU_DIGILOCKER_REDIRECT_URL ||
     'http://localhost:4000/api/v1/identity/digilocker/callback',
   setuDigiLockerMockMode: process.env.SETU_DIGILOCKER_MOCK_MODE === 'true',
+  otpProvider: process.env.OTP_PROVIDER || 'MOCK',
+  otpMockMode: (process.env.OTP_PROVIDER || 'MOCK').toUpperCase() === 'MOCK',
 };

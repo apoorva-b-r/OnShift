@@ -13,6 +13,8 @@ data class UserPreferences(
     val city: String = "Mumbai",
     val email: String = "vikram.malhotra@example.com",
     val isLoggedIn: Boolean = false,
+    val isPhoneVerified: Boolean = false,
+    val isIdentityVerified: Boolean = false,
     val passwordHash: String = "",
     val workerId: String = "OS-DEMO-001"
 )

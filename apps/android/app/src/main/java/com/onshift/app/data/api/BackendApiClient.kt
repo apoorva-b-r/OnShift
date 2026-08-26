@@ -13,13 +13,45 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import java.util.Base64
 
+data class SendOtpResponse(
+    val status: String,
+    val validForSeconds: Int,
+    val demoHint: String? = null
+)
+
+data class VerifyOtpResponse(
+    val status: String,
+    val phoneVerified: Boolean
+)
+
+data class InitiateDigiLockerResponse(
+    val requestId: String,
+    val authorizationUrl: String,
+    val status: String,
+    val validUpto: String? = null
+)
+
+data class DigiLockerStatusResponse(
+    val status: String,
+    val identityVerified: Boolean,
+    val provider: String = "SETU_DIGILOCKER",
+    val verifiedAt: String? = null
+)
+
+data class VerifyDigiLockerResponse(
+    val status: String,
+    val identityVerified: Boolean,
+    val provider: String = "SETU_DIGILOCKER",
+    val verifiedAt: String? = null
+)
+
 object BackendApiClient {
-    private var baseUrl: String = "http://localhost:4000/api/v1"
+    private var baseUrl: String = "http://127.0.0.1:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
 
-    fun createJwtToken(sub: String, secret: String = "24bb3889a3eb46f539d326b55ea6a58ea92b8bc37d0299a2f44b5be691af4b57"): String {
+    fun createJwtToken(sub: String, secret: String = "onshift_default_jwt_secret_key_2026_dev_demo_only"): String {
         val encoder = Base64.getUrlEncoder().withoutPadding()
         val header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"
         val now = System.currentTimeMillis() / 1000
@@ -35,7 +67,7 @@ object BackendApiClient {
         return "$data.$signature"
     }
 
-    fun configure(url: String = "http://10.0.2.2:4000/api/v1", id: String = "OS-DEMO-001") {
+    fun configure(url: String = "http://127.0.0.1:4000/api/v1", id: String = "OS-DEMO-001") {
         this.baseUrl = url.trimEnd('/')
         this.workerId = id
         this.authToken = createJwtToken(id)
@@ -47,6 +79,103 @@ object BackendApiClient {
     }
 
     fun getWorkerId(): String = workerId
+
+    fun initiateDigiLocker(
+        callback: ApiCallback<InitiateDigiLockerResponse>
+    ) {
+        makeRequest("/identity/digilocker/initiate", "POST", JsonObject(), object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val requestId = result.get("requestId")?.asString ?: ""
+                val authorizationUrl = result.get("authorizationUrl")?.asString ?: ""
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val validUpto = result.get("validUpto")?.asString
+                callback.onSuccess(InitiateDigiLockerResponse(requestId, authorizationUrl, status, validUpto))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun getDigiLockerStatus(
+        callback: ApiCallback<DigiLockerStatusResponse>
+    ) {
+        makeRequest("/identity/digilocker/status", "GET", null, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val identityVerified = result.get("identityVerified")?.asBoolean ?: false
+                val provider = result.get("provider")?.asString ?: "SETU_DIGILOCKER"
+                val verifiedAt = result.get("verifiedAt")?.asString
+                callback.onSuccess(DigiLockerStatusResponse(status, identityVerified, provider, verifiedAt))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun verifyDigiLocker(
+        callback: ApiCallback<VerifyDigiLockerResponse>
+    ) {
+        makeRequest("/identity/digilocker/verify", "POST", JsonObject(), object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val identityVerified = result.get("identityVerified")?.asBoolean ?: false
+                val provider = result.get("provider")?.asString ?: "SETU_DIGILOCKER"
+                val verifiedAt = result.get("verifiedAt")?.asString
+                callback.onSuccess(VerifyDigiLockerResponse(status, identityVerified, provider, verifiedAt))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun sendOtp(
+        phoneNumber: String,
+        callback: ApiCallback<SendOtpResponse>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("phoneNumber", phoneNumber)
+
+        makeRequest("/auth/otp/send", "POST", payload, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val validForSeconds = result.get("validForSeconds")?.asInt ?: 300
+                val demoHint = result.get("demoHint")?.asString
+                callback.onSuccess(SendOtpResponse(status, validForSeconds, demoHint))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun verifyOtp(
+        phoneNumber: String,
+        otp: String,
+        callback: ApiCallback<VerifyOtpResponse>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("phoneNumber", phoneNumber)
+        payload.addProperty("otp", otp)
+
+        makeRequest("/auth/otp/verify", "POST", payload, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val status = result.get("status")?.asString ?: "UNKNOWN"
+                val phoneVerified = result.get("phoneVerified")?.asBoolean ?: false
+                callback.onSuccess(VerifyOtpResponse(status, phoneVerified))
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
 
     fun login(
         id: String = workerId,

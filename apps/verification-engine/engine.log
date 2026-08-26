@@ -1,0 +1,19 @@
+INFO:     Started server process [33840]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56449 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64432 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64433 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51633 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51632 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63056 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63057 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63586 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63587 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59178 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59180 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58083 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58084 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58524 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58525 - "POST /reconciliation/run HTTP/1.1" 200 OK

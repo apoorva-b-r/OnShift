@@ -65,6 +65,7 @@ class MainActivity : AppCompatActivity() {
                         val startDestination = when {
                             prefs.language.isEmpty() -> Screen.LanguageSelection.route
                             !prefs.isLoggedIn -> Screen.SignIn.route
+                            !prefs.isPhoneVerified -> Screen.PhoneOtp.route
                             !prefs.onboardingCompleted -> Screen.IdentityOnboarding.route
                             else -> Screen.Home.route
                         }

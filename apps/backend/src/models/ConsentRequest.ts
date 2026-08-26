@@ -18,6 +18,9 @@ export interface ConsentRequestDocument extends Document {
   status: ConsentStatus;
   consentUrl?: string;
   isMock: boolean; // true when served by MockAccountAggregatorProvider
+  fipId?: string;
+  approvedAt?: Date | string;
+  expiresAt?: Date | string;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +57,18 @@ const ConsentRequestSchema = new Schema<ConsentRequestDocument>(
       type: Boolean,
       required: true,
       default: true, // explicitly labeled, per credential/AA mock rule
+    },
+    fipId: {
+      type: String,
+      required: false,
+    },
+    approvedAt: {
+      type: Date,
+      required: false,
+    },
+    expiresAt: {
+      type: Date,
+      required: false,
     },
   },
   {

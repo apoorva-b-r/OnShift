@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,27 +15,59 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.onshift.app.R
+import com.onshift.app.data.api.BackendApiClient
+import com.onshift.app.data.api.InitiateDigiLockerResponse
+import com.onshift.app.data.api.VerifyDigiLockerResponse
 import com.onshift.app.ui.theme.*
-import kotlinx.coroutines.delay
 
 sealed interface VerificationState {
     object Initial : VerificationState
     object Loading : VerificationState
     object Success : VerificationState
+    data class Error(val message: String) : VerificationState
 }
 
 @Composable
 fun IdentityScreen(
     isOnboarding: Boolean = false,
+    isIdentityVerified: Boolean = false,
+    workerId: String = "OS-DEMO-001",
+    workerName: String = "Vikram Malhotra",
+    onVerifySuccess: () -> Unit = {},
+    onSkip: () -> Unit = {},
     onCompleteOnboarding: () -> Unit = {}
 ) {
-    var state by remember { mutableStateOf<VerificationState>(VerificationState.Initial) }
+    var state by remember(isIdentityVerified) {
+        mutableStateOf<VerificationState>(
+            if (isIdentityVerified) VerificationState.Success else VerificationState.Initial
+        )
+    }
 
-    if (state is VerificationState.Loading) {
-        LaunchedEffect(Unit) {
-            delay(2000L)
-            state = VerificationState.Success
-        }
+    val startVerification: () -> Unit = {
+        state = VerificationState.Loading
+        BackendApiClient.initiateDigiLocker(object : BackendApiClient.ApiCallback<InitiateDigiLockerResponse> {
+            override fun onSuccess(initRes: InitiateDigiLockerResponse) {
+                // Initiate succeeded; now call verifyDigiLocker to complete verification session
+                BackendApiClient.verifyDigiLocker(object : BackendApiClient.ApiCallback<VerifyDigiLockerResponse> {
+                    override fun onSuccess(verifyRes: VerifyDigiLockerResponse) {
+                        if (verifyRes.identityVerified || verifyRes.status == "VERIFIED") {
+                            state = VerificationState.Success
+                            onVerifySuccess()
+                        } else {
+                            state = VerificationState.Error("DigiLocker verification status: ${verifyRes.status}")
+                        }
+                    }
+
+                    override fun onError(error: String) {
+                        state = VerificationState.Error(error)
+                    }
+                })
+            }
+
+            override fun onError(error: String) {
+                state = VerificationState.Error(error)
+            }
+        })
     }
 
     Column(
@@ -68,7 +101,7 @@ fun IdentityScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        when (state) {
+        when (val currentState = state) {
             VerificationState.Initial -> {
                 Box(
                     modifier = Modifier
@@ -76,23 +109,39 @@ fun IdentityScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = {
-                            state = VerificationState.Loading
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Primary,
-                            contentColor = OnSurface
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = stringResource(R.string.verify_with_digilocker),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                        Button(
+                            onClick = startVerification,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Primary,
+                                contentColor = OnSurface
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.verify_with_digilocker),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+
+                        TextButton(
+                            onClick = onSkip,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Skip for now",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -120,6 +169,64 @@ fun IdentityScreen(
                             color = TextSecondary,
                             fontWeight = FontWeight.Medium
                         )
+                    }
+                }
+            }
+
+            is VerificationState.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = currentState.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = startVerification,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Primary,
+                                contentColor = OnSurface
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Retry Verification",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        TextButton(
+                            onClick = onSkip,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Skip for now",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -162,14 +269,14 @@ fun IdentityScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.pseudonym_id, "OS-82F91A"),
+                                text = stringResource(R.string.pseudonym_id, workerId),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Primary
                             )
                             Divider(modifier = Modifier.padding(vertical = 4.dp))
                             Text(
-                                text = stringResource(R.string.worker_name, "Ravi Kumar"),
+                                text = stringResource(R.string.worker_name, workerName),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
                                 color = OnSurface
@@ -213,3 +320,4 @@ fun IdentityScreen(
         }
     }
 }
+
