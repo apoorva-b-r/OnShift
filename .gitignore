@@ -36,4 +36,9 @@ prisma/dev.db
 # Memory Dumps & Temporary Files
 *.hprof
 *.bak
+.tmp/
+*.tmp/
+hs_err_pid*.log
+*.lock
+scripts/keep-adb-reverse.ps1
 
