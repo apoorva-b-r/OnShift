@@ -1,9 +1,8 @@
 package com.onshift.app.data.aa
 
 /**
- * Task 0 finding: this project has no Hilt setup, no existing Android ViewModel factory,
- * and no Android Setu provider. This calling-side factory therefore selects the existing
- * MockAccountAggregatorProvider until a real Android provider is supplied.
+ * AccountAggregatorProviderFactory selects BackendAccountAggregatorProvider
+ * to route all consent requests and data fetching to the real OnShift backend API.
  */
 data class AccountAggregatorProviderSelection(
     val provider: AccountAggregatorProvider,
@@ -11,4 +10,4 @@ data class AccountAggregatorProviderSelection(
 )
 
 fun getAccountAggregatorProvider(): AccountAggregatorProviderSelection =
-    AccountAggregatorProviderSelection(MockAccountAggregatorProvider(), isMock = true)
+    AccountAggregatorProviderSelection(BackendAccountAggregatorProvider(), isMock = false)

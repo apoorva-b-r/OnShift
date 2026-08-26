@@ -46,7 +46,10 @@ data class VerifyDigiLockerResponse(
 )
 
 object BackendApiClient {
-    private var baseUrl: String = "http://127.0.0.1:4000/api/v1"
+    // Default is 10.0.2.2 (Android emulator's alias for the host machine).
+    // On physical devices, OnShiftApp.onCreate() overrides this via BuildConfig.BACKEND_BASE_URL
+    // which is read from local.properties — set BACKEND_BASE_URL=http://<LAPTOP_LAN_IP>:4000/api/v1
+    private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
@@ -330,6 +333,25 @@ object BackendApiClient {
         makeRequest("/verification/run", "POST", payload, callback)
     }
 
+    fun runVerificationSync(
+        id: String = workerId,
+        evidenceIds: List<String> = emptyList()
+    ): JsonObject {
+        val payload = JsonObject()
+        payload.addProperty("workerId", id)
+        
+        val period = JsonObject()
+        period.addProperty("startDate", "2026-08-01")
+        period.addProperty("endDate", "2026-08-07")
+        payload.add("payoutPeriod", period)
+
+        val idsArr = JsonArray()
+        evidenceIds.forEach { idsArr.add(it) }
+        payload.add("evidenceIds", idsArr)
+
+        return makeSyncRequest("/verification/run", "POST", payload)
+    }
+
     fun issueCredential(
         verificationId: String,
         id: String = workerId,
@@ -354,5 +376,151 @@ object BackendApiClient {
         payload.addProperty("verificationLevel", verificationLevel)
 
         makeRequest("/schemes/recommend", "POST", payload, callback)
+    }
+
+    // ─── Account Aggregator API Integration ─────────────────────────
+    fun requestConsentSync(
+        id: String = workerId,
+        fiTypes: List<String> = listOf("DEPOSIT", "TRANSACTIONS")
+    ): com.onshift.app.data.aa.AAConsentResponse {
+        val payload = JsonObject()
+        payload.addProperty("workerId", id)
+        val arr = JsonArray()
+        fiTypes.forEach { arr.add(it) }
+        payload.add("fiTypes", arr)
+
+        val res = makeSyncRequest("/consent/request", "POST", payload)
+        val consentId = res.get("consentId")?.asString ?: ""
+        val status = res.get("status")?.asString ?: "PENDING"
+        val consentUrl = res.get("consentUrl")?.asString ?: (res.get("authorizationUrl")?.asString ?: "")
+
+        return com.onshift.app.data.aa.AAConsentResponse(consentId, status, consentUrl)
+    }
+
+    fun getConsentStatusSync(consentId: String): String {
+        val res = makeSyncRequest("/consent/status/$consentId", "GET", null)
+        return res.get("status")?.asString ?: "UNKNOWN"
+    }
+
+    fun fetchFinancialDataSync(consentId: String): List<com.onshift.app.data.aa.AATransaction> {
+        val payload = JsonObject()
+        payload.addProperty("consentId", consentId)
+        makeSyncRequest("/consent/fetch-data", "POST", payload)
+
+        val evidenceArray = getEvidenceSync(workerId)
+        val list = mutableListOf<com.onshift.app.data.aa.AATransaction>()
+        for (i in 0 until evidenceArray.size()) {
+            val item = evidenceArray.get(i).asJsonObject
+            if (item.get("source")?.asString == "FINANCIAL") {
+                list.add(
+                    com.onshift.app.data.aa.AATransaction(
+                        transactionId = item.get("transactionRef")?.asString ?: item.get("id")?.asString ?: "",
+                        bankName = item.get("bankName")?.asString ?: item.get("platform")?.asString ?: "Bank",
+                        amount = item.get("amount")?.asDouble ?: 0.0,
+                        date = item.get("timestamp")?.asString ?: "",
+                        narration = item.get("reference")?.asString ?: "Financial Settlement"
+                    )
+                )
+            }
+        }
+        return list
+    }
+
+    private fun makeSyncRequest(
+        endpoint: String,
+        method: String,
+        body: JsonObject? = null
+    ): JsonObject {
+        var conn: HttpURLConnection? = null
+        try {
+            val url = URL("$baseUrl$endpoint")
+            conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = method
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Accept", "application/json")
+
+            val token = authToken ?: createJwtToken(workerId)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("x-worker-id", workerId)
+
+            if (body != null && (method == "POST" || method == "PUT")) {
+                conn.doOutput = true
+                val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
+                writer.write(body.toString())
+                writer.flush()
+                writer.close()
+            }
+
+            val responseCode = conn.responseCode
+            val stream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
+            val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
+            val responseStr = reader.use { it.readText() }
+
+            if (responseCode in 200..299) {
+                return try {
+                    val element = JsonParser.parseString(responseStr)
+                    if (element.isJsonObject) element.asJsonObject else {
+                        val wrapper = JsonObject()
+                        wrapper.add("data", element)
+                        wrapper
+                    }
+                } catch (e: Exception) {
+                    throw Exception("Malformed response from server.")
+                }
+            } else {
+                val errObj = try { JsonParser.parseString(responseStr).asJsonObject } catch (_: Exception) { null }
+                val message = errObj?.get("message")?.asString ?: "HTTP Error $responseCode"
+                throw Exception(message)
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            throw Exception("Request timed out. Please check network connection.")
+        } catch (e: java.net.ConnectException) {
+            throw Exception("Backend server unavailable at $baseUrl. Please verify server and Wi-Fi.")
+        } catch (e: java.net.UnknownHostException) {
+            throw Exception("Unable to resolve server address $baseUrl.")
+        } catch (e: Exception) {
+            throw Exception(e.message ?: "Network request failed.")
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    private fun getEvidenceSync(id: String = workerId): JsonArray {
+        var conn: HttpURLConnection? = null
+        try {
+            val url = URL("$baseUrl/evidence/worker/$id")
+            conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            val token = authToken ?: createJwtToken(id)
+            conn.setRequestProperty("Authorization", "Bearer $token")
+            conn.setRequestProperty("x-worker-id", id)
+
+            val responseCode = conn.responseCode
+            val stream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
+            val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
+            val responseStr = reader.use { it.readText() }
+
+            if (responseCode in 200..299) {
+                return try {
+                    JsonParser.parseString(responseStr).asJsonArray
+                } catch (e: Exception) {
+                    throw Exception("Malformed evidence response from server.")
+                }
+            } else {
+                throw Exception("HTTP $responseCode: $responseStr")
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            throw Exception("Request timed out fetching evidence.")
+        } catch (e: java.net.ConnectException) {
+            throw Exception("Backend server unavailable at $baseUrl.")
+        } catch (e: Exception) {
+            throw Exception(e.message ?: "Failed to fetch evidence.")
+        } finally {
+            conn?.disconnect()
+        }
     }
 }

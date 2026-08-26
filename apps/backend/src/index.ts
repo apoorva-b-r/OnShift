@@ -54,9 +54,9 @@ if (process.env.NODE_ENV !== 'test') {
   };
   connectDb();
 
-  // HTTP REST API (port 4000)
-  app.listen(config.port, () => {
-    console.log(`[OnShift Backend] Express server running on port ${config.port}`);
+  // HTTP REST API (port 4000) - explicitly bind to 0.0.0.0 for LAN access
+  app.listen(config.port, '0.0.0.0', () => {
+    console.log(`[OnShift Backend] Express server running on port ${config.port} (0.0.0.0)`);
   });
 
   // ─── WebSocket Server for Android Nemotron streaming (port 3000) ──────────

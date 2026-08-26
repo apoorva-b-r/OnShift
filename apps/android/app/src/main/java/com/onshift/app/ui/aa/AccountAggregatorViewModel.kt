@@ -36,6 +36,7 @@ class AccountAggregatorViewModel(
     val uiState: StateFlow<AAUiState> = _uiState.asStateFlow()
     private var lastCustomerId = "OS-DEMO-001"
     private var lastFiTypes = listOf("DEPOSIT", "TRANSACTIONS")
+    private var activeConsent: AAConsentResponse? = null
 
     fun startConsentFlow(customerId: String, fiTypes: List<String>) {
         lastCustomerId = customerId
@@ -43,15 +44,38 @@ class AccountAggregatorViewModel(
         viewModelScope.launch {
             _uiState.value = AAUiState.RequestingConsent
             try {
-                val consent = withContext(Dispatchers.IO) {
-                    provider.requestConsent(AAConsentRequest(customerId, "OnShift income verification", fiTypes, "2026-08-01/2026-08-31"))
+                var consent = activeConsent
+                if (consent == null) {
+                    consent = withContext(Dispatchers.IO) {
+                        provider.requestConsent(AAConsentRequest(customerId, "OnShift income verification", fiTypes, "2026-08-01/2026-08-31"))
+                    }
+                    activeConsent = consent
                 }
+
                 if (consent.status != "ACTIVE" && !selection.isMock) {
-                    _uiState.value = AAUiState.AwaitingApproval(consent.authorizationUrl)
-                    return@launch
+                    if (consent.authorizationUrl.isBlank() || (!consent.authorizationUrl.startsWith("http://") && !consent.authorizationUrl.startsWith("https://"))) {
+                        _uiState.value = AAUiState.Error("Backend returned an invalid or missing consent authorization URL.")
+                        return@launch
+                    }
+                    try {
+                        _uiState.value = AAUiState.FetchingData
+                        val transactions = withContext(Dispatchers.IO) { provider.fetchFinancialData(consent.consentId) }
+                        withContext(Dispatchers.IO) {
+                            try { com.onshift.app.data.api.BackendApiClient.runVerificationSync(customerId) } catch (_: Exception) {}
+                        }
+                        _uiState.value = AAUiState.Success(transactions, selection.isMock)
+                        return@launch
+                    } catch (_: Exception) {
+                        _uiState.value = AAUiState.AwaitingApproval(consent.authorizationUrl)
+                        return@launch
+                    }
                 }
+
                 _uiState.value = AAUiState.FetchingData
                 val transactions = withContext(Dispatchers.IO) { provider.fetchFinancialData(consent.consentId) }
+                withContext(Dispatchers.IO) {
+                    try { com.onshift.app.data.api.BackendApiClient.runVerificationSync(customerId) } catch (_: Exception) {}
+                }
                 _uiState.value = AAUiState.Success(transactions, selection.isMock)
             } catch (error: Exception) {
                 _uiState.value = AAUiState.Error(error.message ?: "Account Aggregator is unavailable.")
@@ -59,5 +83,24 @@ class AccountAggregatorViewModel(
         }
     }
 
-    fun retry() = startConsentFlow(lastCustomerId, lastFiTypes)
+    fun retry() {
+        viewModelScope.launch {
+            val consent = activeConsent
+            if (consent != null) {
+                _uiState.value = AAUiState.FetchingData
+                try {
+                    val transactions = withContext(Dispatchers.IO) { provider.fetchFinancialData(consent.consentId) }
+                    withContext(Dispatchers.IO) {
+                        try { com.onshift.app.data.api.BackendApiClient.runVerificationSync(lastCustomerId) } catch (_: Exception) {}
+                    }
+                    _uiState.value = AAUiState.Success(transactions, selection.isMock)
+                    return@launch
+                } catch (_: Exception) {
+                    _uiState.value = AAUiState.AwaitingApproval(consent.authorizationUrl)
+                    return@launch
+                }
+            }
+            startConsentFlow(lastCustomerId, lastFiTypes)
+        }
+    }
 }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,6 +20,13 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Read BACKEND_BASE_URL from local.properties — change this to your laptop LAN IP.
+        val localProps = Properties()
+        val localPropsFile = rootProject.file("local.properties")
+        if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
+        val backendUrl = localProps.getProperty("BACKEND_BASE_URL", "http://10.0.2.2:4000/api/v1")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 
     buildTypes {
@@ -35,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.8"

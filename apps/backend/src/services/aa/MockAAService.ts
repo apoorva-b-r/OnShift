@@ -15,12 +15,13 @@ export class MockAAService implements AAService {
 
   async createConsentRequest(
     workerId: string,
-    fiTypes: string[]
+    fiTypes: string[],
+    baseUrlOverride?: string
   ): Promise<{ consentId: string; status: string; consentUrl: string }> {
     const uuid = crypto.randomUUID();
     const consentId = `mock-consent-${uuid}`;
-    const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
-    const consentUrl = `${baseUrl}/api/v1/mock-aa/consent/${consentId}`;
+    const baseUrl = baseUrlOverride || process.env.BASE_URL || 'http://localhost:4000';
+    const consentUrl = `${baseUrl.replace(/\/$/, '')}/api/v1/mock-aa/consent/${consentId}`;
 
     const record = { consentId, workerId, fiTypes, status: 'PENDING', consentUrl };
     this.consents.set(consentId, record);

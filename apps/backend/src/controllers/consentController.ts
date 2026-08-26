@@ -37,8 +37,11 @@ export const requestConsent = async (req: Request, res: Response) => {
   const workerId = authWorkerId;
   const { fiTypes = ['DEPOSIT'] } = req.body;
 
+  // Resolve base URL dynamically from request host header unless BASE_URL env is set
+  const requestBaseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
   const aaService = getAAService();
-  const consentResult = await aaService.createConsentRequest(workerId, fiTypes);
+  const consentResult = await aaService.createConsentRequest(workerId, fiTypes, requestBaseUrl);
 
   return res.status(201).json({
     consentId: consentResult.consentId,

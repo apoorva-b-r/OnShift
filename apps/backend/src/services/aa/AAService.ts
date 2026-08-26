@@ -1,7 +1,8 @@
 export interface AAService {
   createConsentRequest(
     workerId: string,
-    fiTypes: string[]
+    fiTypes: string[],
+    baseUrlOverride?: string
   ): Promise<{ consentId: string; status: string; consentUrl: string }>;
   getConsentStatus(consentId: string): Promise<{ consentId: string; status: string }>;
   createDataSession(
