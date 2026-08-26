@@ -46,7 +46,7 @@ data class VerifyDigiLockerResponse(
 )
 
 object BackendApiClient {
-    private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
+    private var baseUrl: String = "http://127.0.0.1:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
@@ -67,7 +67,7 @@ object BackendApiClient {
         return "$data.$signature"
     }
 
-    fun configure(url: String = "http://10.0.2.2:4000/api/v1", id: String = "OS-DEMO-001") {
+    fun configure(url: String = "http://127.0.0.1:4000/api/v1", id: String = "OS-DEMO-001") {
         this.baseUrl = url.trimEnd('/')
         this.workerId = id
         this.authToken = createJwtToken(id)
