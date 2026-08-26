@@ -36,8 +36,9 @@ fun AppNavGraph(
 ) {
     val effectiveWindowSizeClass = windowSizeClass ?: WindowSizeClass.calculateFromSize(DpSize(400.dp, 800.dp))
 
-    // Instantiating the exact data models required by HomeScreen
-    val currentVerificationLevel = VerificationLevel.entries.firstOrNull() ?: VerificationLevel.values().first()
+    // Safe fallback to values() across all Kotlin versions
+    val currentVerificationLevel = VerificationLevel.values().firstOrNull() ?: VerificationLevel.DECLARED
+    
     val defaultWorker = Worker(
         id = "OS-DEMO-001",
         verificationLevel = currentVerificationLevel
