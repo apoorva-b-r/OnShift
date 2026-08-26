@@ -48,6 +48,45 @@ object BackendApiClient {
 
     fun getWorkerId(): String = workerId
 
+    fun login(
+        id: String = workerId,
+        role: String = "WORKER",
+        callback: ApiCallback<JsonObject>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("workerId", id)
+        payload.addProperty("role", role)
+        makeRequest("/auth/login", "POST", payload, object : ApiCallback<JsonObject> {
+            override fun onSuccess(result: JsonObject) {
+                val token = result.get("token")?.asString
+                if (!token.isNullOrEmpty()) {
+                    setAuth(id, token)
+                }
+                callback.onSuccess(result)
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+        })
+    }
+
+    fun createWorker(
+        id: String = workerId,
+        name: String,
+        category: String = "Gig Worker",
+        location: String = "",
+        callback: ApiCallback<JsonObject>
+    ) {
+        val payload = JsonObject()
+        payload.addProperty("id", id)
+        payload.addProperty("name", name)
+        payload.addProperty("workerCategory", category)
+        payload.addProperty("location", location)
+
+        makeRequest("/workers", "POST", payload, callback)
+    }
+
     interface ApiCallback<T> {
         fun onSuccess(result: T)
         fun onError(error: String)

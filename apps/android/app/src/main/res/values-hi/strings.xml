@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">OnShift</string>
-
     <!-- Onboarding -->
     <string name="select_language">भाषा चुनें</string>
     <string name="english">अंग्रेज़ी</string>
@@ -191,4 +190,16 @@
     <string name="error_occurred">सर्वर तक नहीं पहुंचा जा सका, इसके बजाय सहेजा गया डेटा दिखाया जा रहा है</string>
     <string name="empty_data">कोई डेटा उपलब्ध नहीं है</string>
     <string name="empty_credential">प्रमाणपत्र तैयार करने के लिए ऑनबोर्डिंग पूरी करें</string>
+    <!-- Personal Details -->
+    <string name="personal_details">व्यक्तिगत विवरण</string>
+    <string name="edit_personal_details">विवरण संपादित करें</string>
+    <string name="full_name">पूरा नाम</string>
+    <string name="phone_number">फ़ोन नंबर</string>
+    <string name="date_of_birth">जन्म तिथि</string>
+    <string name="gender">लिंग</string>
+    <string name="state">राज्य</string>
+    <string name="city">शहर</string>
+    <string name="age_label">आयु</string>
+    <string name="age_years">%1$d वर्ष</string>
+    <string name="save_details">विवरण सहेजें</string>
 </resources>

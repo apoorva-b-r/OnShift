@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.onshift.app.data.PrivacyRepository
 import com.onshift.app.data.UserPreferencesRepository
 import com.onshift.app.data.model.UserPreferences
 import com.onshift.app.data.model.VerificationLevel
@@ -34,6 +35,8 @@ sealed class Screen(val route: String) {
     object Verification : Screen("verification")
     object Profile : Screen("profile")
     object LanguageSelection : Screen("language_selection")
+    object SignUp : Screen("sign_up")
+    object SignIn : Screen("sign_in")
     object PlatformSelection : Screen("platform_selection")
     object IdentityOnboarding : Screen("identity_onboarding")
 }
@@ -65,15 +68,105 @@ fun AppNavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Onboarding Sequence: Language -> Identity -> Platform Selection -> Home
+        // Onboarding Sequence: Language -> SignUp -> SignIn -> Identity -> Platform Selection -> Home
         composable(Screen.LanguageSelection.route) {
             LanguageSelectionScreen(
                 onLanguageSelected = { lang ->
                     coroutineScope.launch {
                         repository.updateLanguage(lang)
                         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
+                        navController.navigate(Screen.SignUp.route)
+                    }
+                }
+            )
+        }
+        composable(Screen.SignUp.route) {
+            SignUpScreen(
+                onSignUpComplete = { fullName, phone, dob, gender, state, city, email, password ->
+                    coroutineScope.launch {
+                        val generatedWorkerId = "OS-" + (100000..999999).random()
+                        repository.updateWorkerId(generatedWorkerId)
+                        repository.updatePersonalDetails(
+                            fullName = fullName,
+                            phoneNumber = phone,
+                            dateOfBirth = dob,
+                            gender = gender,
+                            state = state,
+                            city = city,
+                            email = email,
+                            password = password
+                        )
+
+                        // Real Backend Integration:
+                        // 1. Authenticate with dev login endpoint to acquire JWT token
+                        // 2. Post worker profile document to /api/v1/workers with Bearer token
+                        com.onshift.app.data.api.BackendApiClient.login(
+                            id = generatedWorkerId,
+                            role = "WORKER",
+                            callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                                override fun onSuccess(result: com.google.gson.JsonObject) {
+                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for $generatedWorkerId")
+                                    com.onshift.app.data.api.BackendApiClient.createWorker(
+                                        id = generatedWorkerId,
+                                        name = fullName,
+                                        category = "Gig Worker",
+                                        location = "$city, $state",
+                                        callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                                            override fun onSuccess(res: com.google.gson.JsonObject) {
+                                                android.util.Log.i("BackendIntegration", "Worker document created in MongoDB for $generatedWorkerId")
+                                            }
+
+                                            override fun onError(error: String) {
+                                                android.util.Log.w("BackendIntegration", "POST /workers call failed for $generatedWorkerId: $error (falling back to local save)")
+                                            }
+                                        }
+                                    )
+                                }
+
+                                override fun onError(error: String) {
+                                    android.util.Log.w("BackendIntegration", "POST /auth/login call failed for $generatedWorkerId: $error (falling back to local save)")
+                                }
+                            }
+                        )
+
+                        navController.navigate(Screen.SignIn.route)
+                    }
+                },
+                onNavigateToSignIn = {
+                    navController.navigate(Screen.SignIn.route)
+                }
+            )
+        }
+        composable(Screen.SignIn.route) {
+            SignInScreen(
+                initialEmail = userPreferences.email,
+                storedEmail = userPreferences.email,
+                storedPasswordHash = userPreferences.passwordHash,
+                onSignInSuccess = { emailOrId, password ->
+                    coroutineScope.launch {
+                        repository.setLoggedIn(true)
+                        val targetWorkerId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-DEMO-001"
+
+                        // Real Backend Integration: Fetch JWT via POST /auth/login and configure client auth
+                        com.onshift.app.data.api.BackendApiClient.login(
+                            id = targetWorkerId,
+                            role = "WORKER",
+                            callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                                override fun onSuccess(result: com.google.gson.JsonObject) {
+                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for worker $targetWorkerId")
+                                }
+
+                                override fun onError(error: String) {
+                                    android.util.Log.w("BackendIntegration", "Backend login failed for $targetWorkerId: $error (falling back to local session)")
+                                }
+                            }
+                        )
+
                         navController.navigate(Screen.IdentityOnboarding.route)
                     }
+                },
+                onNavigateToSignUp = {
+                    navController.navigate(Screen.SignUp.route)
                 }
             )
         }
@@ -94,6 +187,7 @@ fun AppNavGraph(
                     coroutineScope.launch {
                         repository.updateSelectedPlatforms(platforms)
                         repository.setOnboardingCompleted(true)
+                        repository.setLoggedIn(true)
                         navController.navigate(Screen.Home.route) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -170,10 +264,16 @@ fun AppNavGraph(
             ProfileScreen(
                 onRestartDemo = {
                     coroutineScope.launch {
+                        PrivacyRepository.resetHashChain()
                         repository.clearPreferences()
                         navController.navigate(Screen.LanguageSelection.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    }
+                },
+                onLogout = {
+                    navController.navigate(Screen.SignIn.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

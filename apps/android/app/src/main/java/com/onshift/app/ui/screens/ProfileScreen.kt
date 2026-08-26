@@ -33,6 +33,7 @@ import com.onshift.app.data.model.PrivacyRecord
 import com.onshift.app.data.model.UserPreferences
 import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.*
+import com.onshift.app.utils.AgeCalculator
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -44,6 +45,7 @@ fun ProfileScreen(
     onTamperDemo: () -> Unit = {},
     onResetHash: () -> Unit = {},
     onRestartDemo: () -> Unit = {},
+    onLogout: () -> Unit = {},
     uiState: UiState<PrivacyRecord>? = null
 ) {
     if (uiState != null) {
@@ -53,15 +55,18 @@ fun ProfileScreen(
             is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.no_platforms_selected))
             is UiState.Success -> ProfileContent(
                 privacyRecord = uiState.data,
+                userPreferences = UserPreferences(),
                 currentLanguage = "en",
                 selectedPlatforms = listOf("Zomato", "Swiggy"),
                 lastBackedUpAt = null,
+                onUpdatePersonalDetails = { _, _, _, _, _, _ -> },
                 onUpdateLanguage = { },
                 onUpdatePlatforms = { },
                 onUpdateLastBackedUpAt = { },
                 onTamperDemo = onTamperDemo,
                 onResetHash = onResetHash,
-                onRestartDemo = onRestartDemo
+                onRestartDemo = onRestartDemo,
+                onLogout = onLogout
             )
         }
     } else {
@@ -77,9 +82,16 @@ fun ProfileScreen(
 
         ProfileContent(
             privacyRecord = privacyRecord,
+            userPreferences = userPreferences,
             currentLanguage = currentLanguage,
             selectedPlatforms = selectedPlatforms,
             lastBackedUpAt = lastBackedUpAt,
+            onUpdatePersonalDetails = { name, phone, dob, gender, state, city ->
+                coroutineScope.launch {
+                    // No backend worker-update endpoint currently exists (confirmed via investigation), this is a local-only save until one is added.
+                    repository.updatePersonalDetails(name, phone, dob, gender, state, city)
+                }
+            },
             onUpdateLanguage = { newLang ->
                 coroutineScope.launch {
                     repository.updateLanguage(newLang)
@@ -107,6 +119,12 @@ fun ProfileScreen(
                     onRestartDemo()
                     (context as? Activity)?.recreate()
                 }
+            },
+            onLogout = {
+                coroutineScope.launch {
+                    repository.clearSession()
+                    onLogout()
+                }
             }
         )
     }
@@ -116,17 +134,22 @@ fun ProfileScreen(
 @Composable
 fun ProfileContent(
     privacyRecord: PrivacyRecord,
+    userPreferences: UserPreferences,
     currentLanguage: String,
     selectedPlatforms: List<String>,
     lastBackedUpAt: Long?,
+    onUpdatePersonalDetails: (String, String, String, String, String, String) -> Unit,
     onUpdateLanguage: (String) -> Unit,
     onUpdatePlatforms: (List<String>) -> Unit,
     onUpdateLastBackedUpAt: (Long) -> Unit,
     onTamperDemo: () -> Unit,
     onResetHash: () -> Unit,
-    onRestartDemo: () -> Unit
+    onRestartDemo: () -> Unit,
+    onLogout: () -> Unit
 ) {
     var showPlatformEditDialog by remember { mutableStateOf(false) }
+    var showPersonalDetailsDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
     var isBackingUp by remember { mutableStateOf(false) }
     var backupProgress by remember { mutableIntStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
@@ -164,11 +187,59 @@ fun ProfileContent(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
+            text = userPreferences.fullName,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = OnSurface
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
             text = stringResource(R.string.worker_id_label, "OS-82F91A"),
             style = MaterialTheme.typography.titleMedium,
             color = TextSecondary
         )
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Personal Details Card
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Surface)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.personal_details),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = { showPersonalDetailsDialog = true }) {
+                        Text(text = stringResource(R.string.edit_personal_details), color = Primary)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                ProfileDetailRow(label = stringResource(R.string.full_name), value = userPreferences.fullName)
+                ProfileDetailRow(label = stringResource(R.string.phone_number), value = userPreferences.phoneNumber)
+                ProfileDetailRow(label = stringResource(R.string.date_of_birth), value = userPreferences.dateOfBirth)
+
+                // Read-only Age calculated live from DOB via AgeCalculator.calculateAge()
+                val calculatedAge = AgeCalculator.calculateAge(userPreferences.dateOfBirth)
+                ProfileDetailRow(
+                    label = stringResource(R.string.age_label),
+                    value = if (calculatedAge != null) stringResource(R.string.age_years, calculatedAge) else "N/A"
+                )
+
+                ProfileDetailRow(label = stringResource(R.string.gender), value = userPreferences.gender)
+                ProfileDetailRow(label = stringResource(R.string.state), value = userPreferences.state)
+                ProfileDetailRow(label = stringResource(R.string.city), value = userPreferences.city)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Privacy Vault Card
         Card(
@@ -375,6 +446,145 @@ fun ProfileContent(
         TextButton(onClick = onRestartDemo) {
             Text(text = stringResource(R.string.reset_all_data_demo), color = Color.Red.copy(alpha = 0.7f))
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.4f))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Distinct Logout Section
+        Button(
+            onClick = { showLogoutConfirmDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = StatusUnreconciled),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(text = "Log Out of Account", color = Color.White, fontWeight = FontWeight.Bold)
+        }
+    }
+
+    if (showLogoutConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirmDialog = false },
+            title = { Text(text = "Confirm Log Out", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to log out of your OnShift worker account?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutConfirmDialog = false
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusUnreconciled)
+                ) {
+                    Text("Log Out", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirmDialog = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showPersonalDetailsDialog) {
+        var tempName by remember { mutableStateOf(userPreferences.fullName) }
+        var tempPhone by remember { mutableStateOf(userPreferences.phoneNumber) }
+        var tempDob by remember { mutableStateOf(userPreferences.dateOfBirth) }
+        var tempGender by remember { mutableStateOf(userPreferences.gender) }
+        var tempState by remember { mutableStateOf(userPreferences.state) }
+        var tempCity by remember { mutableStateOf(userPreferences.city) }
+
+        val calculatedAgePreview = remember(tempDob) { AgeCalculator.calculateAge(tempDob) }
+
+        AlertDialog(
+            onDismissRequest = { showPersonalDetailsDialog = false },
+            title = { Text(text = stringResource(R.string.edit_personal_details), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        label = { Text(stringResource(R.string.full_name)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tempPhone,
+                        onValueChange = { tempPhone = it },
+                        label = { Text(stringResource(R.string.phone_number)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Column {
+                        OutlinedTextField(
+                            value = tempDob,
+                            onValueChange = { tempDob = it },
+                            label = { Text(stringResource(R.string.date_of_birth) + " (YYYY-MM-DD)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (calculatedAgePreview != null) {
+                                "Calculated Age: ${stringResource(R.string.age_years, calculatedAgePreview)} (Read-only)"
+                            } else {
+                                "Calculated Age: N/A (Enter YYYY-MM-DD)"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                    OutlinedTextField(
+                        value = tempGender,
+                        onValueChange = { tempGender = it },
+                        label = { Text(stringResource(R.string.gender)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tempState,
+                        onValueChange = { tempState = it },
+                        label = { Text(stringResource(R.string.state)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tempCity,
+                        onValueChange = { tempCity = it },
+                        label = { Text(stringResource(R.string.city)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onUpdatePersonalDetails(
+                            tempName,
+                            tempPhone,
+                            tempDob,
+                            tempGender,
+                            tempState,
+                            tempCity
+                        )
+                        showPersonalDetailsDialog = false
+                    }
+                ) {
+                    Text(text = stringResource(R.string.save_details))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPersonalDetailsDialog = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showPlatformEditDialog) {
@@ -437,6 +647,20 @@ fun ProfileContent(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun ProfileDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = OnSurface)
     }
 }
 

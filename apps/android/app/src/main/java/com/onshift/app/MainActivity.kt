@@ -62,11 +62,11 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         // Determine onboarding vs main tab start destination dynamically
-                        val isNeedsOnboarding = prefs.language.isEmpty() || prefs.selectedPlatforms.isEmpty() || !prefs.onboardingCompleted
-                        val startDestination = if (isNeedsOnboarding) {
-                            Screen.LanguageSelection.route
-                        } else {
-                            Screen.Home.route
+                        val startDestination = when {
+                            prefs.language.isEmpty() -> Screen.LanguageSelection.route
+                            !prefs.isLoggedIn -> Screen.SignIn.route
+                            !prefs.onboardingCompleted -> Screen.IdentityOnboarding.route
+                            else -> Screen.Home.route
                         }
 
                         val navController = rememberNavController()
