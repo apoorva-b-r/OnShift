@@ -2,23 +2,30 @@ package com.onshift.app.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.util.Base64
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.gson.GsonBuilder
 import com.onshift.app.R
 import com.onshift.app.data.model.Credential
 import com.onshift.app.data.model.MockData
@@ -28,18 +35,29 @@ import com.onshift.app.ui.theme.StatusReconciled
 import com.onshift.app.ui.theme.Surface
 import com.onshift.app.ui.theme.TextSecondary
 
-/** Swap this for the real verifier host once the backend team confirms it. */
-private const val VERIFICATION_BASE_URL = "https://PLACEHOLDER_DOMAIN"
+/** External verifier / lender portal (Vercel). */
+const val VERIFIER_URL = "https://on-shift-verifier-web-22pj.vercel.app/"
 
-fun shareCredential(context: Context, credentialId: String) {
-    val shareText =
-        "Here is my verified income credential from OnShift. View and verify it here: " +
-            "$VERIFICATION_BASE_URL/verify/$credentialId"
+fun generateVerificationLink(credential: Credential): String {
+    val gson = GsonBuilder().setPrettyPrinting().create()
+    val jsonString = gson.toJson(credential)
+    val encodedData = Base64.encodeToString(
+        jsonString.toByteArray(Charsets.UTF_8),
+        Base64.URL_SAFE or Base64.NO_WRAP
+    )
+    return "${VERIFIER_URL}?data=${encodedData}"
+}
+
+fun shareCredential(context: Context, credential: Credential) {
+    val verificationLink = generateVerificationLink(credential)
+    val shareMessage = context.getString(R.string.share_credential_message, verificationLink)
+
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, shareText)
+        putExtra(Intent.EXTRA_TEXT, shareMessage)
     }
-    context.startActivity(Intent.createChooser(sendIntent, "Share with lender"))
+
+    context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.share_with_lender)))
 }
 
 @Composable
@@ -68,6 +86,8 @@ fun CredentialContent(
     disclosedClaims: List<String>? = null
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    var showShareDialog by remember { mutableStateOf(false) }
     val claimsToDisplay = disclosedClaims ?: credential.includedClaims
 
     val showIdentity = claimsToDisplay.isEmpty() || claimsToDisplay.any { it.contains("Identity", ignoreCase = true) || it.contains("Name", ignoreCase = true) }
@@ -209,14 +229,88 @@ fun CredentialContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val filteredCredential = credential.copy(
+            verifiedIncome = if (showIncome) credential.verifiedIncome else null,
+            verificationLevel = if (showLevel) credential.verificationLevel else null,
+            includedClaims = claimsToDisplay
+        )
+
         Button(
-            onClick = { shareCredential(context, credential.workerId) },
+            onClick = { showShareDialog = true },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.Share, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = stringResource(R.string.share_with_lender))
+        }
+
+        if (showShareDialog) {
+            val verificationLink = remember(filteredCredential) { generateVerificationLink(filteredCredential) }
+            val linkCopiedMsg = stringResource(R.string.link_copied)
+            AlertDialog(
+                onDismissRequest = { showShareDialog = false },
+                title = {
+                    Text(
+                        text = stringResource(R.string.share_dialog_title),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.share_dialog_instruction),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            SelectionContainer {
+                                Text(
+                                    text = verificationLink,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                    color = Primary,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(verificationLink))
+                                Toast.makeText(context, linkCopiedMsg, Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = stringResource(R.string.copy_link))
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showShareDialog = false
+                            shareCredential(context, filteredCredential)
+                        },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = stringResource(R.string.continue_to_share))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showShareDialog = false }) {
+                        Text(text = stringResource(R.string.cancel))
+                    }
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))

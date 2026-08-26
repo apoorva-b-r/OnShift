@@ -103,6 +103,12 @@
     <string name="verification_level_label">स्तर: %1$s</string>
     <string name="signature">हस्ताक्षर: %1$s</string>
     <string name="share_with_lender">ऋणदाता के साथ साझा करें</string>
+    <string name="share_dialog_title">प्रमाणपत्र साझा करें</string>
+    <string name="share_dialog_instruction">इस फ़ाइल को अपने ऋणदाता के साथ साझा करें। वे इसे यहां सत्यापित कर सकते हैं:</string>
+    <string name="copy_link">लिंक कॉपी करें</string>
+    <string name="continue_to_share">साझा करने के लिए आगे बढ़ें</string>
+    <string name="link_copied">लिंक क्लिपबोर्ड पर कॉपी किया गया</string>
+    <string name="share_credential_message">यहाँ मेरा OnShift सत्यापित आय प्रमाणपत्र है। इसे सत्यापित करने के लिए इस लिंक को खोलें: %1$s</string>
 
     <!-- Verification Screen -->
     <string name="evidence_verification_title">प्रमाण सत्यापन स्तर</string>

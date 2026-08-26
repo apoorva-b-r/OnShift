@@ -185,6 +185,25 @@ export default function App() {
     setUploadedFileName(sourceLabel);
     runVerification(formattedText);
   };
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('data');
+    if (dataParam) {
+      try {
+        const normalizedBase64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedRaw = atob(normalizedBase64);
+        let decodedJson = decodedRaw;
+        try {
+          decodedJson = decodeURIComponent(escape(decodedRaw));
+        } catch {
+          // Fallback to raw decoded string if decodeURIComponent fails
+        }
+        ingestCredentialText(decodedJson, 'Shared Credential Link (URL Data)');
+      } catch {
+        // Fallback silently if base64 decoding fails
+      }
+    }
+  }, []);
 
   const handleSendCredentialToVerifier = (credentialJson: string) => {
     ingestCredentialText(credentialJson, 'Issued Worker Credential (Direct)');
