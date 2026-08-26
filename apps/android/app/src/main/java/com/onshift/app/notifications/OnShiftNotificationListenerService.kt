@@ -19,24 +19,35 @@ class OnShiftNotificationListenerService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
 
+        // Step 1: package name is the only notification field read before the privacy gate.
         val packageName = sbn.packageName
-        val extras = sbn.notification.extras
-        val title = extras.getString("android.title") ?: ""
-        val text = extras.getCharSequence("android.text")?.toString() ?: ""
-        val notificationId = "${sbn.id}-${sbn.postTime}"
 
         scope.launch {
             val preferences = UserPreferencesRepository(applicationContext).userPreferencesFlow.first()
-            if (packageName !in PlatformRegistry.allowedPackages(preferences.selectedPlatforms)) {
+            val allowlist = resolveAllowlist(preferences)
+
+            // Step 2: off-allowlist notifications end here; their content is never read.
+            if (packageName !in allowlist) {
                 debugLog(packageName, accepted = false)
                 return@launch
             }
 
-            val ingestion = NotificationEvidenceIngestion((application as OnShiftApp).evidenceRepository)
-            val accepted = ingestion.ingest(
-                NotificationInput(packageName, title, text, notificationId),
-                preferences.workerId
+            // Step 3: an allowlisted notification alone may enter parsing and persistence.
+            val boundary = NotificationPrivacyBoundary(
+                allowlistProvider = { allowlist },
+                parserForAllowedPackage = PlatformRegistry::getParserForAllowedPackage,
+                repository = (application as OnShiftApp).evidenceRepository,
+                discardLogger = { message -> if (BuildConfig.DEBUG) Log.d("OnShiftNotification", message) }
             )
+            val accepted = boundary.handle(packageName, preferences.workerId) {
+                val extras = sbn.notification.extras
+                NotificationInput(
+                    packageName = packageName,
+                    title = extras.getString("android.title") ?: "",
+                    body = extras.getCharSequence("android.text")?.toString() ?: "",
+                    notificationId = "${sbn.id}-${sbn.postTime}"
+                )
+            }
             debugLog(packageName, accepted)
         }
     }

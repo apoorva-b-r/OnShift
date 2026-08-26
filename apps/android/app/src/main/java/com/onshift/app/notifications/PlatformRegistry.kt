@@ -1,13 +1,13 @@
 package com.onshift.app.notifications
 
 object PlatformRegistry {
-    // TODO: verify real package name with each platform before production release.
+    // TODO: verify real package name against production APK
     const val ZOMATO_PACKAGE = "com.zomato.delivery"
-    // TODO: verify real package name with each platform before production release.
+    // TODO: verify real package name against production APK
     const val SWIGGY_PACKAGE = "com.swiggy.deliveryapp"
-    // TODO: verify real package name with Uber before production release.
+    // TODO: verify real package name against production APK
     const val UBER_PACKAGE = "com.ubercab.driver"
-    // TODO: verify Blinkit delivery-partner package name before production release.
+    // TODO: verify real package name against production APK
     const val BLINKIT_PACKAGE = "com.blinkit.delivery"
 
     private val zomatoParser = ZomatoParser()
@@ -35,5 +35,17 @@ object PlatformRegistry {
             packageName == BLINKIT_PACKAGE || textContent.contains("blinkit", ignoreCase = true) -> genericParser
             else -> genericParser
         }
+    }
+
+    /**
+     * Routes only packages which have already passed the per-worker allowlist boundary.
+     * Unlike [getParserForPackage], this method never examines notification content.
+     */
+    fun getParserForAllowedPackage(packageName: String): NotificationParser = when (packageName) {
+        ZOMATO_PACKAGE -> zomatoParser
+        SWIGGY_PACKAGE -> swiggyParser
+        UBER_PACKAGE -> uberParser
+        BLINKIT_PACKAGE -> genericParser
+        else -> genericParser
     }
 }
