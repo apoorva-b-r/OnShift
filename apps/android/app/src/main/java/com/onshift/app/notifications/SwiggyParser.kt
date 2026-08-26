@@ -22,9 +22,9 @@ class SwiggyParser : NotificationParser {
         val amount = amountMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: return null
 
         // 3. Extract Reference
-        val refRegex = Regex("""(?:Order\s*(?:#|ID:?)?\s*|SW-?|Ref:\s*)([A-Z0-9]+)""", RegexOption.IGNORE_CASE)
+        val refRegex = Regex("""(?:Order\s*(?:#|ID:?)?\s*|Ref:\s*)([A-Z0-9\-]+)""", RegexOption.IGNORE_CASE)
         val refMatch = refRegex.find(content)
-        val reference = refMatch?.groupValues?.get(1) ?: "SWG-${UUID.randomUUID().toString().take(6).uppercase()}"
+        val reference = refMatch?.groupValues?.get(1)?.trimEnd('-') ?: "SWG-${UUID.randomUUID().toString().take(6).uppercase()}"
 
         return NormalizedEvidence(
             id = "obs-swiggy-${UUID.randomUUID().toString().take(8)}",
