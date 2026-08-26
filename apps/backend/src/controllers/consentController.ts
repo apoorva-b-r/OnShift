@@ -20,30 +20,35 @@ export const requestConsent = async (req: Request, res: Response) => {
   const { aaProvider = 'Setu Mock AA', fiTypes = ['DEPOSIT'] } = req.body;
   const consentId = `AA-CONSENT-${Date.now().toString(36).toUpperCase()}`;
   const authorizationUrl = `https://aa-sandbox.onshift.org/auth/${consentId}`;
-  const isMock = aaProvider.toLowerCase().includes('mock') || true;
+  const isMock = aaProvider.toLowerCase().includes('mock');
+
+  const consent = {
+    consentId,
+    workerId,
+    fiTypes,
+    status: 'PENDING' as const,
+    consentUrl: authorizationUrl,
+    isMock,
+  };
 
   try {
     await ConsentRequest.create({
-      consentId,
+      consentId: consent.consentId,
       workerId,
       fiTypes,
-      status: 'PENDING',
-      consentUrl: authorizationUrl,
-      isMock,
+      status: consent.status,
+      consentUrl: consent.consentUrl,
+      isMock: consent.isMock,
     });
-  } catch (err) {
-    console.warn('Failed to persist consent request to MongoDB, returning mock response.');
+  } catch (_error) {
+    console.warn('Failed to persist consent request to MongoDB.');
   }
 
-  return res.status(201).json({
-    consentId,
-    workerId,
-    aaProvider,
-    status: 'PENDING',
-    authorizationUrl,
-    isMock,
-    createdAt: new Date().toISOString(),
-  });
+  return res.status(201).json(consent);
+};
+
+export const fetchFinancialData = async (req: Request, res: Response) => {
+  throw new ApiError(501, 'AA_PROVIDER_UNAVAILABLE', 'Account Aggregator financial data provider is not configured.');
 };
 
 export const getConsentStatus = async (req: Request, res: Response) => {

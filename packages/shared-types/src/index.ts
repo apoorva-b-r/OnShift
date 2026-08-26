@@ -123,9 +123,15 @@ export interface CredentialClaim {
 }
 
 export interface Credential {
+  /** Canonical field — always "OnShiftIncomeCredential" */
   type: string;
+  /** Alias for type — accepted by verifier for backwards compatibility */
+  credentialType?: string;
   issuer: string;
+  /** Canonical field — hex-encoded Ed25519 public key of the issuer */
   publicKeyHex: string;
+  /** Alias for publicKeyHex — accepted by verifier for backwards compatibility */
+  issuerPublicKey?: string;
   workerId: string;
   issuedAt: string;
   validUntil: string;
@@ -140,6 +146,8 @@ export interface CredentialVerificationResult {
   claims?: CredentialClaim;
   issuer?: string;
   workerId?: string;
+  issuedAt?: string;
+  validUntil?: string;
   message?: string;
 }
 

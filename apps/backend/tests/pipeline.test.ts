@@ -1,4 +1,4 @@
-﻿import request from 'supertest';
+import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/index';
@@ -187,6 +187,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         limitations: 'None',
         evidenceIds: [],
         engineSource: 'MOCK_TEST',
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -225,6 +226,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         evidenceIds: [],
         expectedNet: 30100,
         engineSource: 'MOCK_TEST',
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 

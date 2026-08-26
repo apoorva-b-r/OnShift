@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
@@ -42,6 +43,7 @@ fun HomeScreen(
     worker: Worker,
     reconciliationResult: ReconciliationResult?,
     userPrefs: UserPreferences,
+    onOpenAccountAggregator: () -> Unit = {},
     verificationResult: VerificationResult? = MockData.mockVerificationResult,
     uiState: UiState<HomeData> = UiState.Success(HomeData(worker, reconciliationResult, userPrefs, verificationResult))
 ) {
@@ -56,7 +58,8 @@ fun HomeScreen(
                 worker = data.worker,
                 reconciliationResult = data.reconciliationResult,
                 userPrefs = data.userPrefs,
-                verificationResult = data.verificationResult
+                verificationResult = data.verificationResult,
+                onOpenAccountAggregator = onOpenAccountAggregator
             )
         }
     }
@@ -68,7 +71,8 @@ fun HomeScreenContent(
     worker: Worker,
     reconciliationResult: ReconciliationResult?,
     userPrefs: UserPreferences,
-    verificationResult: VerificationResult?
+    verificationResult: VerificationResult?,
+    onOpenAccountAggregator: () -> Unit = {}
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "IN")).apply {
         maximumFractionDigits = 0
@@ -153,6 +157,11 @@ fun HomeScreenContent(
 
         // Reconciliation Card
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onOpenAccountAggregator, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.AccountBalance, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Verify Income")
+            }
             Text(text = stringResource(R.string.reconciliation_status), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             ReconciliationCard(reconciliationResult, currencyFormatter)
         }

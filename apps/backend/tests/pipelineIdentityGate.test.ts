@@ -2,9 +2,9 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/index';
-import { IdentityVerification, IDENTITY_VERIFICATION_STATUSES } from '../src/models/IdentityVerification';
-import { VerificationRecord, Credential } from '../src/models';
+import { IdentityVerification, IDENTITY_VERIFICATION_STATUSES, VerificationRecord, Credential, Evidence } from '../src/models';
 import { generateWorkerToken } from '../src/middleware/authMiddleware';
+import { config } from '../src/config';
 
 describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () => {
   let mongoServer: MongoMemoryServer;
@@ -14,6 +14,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
   jest.setTimeout(30000);
 
   beforeAll(async () => {
+    (config as any).demoMode = true;
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
@@ -50,6 +51,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -87,7 +89,8 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
           supportingEvidence: [],
           limitations: 'None',
           evidenceIds: [],
-          computedAt: new Date().toISOString(),
+          verificationSource: 'AUTHORITATIVE_ENGINE',
+        computedAt: new Date().toISOString(),
         });
 
         const res = await request(app)
@@ -124,6 +127,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -156,6 +160,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -198,6 +203,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -240,6 +246,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -276,6 +283,7 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
         supportingEvidence: [],
         limitations: 'None',
         evidenceIds: [],
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -299,6 +307,21 @@ describe('Phase 4: Server-Side Identity Gate & Pipeline Integration Tests', () =
     });
 
     it('14 & 15. Authoritative verification pipeline sets identityVerified on VerificationRecord', async () => {
+      await Evidence.create({
+        id: 'ev-gate-a-1',
+        workerId: 'OS-WORKER-GATE-A',
+        source: 'OBSERVED',
+        type: 'ORDER_COMPLETED',
+        platform: 'Zomato',
+        amount: 500,
+        currency: 'INR',
+        reference: 'REF-GATE-A',
+        timestamp: new Date().toISOString(),
+        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
+        integrityHash: 'HASH-GATE-A',
+        capturedAt: new Date().toISOString(),
+      });
+
       // Unverified worker runs verification pipeline
       const resUnverified = await request(app)
         .post('/api/v1/verification/run')

@@ -1,5 +1,6 @@
 package com.onshift.app.data.vault
 
+import android.content.Context
 import com.onshift.app.data.hashchain.HashChain
 import com.onshift.app.data.hashchain.HashChainValidationResult
 import java.io.File
@@ -12,14 +13,37 @@ class LocalEncryptedEvidenceRepository(
 
     companion object {
         const val GENESIS_HASH = "GENESIS_0000000000000000000000000000000000000000000000000000000000000000"
-        
+
+        /**
+         * JVM unit-test singleton only. Uses a relative build path that is valid in
+         * a desktop test environment. Do NOT call this from Android app code.
+         */
         private val defaultVaultFile by lazy {
             File("build/vault/evidence_vault.enc")
         }
 
+        /**
+         * JVM unit-test singleton. Not available on real Android devices.
+         */
         val instance: LocalEncryptedEvidenceRepository by lazy {
             try {
                 LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(defaultVaultFile))
+            } catch (_: Exception) {
+                LocalEncryptedEvidenceRepository(null)
+            }
+        }
+
+        /**
+         * Android-safe factory. Uses context.noBackupFilesDir so the vault is stored
+         * in the app's private internal storage and is excluded from cloud backups.
+         * Call this from Application.onCreate() or a Hilt module.
+         */
+        fun createInstance(context: Context): LocalEncryptedEvidenceRepository {
+            val vaultDir = File(context.noBackupFilesDir, "onshift_vault")
+            vaultDir.mkdirs()
+            val vaultFile = File(vaultDir, "evidence_vault.enc")
+            return try {
+                LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(vaultFile))
             } catch (_: Exception) {
                 LocalEncryptedEvidenceRepository(null)
             }

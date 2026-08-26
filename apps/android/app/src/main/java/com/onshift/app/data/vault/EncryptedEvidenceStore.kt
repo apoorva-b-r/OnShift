@@ -1,14 +1,16 @@
 package com.onshift.app.data.vault
 
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
+import java.security.KeyStore
 import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 class StorageCorruptionException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
@@ -23,30 +25,47 @@ class EncryptedEvidenceStore(
         private const val IV_SIZE = 12
         private const val TAG_BIT_LENGTH = 128
 
+        /**
+         * Key alias used to identify the AES key inside the Android KeyStore.
+         * One key per vault file, keyed by the vault filename.
+         */
+        private fun keystoreAlias(vaultFile: File): String =
+            "onshift_vault_aes_${vaultFile.name}"
+
+        /**
+         * Retrieves an existing AES-256 key from Android KeyStore or generates a new one
+         * if it does not yet exist. Key material never leaves secure hardware.
+         *
+         * NOTE: This requires API 23+ (Android 6.0 Marshmallow) and minSdk must be ≥ 23.
+         */
         fun getOrCreateKeyForVault(vaultFile: File): SecretKey {
-            return try {
-                val parent = vaultFile.parentFile
-                if (parent != null && !parent.exists()) {
-                    parent.mkdirs()
-                }
-                val keyFile = File(parent, vaultFile.name + ".key")
-                if (keyFile.exists() && keyFile.length() == 32L) {
-                    val keyBytes = keyFile.readBytes()
-                    SecretKeySpec(keyBytes, "AES")
-                } else {
-                    val keyGen = KeyGenerator.getInstance("AES")
-                    keyGen.init(256, SecureRandom())
-                    val key = keyGen.generateKey()
-                    try {
-                        keyFile.writeBytes(key.encoded)
-                    } catch (_: Exception) {}
-                    key
-                }
-            } catch (_: Exception) {
-                val keyGen = KeyGenerator.getInstance("AES")
-                keyGen.init(256, SecureRandom())
-                keyGen.generateKey()
+            val alias = keystoreAlias(vaultFile)
+            val keyStore = KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
+
+            if (keyStore.containsAlias(alias)) {
+                val entry = keyStore.getEntry(alias, null) as? KeyStore.SecretKeyEntry
+                if (entry != null) return entry.secretKey
+                // Entry corrupted or wrong type — fall through to regenerate.
+                keyStore.deleteEntry(alias)
             }
+
+            // Generate a new AES-256-GCM key inside the hardware-backed KeyStore enclave.
+            val keyGenSpec = KeyGenParameterSpec.Builder(
+                alias,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .setRandomizedEncryptionRequired(false) // We provide our own IV
+                .build()
+
+            val keyGen = KeyGenerator.getInstance(
+                KeyProperties.KEY_ALGORITHM_AES,
+                "AndroidKeyStore"
+            )
+            keyGen.init(keyGenSpec)
+            return keyGen.generateKey()
         }
 
         fun createForTest(file: File): EncryptedEvidenceStore {

@@ -3,6 +3,7 @@ package com.onshift.app.data.aa
 data class AAConsentRequest(
     val workerId: String,
     val aaHandle: String,
+    val fiTypes: List<String> = listOf("DEPOSIT", "TRANSACTIONS"),
     val dateRange: String
 )
 

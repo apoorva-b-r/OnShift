@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consent Callback - Setu AA Tester</title>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --border-color: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --primary: #1f6feb;
+      --primary-hover: #388bfd;
+      --success: #238636;
+      --accent: #58a6ff;
+      --error-bg: #f851491a;
+      --error-border: #f85149;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 680px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background-color: rgba(56, 139, 253, 0.15);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    pre {
+      background: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 13px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      color: #79c0ff;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      max-height: 250px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      background-color: #0d1117;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      background-color: var(--primary);
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+      text-decoration: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #21262d;
+      color: var(--text-main);
+      border-color: var(--border-color);
+      flex: 0 0 auto;
+    }
+
+    .btn-secondary:hover {
+      background-color: #30363d;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status-response {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="badge">Callback Received</span>
+    <h1>Consent Callback Result</h1>
+    <p class="subtitle">Setu has redirected the user back with approval/rejection params.</p>
+
+    <div class="section-title">URL Query Parameters</div>
+    <pre id="queryParamsDisplay">Loading parameters...</pre>
+
+    <div class="form-group">
+      <label for="consentHandleInput">Consent Handle</label>
+      <input type="text" id="consentHandleInput" placeholder="Enter or verify Consent Handle">
+    </div>
+
+    <div class="button-group">
+      <button id="checkStatusBtn" class="btn" onclick="checkStatus()">
+        <span>Check Consent Status</span>
+      </button>
+      <a href="/index.html" class="btn btn-secondary">Start Over</a>
+    </div>
+
+    <div id="statusResponseContainer" class="status-response">
+      <div class="section-title">Consent Status API Response</div>
+      <pre id="statusResponseDisplay"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Parse query params on load
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramsObj = {};
+    for (const [key, value] of urlParams.entries()) {
+      paramsObj[key] = value;
+    }
+
+    const queryParamsDisplay = document.getElementById('queryParamsDisplay');
+    queryParamsDisplay.textContent = Object.keys(paramsObj).length > 0 
+      ? JSON.stringify(paramsObj, null, 2)
+      : 'No query parameters received.';
+
+    // Populate handle if present in params
+    const consentHandle = paramsObj.consentHandle || paramsObj.ConsentHandle || paramsObj.id || paramsObj.handle || '';
+    const consentHandleInput = document.getElementById('consentHandleInput');
+    if (consentHandle) {
+      consentHandleInput.value = consentHandle;
+    }
+
+    async function checkStatus() {
+      const handle = consentHandleInput.value.trim();
+      const checkStatusBtn = document.getElementById('checkStatusBtn');
+      const responseContainer = document.getElementById('statusResponseContainer');
+      const responseDisplay = document.getElementById('statusResponseDisplay');
+
+      if (!handle) {
+        alert('Please enter a valid Consent Handle');
+        return;
+      }
+
+      checkStatusBtn.disabled = true;
+      checkStatusBtn.innerHTML = '<span>Checking Status...</span>';
+      responseContainer.style.display = 'block';
+      responseDisplay.textContent = 'Fetching consent status from backend...';
+
+      try {
+        const response = await fetch(`/api/consent-status/${encodeURIComponent(handle)}`);
+        const data = await response.json();
+
+        responseDisplay.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        responseDisplay.textContent = `Error fetching status: ${err.message}`;
+      } finally {
+        checkStatusBtn.disabled = false;
+        checkStatusBtn.innerHTML = '<span>Check Consent Status</span>';
+      }
+    }
+  </script>
+</body>
+</html>
