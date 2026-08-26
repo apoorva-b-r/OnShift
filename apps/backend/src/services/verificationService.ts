@@ -138,7 +138,13 @@ export async function runAuthoritativeVerificationPipeline(
     confidence: verResult.confidence,
     reason: verResult.reason,
     supportingEvidence: verResult.supportingEvidence || [],
-    limitations: verResult.limitations || '',
+    // Engine returns limitations as string[]; the record schema stores a single
+    // required string. Empty array/undefined must map to a non-empty placeholder.
+    limitations: Array.isArray(verResult.limitations)
+      ? verResult.limitations.length > 0
+        ? verResult.limitations.join(' | ')
+        : 'None'
+      : verResult.limitations || 'None',
     evidenceIds,
     identityVerified: idVerified,
     reconciliationStatus: reconResult?.status || (verResult.level === 'FINANCIALLY_CORROBORATED' ? 'MATCHED' : 'UNEXPLAINED_DIFFERENCE'),

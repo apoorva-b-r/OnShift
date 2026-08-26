@@ -30,10 +30,10 @@ export interface VerificationRecordDocument extends Document {
   level: VerificationLevel;
   confidence: number;
   reason: string;
-  supportingEvidence: string[];
-  limitations: string;
-  evidenceIds: string[]; // the exact evidenceIds sent in the originating request
-  identityVerified?: boolean;
+   supportingEvidence: string[];
+   limitations: string;
+   evidenceIds: string[]; // the exact evidenceIds sent in the originating request
+   identityVerified?: boolean;
   reconciliationStatus?: string; // MATCHED | EXPLAINED_DIFFERENCE | UNEXPLAINED_DIFFERENCE | INSUFFICIENT_EVIDENCE
   expectedGross?: number;
   authorizedDeductions?: number;
@@ -42,7 +42,7 @@ export interface VerificationRecordDocument extends Document {
   engineSource: string; // e.g. "PYTHON_VERIFICATION_ENGINE" or "MOCK_FALLBACK"
   verificationSource: 'AUTHORITATIVE_ENGINE' | 'DEMO_FIXTURE';
   verificationEngineVersion?: string;
-  computedAt: string;
+  computedAt: Date;
 }
 
 const PayoutPeriodSchema = new Schema<PayoutPeriod>(
@@ -140,7 +140,9 @@ const VerificationRecordSchema = new Schema<VerificationRecordDocument>(
       default: '1.0.0',
     },
     computedAt: {
-      type: String,
+      // Real BSON Date so Atlas renders it in the viewer's local timezone
+      // (consistent with ConsentRequest's createdAt/updatedAt timestamps).
+      type: Date,
       required: true,
     },
   },
