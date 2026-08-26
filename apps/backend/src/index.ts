@@ -29,10 +29,30 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 if (process.env.NODE_ENV !== 'test') {
-  mongoose
-    .connect(config.mongodbUri)
-    .then(() => console.log(`[OnShift Backend] Connected to MongoDB at ${config.mongodbUri}`))
-    .catch((err) => console.warn(`[OnShift Backend] MongoDB connection warning: ${err.message}. Operating in mock/fallback mode.`));
+  const connectDb = async () => {
+    try {
+      await mongoose.connect(config.mongodbUri, { serverSelectionTimeoutMS: 2000 });
+      console.log(`[OnShift Backend] Connected to MongoDB at ${config.mongodbUri}`);
+    } catch (err: any) {
+      console.warn(`[OnShift Backend] Local MongoDB not reachable (${err.message}). Starting in-memory MongoDB...`);
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const memDbPath = path.resolve(process.cwd(), '.tmp', 'mongo-mem');
+        fs.mkdirSync(memDbPath, { recursive: true });
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        const memoryServer = await MongoMemoryServer.create({
+          instance: { dbPath: memDbPath }
+        });
+        const memoryUri = memoryServer.getUri();
+        await mongoose.connect(memoryUri);
+        console.log(`[OnShift Backend] In-memory MongoDB connected at ${memoryUri}`);
+      } catch (memErr: any) {
+        console.error(`[OnShift Backend] Failed to start in-memory MongoDB:`, memErr);
+      }
+    }
+  };
+  connectDb();
 
   // HTTP REST API (port 4000)
   app.listen(config.port, () => {
