@@ -17,6 +17,7 @@ class UserPreferencesRepository(private val context: Context) {
         val LANGUAGE = stringPreferencesKey("language")
         val SELECTED_PLATFORMS = stringSetPreferencesKey("selected_platforms")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val LAST_BACKED_UP_AT = longPreferencesKey("last_backed_up_at")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data
@@ -28,10 +29,11 @@ class UserPreferencesRepository(private val context: Context) {
             }
         }
         .map { preferences ->
-            val language = preferences[PreferencesKeys.LANGUAGE] ?: "en"
+            val language = preferences[PreferencesKeys.LANGUAGE] ?: ""
             val selectedPlatforms = preferences[PreferencesKeys.SELECTED_PLATFORMS]?.toList() ?: emptyList()
             val onboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
-            UserPreferences(language, selectedPlatforms, onboardingCompleted)
+            val lastBackedUpAt = preferences[PreferencesKeys.LAST_BACKED_UP_AT]
+            UserPreferences(language, selectedPlatforms, onboardingCompleted, lastBackedUpAt)
         }
 
     suspend fun updateLanguage(language: String) {
@@ -49,6 +51,18 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    suspend fun updateLastBackedUpAt(timestamp: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.LAST_BACKED_UP_AT] = timestamp
+        }
+    }
+
+    suspend fun clearPreferences() {
+        context.dataStore.edit { preferences ->
+            preferences.clear()
         }
     }
 }

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { DEMO_WORKER } from '@onshift/mock-data';
 import mongoose from 'mongoose';
 import { Worker } from '../models/Worker';
+import { ApiError } from '../middleware/apiError';
 
 const memoryWorkerIds = new Set<string>();
 
@@ -59,14 +60,14 @@ export const createWorker = async (req: Request, res: Response) => {
       return res.status(201).json(workerResponse(worker));
     } catch (error) {
       if ((error as { code?: number }).code === 11000) {
-        return res.status(409).json({ error: 'Worker already exists.' });
+        throw new ApiError(409, 'CONFLICT', 'Worker already exists.');
       }
       throw error;
     }
   }
 
   if (memoryWorkerIds.has(workerId)) {
-    return res.status(409).json({ error: 'Worker already exists.' });
+    throw new ApiError(409, 'CONFLICT', 'Worker already exists.');
   }
   memoryWorkerIds.add(workerId);
 

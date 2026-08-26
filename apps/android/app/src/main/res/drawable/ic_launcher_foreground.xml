@@ -5,12 +5,12 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Shield Background -->
+    <!-- Shield Outline / Body in Deep Navy #050F2A -->
     <path
         android:fillColor="#050F2A"
         android:pathData="M54,24c-12,0 -24,4 -24,4v28c0,16 24,28 24,28s24,-12 24,-28v-28c0,0 -12,-4 -24,-4z" />
 
-    <!-- Checkmark -->
+    <!-- Checkmark Stroke in Off-White #F2FDFF -->
     <path
         android:strokeColor="#F2FDFF"
         android:strokeWidth="4"
@@ -18,7 +18,7 @@
         android:strokeLineJoin="round"
         android:pathData="M42,54l8,8l16,-16" />
 
-    <!-- Accent Circle -->
+    <!-- Small Accent Circle in Lavender #B8A9FF -->
     <path
         android:fillColor="#B8A9FF"
         android:pathData="M70,36m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />

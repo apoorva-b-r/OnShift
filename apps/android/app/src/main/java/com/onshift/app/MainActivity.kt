@@ -15,19 +15,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationManagerCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.onshift.app.data.UserPreferencesRepository
 import com.onshift.app.navigation.AppNavGraph
+import com.onshift.app.navigation.Screen
+import com.onshift.app.ui.components.CustomBottomNavigation
+import com.onshift.app.ui.theme.OnShiftTheme
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -37,92 +34,78 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MandatoryNotificationAccessGate {
-                        val navController = rememberNavController()
-                        AppNavGraph(navController = navController)
-                    }
-                }
-            }
-        }
-    }
-}
+                    val userPreferencesRepository = remember { UserPreferencesRepository(applicationContext) }
+                    val userPreferencesState by userPreferencesRepository.userPreferencesFlow.collectAsState(initial = null)
 
-private fun isNotificationAccessGranted(context: Context): Boolean {
-    val enabledPackages = NotificationManagerCompat.getEnabledListenerPackages(context)
-    return enabledPackages.contains(context.packageName)
-}
-
-@Composable
-fun MandatoryNotificationAccessGate(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    var hasPermission by remember { mutableStateOf(isNotificationAccessGranted(context)) }
-
-    // Automatically re-checks when returning to the app from Settings
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                hasPermission = isNotificationAccessGranted(context)
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    if (hasPermission) {
-        content()
-    } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(48.dp)
-                    )
-
-                    Text(
-                        text = "Permission Required",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = "OnShift requires Notification Access to automatically capture and verify shift deliveries on-device.\n\nYou cannot use the app without granting this access.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    val prefs = userPreferencesState
+                    if (prefs == null) {
+                        // Loading preferences state from DataStore
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        // Apply saved language locale if needed on startup
+                        LaunchedEffect(prefs.language) {
+                            if (prefs.language.isNotEmpty()) {
+                                val currentTag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                                if (currentTag != prefs.language) {
+                                    Log.d("LanguageSwitch", "Applying saved startup locale: ${prefs.language}")
+                                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(prefs.language))
+                                }
                             }
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Grant Permission in Settings", fontWeight = FontWeight.Bold)
+                        }
+
+                        // Determine onboarding vs main tab start destination dynamically
+                        val isNeedsOnboarding = prefs.language.isEmpty() || prefs.selectedPlatforms.isEmpty() || !prefs.onboardingCompleted
+                        val startDestination = if (isNeedsOnboarding) {
+                            Screen.LanguageSelection.route
+                        } else {
+                            Screen.Home.route
+                        }
+
+                        val navController = rememberNavController()
+                        val navBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentRoute = navBackStackEntry?.destination?.route
+
+                        val mainTabRoutes = setOf(
+                            Screen.Home.route,
+                            Screen.Evidence.route,
+                            Screen.Credential.route,
+                            Screen.GovernmentSchemes.route,
+                            Screen.Profile.route
+                        )
+                        val showBottomBar = currentRoute in mainTabRoutes
+
+                        Scaffold(
+                            bottomBar = {
+                                if (showBottomBar) {
+                                    CustomBottomNavigation(
+                                        currentRoute = currentRoute,
+                                        onTabSelected = { targetRoute ->
+                                            if (currentRoute != targetRoute) {
+                                                navController.navigate(targetRoute) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.background
+                        ) { innerPadding ->
+                            AppNavGraph(
+                                navController = navController,
+                                startDestination = startDestination,
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
                     }
                 }
             }

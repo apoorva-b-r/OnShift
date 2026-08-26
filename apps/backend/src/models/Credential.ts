@@ -17,10 +17,12 @@ import type { CredentialClaim } from '@onshift/shared-types';
  * would break that call or silently drop data.
  */
 export interface CredentialDocument extends Document {
-  credentialType: string;
+  type: string;
   issuer: string;
   issuerPublicKey: string;
+  publicKeyHex?: string;
   workerId: string;
+  verificationId?: string;
   issuedAt: string;
   validUntil: string;
   claims: CredentialClaim;
@@ -29,7 +31,7 @@ export interface CredentialDocument extends Document {
 
 const CredentialSchema = new Schema<CredentialDocument>(
   {
-    credentialType: {
+    type: {
       type: String,
       required: true,
       default: 'OnShiftIncomeCredential',
@@ -41,11 +43,20 @@ const CredentialSchema = new Schema<CredentialDocument>(
     },
     issuerPublicKey: {
       type: String,
+      required: false,
+    },
+    publicKeyHex: {
+      type: String,
       required: true,
     },
     workerId: {
       type: String,
       required: true,
+      index: true,
+    },
+    verificationId: {
+      type: String,
+      required: false,
       index: true,
     },
     issuedAt: {
@@ -65,6 +76,7 @@ const CredentialSchema = new Schema<CredentialDocument>(
         enum: ['DECLARED', 'OBSERVED', 'CORROBORATED', 'FINANCIALLY_CORROBORATED'],
       },
       platformBreakdown: { type: Schema.Types.Mixed, required: false },
+      identityVerified: { type: Boolean, required: false },
     },
     signature: {
       type: String,

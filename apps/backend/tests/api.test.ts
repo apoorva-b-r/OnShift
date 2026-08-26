@@ -21,17 +21,21 @@ import request from 'supertest';
 import app from '../src/index';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { VerificationRecord } from '../src/models';
+import { VerificationRecord, Credential, IdentityVerification } from '../src/models';
 import { Worker } from '../src/models/Worker';
 import { issueCredential, verifyCredential } from '../src/services/credentialService';
 
 let mongod: MongoMemoryServer;
 let originalEngineUrl: string | undefined;
 
+jest.setTimeout(30000);
+
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
   const uri = mongod.getUri();
   await mongoose.connect(uri);
+  // Ensure unique indexes (e.g. Worker.id) are built before tests run.
+  await Worker.ensureIndexes();
 });
 
 afterAll(async () => {
@@ -70,10 +74,6 @@ describe('GET /api/v1/health', () => {
 
 // =============================================================================
 // 2. Workers round-trip
-// NOTE: workerController currently never touches Mongoose so:
-//   - POST /workers always returns 201 (no persistence, no duplicate check).
-//   - GET /workers/:id returns mock data for OS-DEMO-001 or a generic stub.
-//   - Duplicate POST does NOT return 409 -- this is a KNOWN BUG reported below.
 // =============================================================================
 describe('Workers', () => {
   const testId = `OS-TEST-${Date.now()}`;
@@ -92,23 +92,14 @@ describe('Workers', () => {
     expect(res.body.id).toBe(testId);
   });
 
-  /**
-   * KNOWN BUG -- reported, not silently patched.
-   * workerController.createWorker() never writes to Mongoose, so sending the
-   * same id a second time returns 201 again instead of 409.
-   *
-   * Fix required in workerController.ts:
-   *   const existing = await Worker.findOne({ id });
-   *   if (existing) return res.status(409).json({ error: 'Worker already exists.' });
-   *   const saved = await Worker.create({ id, name, ... });
-   *   return res.status(201).json(saved);
-   */
-  it.skip('[BUG] POST /api/v1/workers with duplicate id returns 409', async () => {
-    await Worker.create({ id: testId, name: 'Pre-seeded Worker' });
+  it('POST /api/v1/workers with duplicate id returns 409', async () => {
+    const duplicateId = `OS-DUPLICATE-${Date.now()}`;
+    await Worker.create({ id: duplicateId, name: 'Pre-seeded Worker' });
     const res = await request(app)
       .post('/api/v1/workers')
-      .send({ id: testId, name: 'Duplicate Worker' });
+      .send({ id: duplicateId, name: 'Duplicate Worker' });
     expect(res.status).toBe(409);
+    expect(res.body.error).toBe('CONFLICT');
   });
 });
 
@@ -132,7 +123,85 @@ describe('Evidence', () => {
         // integrityHash intentionally omitted
       });
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/integrityHash/i);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.message).toBe('Request validation failed.');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'integrityHash' })])
+    );
+  });
+});
+
+// =============================================================================
+// P1. Request validation and centralized errors
+// =============================================================================
+describe('Request validation and error responses', () => {
+  it('rejects an invalid worker payload with structured field details', async () => {
+    const res = await request(app).post('/api/v1/workers').send({ id: '   ' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'VALIDATION_ERROR',
+      message: 'Request validation failed.',
+      details: expect.arrayContaining([expect.objectContaining({ field: 'id' })]),
+    });
+  });
+
+  it('rejects verification requests with an invalid payout period', async () => {
+    const res = await request(app).post('/api/v1/verification/level').send({
+      workerId: 'OS-TEST-VALIDATION',
+      evidenceIds: [],
+      payoutPeriod: { startDate: '2026-08-08', endDate: '2026-08-01' },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'evidenceIds' }),
+        expect.objectContaining({ field: 'payoutPeriod' }),
+      ])
+    );
+  });
+
+  it('rejects credential issuance with an invalid verification level', async () => {
+    const res = await request(app).post('/api/v1/credentials/issue').send({
+      workerId: 'OS-TEST-VALIDATION',
+      disclosedClaims: {
+        verifiedIncome: 30100,
+        period: '01 Aug to 07 Aug 2026',
+        verificationLevel: 'UNVERIFIED',
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'disclosedClaims.verificationLevel' })])
+    );
+  });
+
+  it('rejects malformed consent and scheme-match payloads', async () => {
+    const [consentResponse, schemeResponse] = await Promise.all([
+      request(app).post('/api/v1/consent/request').send({ aaProvider: 'Finvu Sandbox' }),
+      request(app).post('/api/v1/schemes/match').send({ monthlyIncome: -1 }),
+    ]);
+
+    expect(consentResponse.status).toBe(400);
+    expect(consentResponse.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'workerId' })])
+    );
+    expect(schemeResponse.status).toBe(400);
+    expect(schemeResponse.body.details).toEqual(
+      expect.arrayContaining([expect.objectContaining({ field: 'monthlyIncome' })])
+    );
+  });
+
+  it('returns a consistent 404 response for an unknown route', async () => {
+    const res = await request(app).get('/api/v1/not-a-route');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('NOT_FOUND');
+    expect(res.body.message).toMatch(/was not found/i);
   });
 });
 
@@ -237,14 +306,19 @@ describe('Credentials', () => {
       verificationLevel: 'FINANCIALLY_CORROBORATED' as const,
     };
     const credential = issueCredential('OS-TEST-TAMPER', claims);
+    const lastChar = credential.signature.slice(-1);
+    const newChar = lastChar.toLowerCase() === 'a' ? '0' : 'a';
     const mutated = {
       ...credential,
-      signature: credential.signature.replace(/.$/, credential.signature.endsWith('A') ? 'B' : 'A'),
+      signature: credential.signature.slice(0, -1) + newChar,
     };
 
     const res = await request(app)
       .post('/api/v1/credentials/verify')
       .send(mutated);
+    if (res.status !== 200) {
+      console.log('Verify Error Response:', JSON.stringify(res.body, null, 2));
+    }
     expect(res.status).toBe(200);
     expect(res.body.valid).toBe(false);
   });
@@ -264,6 +338,42 @@ describe('Credentials', () => {
     expect(verification.signatureVerified).toBe(true);
     expect(verification.claims?.verifiedIncome).toBe(30100);
   });
+
+  it('POST /api/v1/credentials/issue returns 201 with aligned keys and persists to MongoDB', async () => {
+    const issueWorkerId = `OS-ISSUE-${Date.now()}`;
+    await IdentityVerification.create({
+      workerId: issueWorkerId,
+      provider: 'SETU_DIGILOCKER',
+      status: 'VERIFIED',
+      verifiedAt: new Date(),
+    });
+    const res = await request(app)
+      .post('/api/v1/credentials/issue')
+      .send({
+        workerId: issueWorkerId,
+        disclosedClaims: {
+          verifiedIncome: 30100,
+          period: '01 Aug to 07 Aug 2026',
+          verificationLevel: 'FINANCIALLY_CORROBORATED',
+        },
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.credential).toBeDefined();
+    const cred = res.body.credential;
+    expect(cred.type).toBe('OnShiftIncomeCredential');
+    expect(cred.issuer).toBe('OnShift Proof Authority');
+    expect(cred.publicKeyHex).toBeDefined();
+    expect(cred.workerId).toBe(issueWorkerId);
+    expect(cred.issuedAt).toBeDefined();
+    expect(cred.validUntil).toBeDefined();
+    expect(cred.signature).toBeDefined();
+    expect(cred.claims.verifiedIncome).toBe(30100);
+
+    const savedDoc = await Credential.findOne({ workerId: issueWorkerId });
+    expect(savedDoc).not.toBeNull();
+    expect(savedDoc!.publicKeyHex).toBe(cred.publicKeyHex);
+  });
 });
 
 // =============================================================================
@@ -278,4 +388,56 @@ describe('GET /api/v1/schemes', () => {
     expect(res.body.length).toBeGreaterThan(0);
   });
 });
+
+// =============================================================================
+// 11. Account Aggregator Consent Flow
+// =============================================================================
+describe('Account Aggregator Consent Flow', () => {
+  it('POST /api/v1/consent/request returns 201 with consentId and isMock label', async () => {
+    const res = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST', aaProvider: 'Setu Mock AA' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.consentId).toMatch(/^AA-CONSENT-/);
+    expect(res.body.isMock).toBe(true);
+    expect(res.body.authorizationUrl).toContain(res.body.consentId);
+  });
+
+  it('GET /api/v1/consent/status/:consentId returns 200 for stored consent and 404 for nonexistent ID', async () => {
+    const requestRes = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST-2', aaProvider: 'Setu Mock AA' });
+
+    const consentId = requestRes.body.consentId;
+    const res = await request(app).get(`/api/v1/consent/status/${consentId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.consentId).toBe(consentId);
+    expect(res.body.status).toBe('PENDING');
+    expect(res.body.isMock).toBe(true);
+
+    const res404 = await request(app).get('/api/v1/consent/status/nonexistent-id-12345');
+    expect(res404.status).toBe(404);
+    expect(res404.body.error).toBe('Consent request not found.');
+  });
+
+  it('POST /api/v1/consent/request with invalid fiTypes returns 400', async () => {
+    const res = await request(app)
+      .post('/api/v1/consent/request')
+      .send({ workerId: 'OS-AA-TEST-3', fiTypes: ['NOT_A_REAL_TYPE'] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('VALIDATION_ERROR');
+    expect(res.body.details).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: 'fiTypes',
+          issue: 'fiTypes must be an array of valid AA financial information types.',
+        }),
+      ])
+    );
+  });
+});
+
 

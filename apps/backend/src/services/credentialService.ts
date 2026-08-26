@@ -1,8 +1,20 @@
-import { Credential, CredentialClaim, CredentialVerificationResult } from '@onshift/shared-types';
-import { signCredential, verifyCredentialSignature } from '@onshift/credential-schema';
+import {
+  OnShiftIncomeCredential,
+  CredentialVerificationResult,
+  signCredential,
+  verifyCredentialSignature,
+} from '@onshift/credential-schema';
+import { CredentialClaim } from '@onshift/shared-types';
 import { config } from '../config';
 
-export function issueCredential(workerId: string, claims: CredentialClaim): Credential {
+/**
+ * Issue a signed OnShiftIncomeCredential using Ed25519.
+ * Returns the credential-schema's OnShiftIncomeCredential, which carries
+ * `type` and `publicKeyHex` instead of the shared-types aliases
+ * (`credentialType`, `issuerPublicKey`). The verifier web app and
+ * Android client must accept either alias.
+ */
+export function issueCredential(workerId: string, claims: CredentialClaim): OnShiftIncomeCredential {
   return signCredential(
     workerId,
     claims,
@@ -12,6 +24,10 @@ export function issueCredential(workerId: string, claims: CredentialClaim): Cred
   );
 }
 
-export function verifyCredential(credential: Credential): CredentialVerificationResult {
-  return verifyCredentialSignature(credential);
+/**
+ * Verify the Ed25519 signature of an OnShiftIncomeCredential (or any generic credential object).
+ * Accepts OnShiftIncomeCredential or any object with signature fields.
+ */
+export function verifyCredential(credential: OnShiftIncomeCredential | any): CredentialVerificationResult {
+  return verifyCredentialSignature(credential as any);
 }

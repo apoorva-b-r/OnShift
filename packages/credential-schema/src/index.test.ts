@@ -510,6 +510,7 @@ test('Test 22 — Tampering selective credential fails verification', () => {
   const tamperedCred: OnShiftIncomeCredential = {
     ...cred,
     claims: {
+      ...cred.claims,
       verifiedIncome: 50100,
     },
   };
@@ -599,7 +600,167 @@ test('Test 25 — Part 5: Canonical Demo Credential Verification & Tamper Detect
   assert.equal(tamperedResult.signatureVerified, false);
 });
 
-test('Test 26 — Part 5: Public API Export Verification', async () => {
+// ==================================================
+// PART 6: CREDENTIAL EXPIRY (validUntil) TESTS
+// ==================================================
+
+test('Test 26 — Expiry: validUntil field exists and is ISO 8601 timestamp', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-DEMO-001',
+    { verifiedIncome: 30100, period: '2026-07', verificationLevel: 'CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  assert.ok(credential.validUntil, 'validUntil should exist');
+  assert.equal(typeof credential.validUntil, 'string');
+  // Validate ISO 8601 format (basic check)
+  assert.match(credential.validUntil, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+});
+
+test('Test 27 — Expiry: validUntil is exactly 90 days after issuedAt', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-DEMO-001',
+    { verifiedIncome: 30100, period: '2026-07', verificationLevel: 'CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  const issuedAtMs = new Date(credential.issuedAt).getTime();
+  const validUntilMs = new Date(credential.validUntil).getTime();
+  const diffMs = validUntilMs - issuedAtMs;
+  const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+
+  assert.equal(diffMs, ninetyDaysMs, 'validUntil should be exactly 90 days after issuedAt');
+});
+
+test('Test 28 — Expiry: validUntil is included in the signed payload and protected by signature', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-DEMO-001',
+    { verifiedIncome: 30100, period: '2026-07', verificationLevel: 'CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  // Verify the credential is initially valid
+  const result = verifyCredentialSignature(credential);
+  assert.equal(result.valid, true);
+  assert.equal(result.signatureVerified, true);
+});
+
+test('Test 29 — Expiry: Modifying validUntil invalidates the signature', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-DEMO-001',
+    { verifiedIncome: 30100, period: '2026-07', verificationLevel: 'CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  // Modify validUntil to a different date
+  const tamperedCred: OnShiftIncomeCredential = {
+    ...credential,
+    validUntil: '2026-11-20T10:00:00.000Z', // Different from the actual calculated value
+  };
+
+  const result = verifyCredentialSignature(tamperedCred);
+  assert.equal(result.valid, false, 'Modifying validUntil should invalidate the signature');
+  assert.equal(result.signatureVerified, false);
+});
+
+test('Test 30 — Expiry: Selective disclosure preserves validUntil', () => {
+  const keyPair = generateEd25519KeyPair();
+  const fullClaims: CredentialClaim = {
+    verifiedIncome: 30100,
+    period: '2026-07',
+    verificationLevel: 'CORROBORATED',
+  };
+
+  const disclosedCred = buildSelectiveDisclosureCredential(
+    'OS-DEMO-001',
+    fullClaims,
+    { includeVerifiedIncome: true, includePeriod: false, includeVerificationLevel: false },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  assert.ok(disclosedCred.validUntil, 'validUntil should be present in selectively disclosed credential');
+  assert.ok(disclosedCred.issuedAt, 'issuedAt should be present');
+
+  // Verify the selective disclosure credential is valid
+  const result = verifyCredentialSignature(disclosedCred);
+  assert.equal(result.valid, true);
+  assert.equal(result.signatureVerified, true);
+});
+
+test('Test 31 — Expiry: All claim disclosure variations preserve validUntil', () => {
+  const keyPair = generateEd25519KeyPair();
+  const fullClaims: CredentialClaim = {
+    verifiedIncome: 30100,
+    period: '2026-07',
+    verificationLevel: 'CORROBORATED',
+  };
+
+  const configs = [
+    { includeVerifiedIncome: true, includePeriod: false, includeVerificationLevel: false },
+    { includeVerifiedIncome: false, includePeriod: true, includeVerificationLevel: false },
+    { includeVerifiedIncome: false, includePeriod: false, includeVerificationLevel: true },
+    { includeVerifiedIncome: true, includePeriod: true, includeVerificationLevel: true },
+  ];
+
+  for (const config of configs) {
+    const disclosedCred = buildSelectiveDisclosureCredential(
+      'OS-DEMO-001',
+      fullClaims,
+      config,
+      keyPair.privateKeyHex,
+      keyPair.publicKeyHex,
+      'OnShift Demo Issuer'
+    );
+
+    assert.ok(disclosedCred.validUntil, `validUntil should exist for config ${JSON.stringify(config)}`);
+    const result = verifyCredentialSignature(disclosedCred);
+    assert.equal(result.valid, true, `Credential should verify for config ${JSON.stringify(config)}`);
+  }
+});
+
+test('Test 32 — Expiry: Missing validUntil is rejected by verifyCredentialSignature', () => {
+  const keyPair = generateEd25519KeyPair();
+  const credential = signCredential(
+    'OS-DEMO-001',
+    { verifiedIncome: 30100, period: '2026-07', verificationLevel: 'CORROBORATED' },
+    keyPair.privateKeyHex,
+    keyPair.publicKeyHex,
+    'OnShift Demo Issuer'
+  );
+
+  // Manually create a credential without validUntil
+  const malformedCred: any = {
+    type: credential.type,
+    workerId: credential.workerId,
+    issuer: credential.issuer,
+    issuedAt: credential.issuedAt,
+    claims: credential.claims,
+    signature: credential.signature,
+    publicKeyHex: credential.publicKeyHex,
+    // validUntil is intentionally omitted
+  };
+
+  const result = verifyCredentialSignature(malformedCred);
+  assert.equal(result.valid, false, 'Credential without validUntil should fail verification');
+  assert.equal(result.signatureVerified, false);
+  assert.ok(result.message?.includes('Invalid credential payload structure'));
+});
+
+test('Test 33 — Part 5: Public API Export Verification', async () => {
   const mod = await import('./index.js');
   assert.equal(typeof mod.generateEd25519KeyPair, 'function');
   assert.equal(typeof mod.signCredential, 'function');

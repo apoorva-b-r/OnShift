@@ -1,5 +1,18 @@
+import path from 'path';
+import dns from 'dns';
 import dotenv from 'dotenv';
+
+// Load .env from backend directory and monorepo root
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
+
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (_) {
+  // Ignore if unsupported
+}
+
 
 export const config = {
   port: parseInt(process.env.PORT || '4000', 10),
@@ -13,4 +26,14 @@ export const config = {
   ed25519PublicKeyHex:
     process.env.ED25519_PUBLIC_KEY_HEX ||
     'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
+  jwtSecret: process.env.JWT_SECRET || 'onshift_default_jwt_secret_key_2026_dev_demo_only',
+  setuDigiLockerBaseUrl: process.env.SETU_DIGILOCKER_BASE_URL || 'https://dg-sandbox.setu.co',
+  setuDigiLockerClientId: process.env.SETU_DIGILOCKER_CLIENT_ID || '',
+  setuDigiLockerClientSecret: process.env.SETU_DIGILOCKER_CLIENT_SECRET || '',
+  setuDigiLockerProductInstanceId: process.env.SETU_DIGILOCKER_PRODUCT_INSTANCE_ID || '',
+  setuDigiLockerRedirectUrl:
+    process.env.SETU_DIGILOCKER_REDIRECT_URL ||
+    'http://localhost:4000/api/v1/identity/digilocker/callback',
+  setuDigiLockerMockMode: process.env.SETU_DIGILOCKER_MOCK_MODE === 'true',
 };
+

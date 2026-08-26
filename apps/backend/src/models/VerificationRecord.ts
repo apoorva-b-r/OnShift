@@ -33,7 +33,14 @@ export interface VerificationRecordDocument extends Document {
   supportingEvidence: string[];
   limitations: string;
   evidenceIds: string[]; // the exact evidenceIds sent in the originating request
+  identityVerified?: boolean;
+  reconciliationStatus?: string; // MATCHED | EXPLAINED_DIFFERENCE | UNEXPLAINED_DIFFERENCE | INSUFFICIENT_EVIDENCE
+  expectedGross?: number;
+  authorizedDeductions?: number;
+  expectedNet?: number;
+  actualSettlement?: number;
   engineSource: string; // e.g. "PYTHON_VERIFICATION_ENGINE" or "MOCK_FALLBACK"
+  verificationEngineVersion?: string;
   computedAt: string;
 }
 
@@ -91,10 +98,40 @@ const VerificationRecordSchema = new Schema<VerificationRecordDocument>(
       required: true,
       default: [],
     },
+    identityVerified: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    reconciliationStatus: {
+      type: String,
+      required: false,
+    },
+    expectedGross: {
+      type: Number,
+      required: false,
+    },
+    authorizedDeductions: {
+      type: Number,
+      required: false,
+    },
+    expectedNet: {
+      type: Number,
+      required: false,
+    },
+    actualSettlement: {
+      type: Number,
+      required: false,
+    },
     engineSource: {
       type: String,
       required: true,
       default: 'PYTHON_VERIFICATION_ENGINE',
+    },
+    verificationEngineVersion: {
+      type: String,
+      required: false,
+      default: '1.0.0',
     },
     computedAt: {
       type: String,
