@@ -180,11 +180,27 @@ object BackendApiClient {
     fun login(
         id: String = workerId,
         role: String = "WORKER",
+        name: String? = null,
+        phoneNumber: String? = null,
+        email: String? = null,
+        dateOfBirth: String? = null,
+        gender: String? = null,
+        state: String? = null,
+        city: String? = null,
+        workerCategory: String? = null,
         callback: ApiCallback<JsonObject>
     ) {
         val payload = JsonObject()
         payload.addProperty("workerId", id)
         payload.addProperty("role", role)
+        if (!name.isNullOrBlank()) payload.addProperty("name", name)
+        if (!phoneNumber.isNullOrBlank()) payload.addProperty("phoneNumber", phoneNumber)
+        if (!email.isNullOrBlank()) payload.addProperty("email", email)
+        if (!dateOfBirth.isNullOrBlank()) payload.addProperty("dateOfBirth", dateOfBirth)
+        if (!gender.isNullOrBlank()) payload.addProperty("gender", gender)
+        if (!state.isNullOrBlank()) payload.addProperty("state", state)
+        if (!city.isNullOrBlank()) payload.addProperty("city", city)
+        if (!workerCategory.isNullOrBlank()) payload.addProperty("workerCategory", workerCategory)
         makeRequest("/auth/login", "POST", payload, object : ApiCallback<JsonObject> {
             override fun onSuccess(result: JsonObject) {
                 val token = result.get("token")?.asString

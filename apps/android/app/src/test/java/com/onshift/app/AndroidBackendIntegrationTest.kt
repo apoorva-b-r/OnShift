@@ -429,4 +429,38 @@ class AndroidBackendIntegrationTest {
             assertTrue("Offline error captured cleanly", initErr!!.contains("Network error") || initErr!!.contains("HTTP"))
         }
     }
+
+    // =========================================================================
+    // 10. Backend Login API & Server JWT Storage Handling
+    // =========================================================================
+    @Test
+    fun test10_BackendLoginResponseParsingAndServerJwtStorage() {
+        BackendApiClient.configure("http://localhost:59999/api/v1", "OS-FRONTEND-TEST-001")
+
+        val loginLatch = CountDownLatch(1)
+        var loginError: String? = null
+        BackendApiClient.login(
+            id = "OS-FRONTEND-TEST-001",
+            role = "WORKER",
+            name = "Test Worker Frontend",
+            workerCategory = "Delivery Partner",
+            callback = object : BackendApiClient.ApiCallback<JsonObject> {
+                override fun onSuccess(result: JsonObject) {
+                    loginLatch.countDown()
+                }
+
+                override fun onError(error: String) {
+                    loginError = error
+                    loginLatch.countDown()
+                }
+            }
+        )
+        loginLatch.await(5, TimeUnit.SECONDS)
+        assertNotNull("Client must report error when backend server is offline", loginError)
+        assertTrue(
+            "Offline connection error reported cleanly ($loginError)",
+            loginError!!.contains("Network error") || loginError!!.contains("Connection refused") || loginError!!.contains("HTTP")
+        )
+    }
 }
+

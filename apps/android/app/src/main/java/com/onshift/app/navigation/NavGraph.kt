@@ -103,33 +103,31 @@ fun AppNavGraph(
                         )
 
                         // Real Backend Integration:
-                        // 1. Authenticate with dev login endpoint to acquire JWT token
-                        // 2. Post worker profile document to /api/v1/workers with Bearer token
+                        // 1. Authenticate with dev login endpoint to acquire server-signed JWT token & trigger MongoDB Worker upsert
                         com.onshift.app.data.api.BackendApiClient.login(
                             id = generatedWorkerId,
                             role = "WORKER",
+                            name = fullName,
+                            phoneNumber = phone,
+                            email = email,
+                            dateOfBirth = dob,
+                            gender = gender,
+                            state = state,
+                            city = city,
+                            workerCategory = "Delivery Partner",
                             callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
                                 override fun onSuccess(result: com.google.gson.JsonObject) {
-                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for $generatedWorkerId")
-                                    com.onshift.app.data.api.BackendApiClient.createWorker(
-                                        id = generatedWorkerId,
-                                        name = fullName,
-                                        category = "Gig Worker",
-                                        location = "$city, $state",
-                                        callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
-                                            override fun onSuccess(res: com.google.gson.JsonObject) {
-                                                android.util.Log.i("BackendIntegration", "Worker document created in MongoDB for $generatedWorkerId")
-                                            }
-
-                                            override fun onError(error: String) {
-                                                android.util.Log.w("BackendIntegration", "POST /workers call failed for $generatedWorkerId: $error (falling back to local save)")
-                                            }
+                                    val serverToken = result.get("token")?.asString
+                                    if (!serverToken.isNullOrEmpty()) {
+                                        coroutineScope.launch {
+                                            repository.updateAuthToken(serverToken)
                                         }
-                                    )
+                                    }
+                                    android.util.Log.i("BackendIntegration", "Backend login & Worker profile upsert succeeded for $generatedWorkerId")
                                 }
 
                                 override fun onError(error: String) {
-                                    android.util.Log.w("BackendIntegration", "POST /auth/login call failed for $generatedWorkerId: $error (falling back to local save)")
+                                    android.util.Log.w("BackendIntegration", "POST /auth/login call failed for $generatedWorkerId: $error (falling back to local session)")
                                 }
                             }
                         )
@@ -150,14 +148,35 @@ fun AppNavGraph(
                 onSignInSuccess = { emailOrId, password ->
                     coroutineScope.launch {
                         repository.setLoggedIn(true)
-                        val targetWorkerId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-DEMO-001"
+                        val targetWorkerId = if (emailOrId.startsWith("OS-", ignoreCase = true)) {
+                            emailOrId
+                        } else if (userPreferences.workerId.isNotBlank()) {
+                            userPreferences.workerId
+                        } else {
+                            "OS-DEMO-001"
+                        }
+                        repository.updateWorkerId(targetWorkerId)
 
-                        // Real Backend Integration: Fetch JWT via POST /auth/login and configure client auth
+                        // Real Backend Integration: Fetch server JWT via POST /auth/login and trigger MongoDB Worker upsert
                         com.onshift.app.data.api.BackendApiClient.login(
                             id = targetWorkerId,
                             role = "WORKER",
+                            name = if (userPreferences.fullName.isNotBlank()) userPreferences.fullName else "Worker $targetWorkerId",
+                            phoneNumber = if (userPreferences.phoneNumber.isNotBlank()) userPreferences.phoneNumber else null,
+                            email = if (userPreferences.email.isNotBlank()) userPreferences.email else null,
+                            dateOfBirth = if (userPreferences.dateOfBirth.isNotBlank()) userPreferences.dateOfBirth else null,
+                            gender = if (userPreferences.gender.isNotBlank()) userPreferences.gender else null,
+                            state = if (userPreferences.state.isNotBlank()) userPreferences.state else null,
+                            city = if (userPreferences.city.isNotBlank()) userPreferences.city else null,
+                            workerCategory = "Delivery Partner",
                             callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
                                 override fun onSuccess(result: com.google.gson.JsonObject) {
+                                    val serverToken = result.get("token")?.asString
+                                    if (!serverToken.isNullOrEmpty()) {
+                                        coroutineScope.launch {
+                                            repository.updateAuthToken(serverToken)
+                                        }
+                                    }
                                     android.util.Log.i("BackendIntegration", "Backend login succeeded for worker $targetWorkerId")
                                 }
 
