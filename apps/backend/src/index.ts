@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+// @ts-ignore
 import { WebSocketServer, WebSocket } from 'ws';
 import routes from './routes';
 import { config } from './config';
@@ -45,7 +46,7 @@ if (process.env.NODE_ENV !== 'test') {
   wss.on('connection', (ws: WebSocket) => {
     console.log('[OnShift WS] Android client connected');
 
-    ws.on('message', async (data) => {
+    ws.on('message', async (data: any) => {
       try {
         const message = JSON.parse(data.toString());
 
@@ -68,7 +69,7 @@ if (process.env.NODE_ENV !== 'test') {
       console.log('[OnShift WS] Android client disconnected');
     });
 
-    ws.on('error', (err) => {
+    ws.on('error', (err: any) => {
       console.error('[OnShift WS] Error:', err.message);
     });
   });

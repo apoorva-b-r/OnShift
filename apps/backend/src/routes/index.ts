@@ -13,6 +13,7 @@ import {
   verifyDigiLocker,
   handleDigiLockerCallback,
 } from '../controllers/identityController';
+import { sendOtpHandler, verifyOtpHandler } from '../controllers/otpController';
 import { asyncHandler } from '../middleware/apiError';
 import { authenticateWorker, requireRole } from '../middleware/authMiddleware';
 import {
@@ -54,6 +55,10 @@ router.get('/health', (_req, res) => {
 });
 
 router.post('/auth/login', requireDemoAuth, asyncHandler(login));
+
+// Mock OTP Phone Verification (Protected)
+router.post('/auth/otp/send', workerAuth, asyncHandler(sendOtpHandler));
+router.post('/auth/otp/verify', workerAuth, asyncHandler(verifyOtpHandler));
 
 // Workers (Protected)
 router.get('/workers/:id', workerAuth, asyncHandler(getWorker));
