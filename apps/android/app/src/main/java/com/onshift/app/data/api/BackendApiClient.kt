@@ -30,7 +30,7 @@ object BackendApiClient {
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
 
-    fun createJwtToken(sub: String, secret: String = "24bb3889a3eb46f539d326b55ea6a58ea92b8bc37d0299a2f44b5be691af4b57"): String {
+    fun createJwtToken(sub: String, secret: String = "onshift_default_jwt_secret_key_2026_dev_demo_only"): String {
         val encoder = Base64.getUrlEncoder().withoutPadding()
         val header = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}"
         val now = System.currentTimeMillis() / 1000
