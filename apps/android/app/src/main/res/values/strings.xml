@@ -109,6 +109,7 @@
     <string name="continue_to_share">Continue to share</string>
     <string name="link_copied">Link copied to clipboard</string>
     <string name="share_credential_message">Here is my OnShift verified income credential. Open this link to verify it: %1$s</string>
+    <string name="shortening_link">Shortening link...</string>
 
     <!-- Verification Screen -->
     <string name="evidence_verification_title">Evidence Verification Level</string>

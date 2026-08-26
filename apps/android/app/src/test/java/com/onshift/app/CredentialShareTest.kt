@@ -4,6 +4,8 @@ import com.google.gson.GsonBuilder
 import com.onshift.app.data.model.Credential
 import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.ui.screens.VERIFIER_URL
+import com.onshift.app.ui.screens.shortenUrl
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import java.util.Base64
@@ -79,11 +81,18 @@ class CredentialShareTest {
         val fullLink = "${VERIFIER_URL}?data=${encodedStr}"
 
         assertTrue(fullLink.startsWith("https://on-shift-verifier-web-22pj.vercel.app/?data="))
-        
+
         // Test decoding back
         val decodedBytes = Base64.getUrlDecoder().decode(encodedStr)
         val decodedJson = String(decodedBytes, Charsets.UTF_8)
         assertTrue(decodedJson.contains("WORKER-789"))
         assertTrue(decodedJson.contains("50000.0"))
+    }
+
+    @Test
+    fun testShortenUrlFallbackOnInvalidUrl() = runBlocking {
+        val dummyUrl = "invalid-url-for-shortener"
+        val result = shortenUrl(dummyUrl)
+        assertEquals(dummyUrl, result)
     }
 }

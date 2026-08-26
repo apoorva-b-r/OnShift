@@ -109,6 +109,7 @@
     <string name="continue_to_share">साझा करने के लिए आगे बढ़ें</string>
     <string name="link_copied">लिंक क्लिपबोर्ड पर कॉपी किया गया</string>
     <string name="share_credential_message">यहाँ मेरा OnShift सत्यापित आय प्रमाणपत्र है। इसे सत्यापित करने के लिए इस लिंक को खोलें: %1$s</string>
+    <string name="shortening_link">लिंक छोटा किया जा रहा है...</string>
 
     <!-- Verification Screen -->
     <string name="evidence_verification_title">प्रमाण सत्यापन स्तर</string>

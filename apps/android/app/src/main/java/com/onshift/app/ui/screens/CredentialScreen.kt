@@ -34,6 +34,14 @@ import com.onshift.app.ui.theme.Primary
 import com.onshift.app.ui.theme.StatusReconciled
 import com.onshift.app.ui.theme.Surface
 import com.onshift.app.ui.theme.TextSecondary
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.util.Log
+import okhttp3.FormBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 /** External verifier / lender portal (Vercel). */
 const val VERIFIER_URL = "https://on-shift-verifier-web-22pj.vercel.app/"
@@ -48,8 +56,49 @@ fun generateVerificationLink(credential: Credential): String {
     return "${VERIFIER_URL}?data=${encodedData}"
 }
 
-fun shareCredential(context: Context, credential: Credential) {
-    val verificationLink = generateVerificationLink(credential)
+private fun safeLogD(tag: String, msg: String, throwable: Throwable? = null) {
+    try {
+        if (throwable != null) {
+            Log.d(tag, msg, throwable)
+        } else {
+            Log.d(tag, msg)
+        }
+    } catch (t: Throwable) {
+        // Ignored in desktop JVM unit test environment
+    }
+}
+
+suspend fun shortenUrl(longUrl: String): String = withContext(Dispatchers.IO) {
+    try {
+        val formBody = FormBody.Builder()
+            .add("format", "simple")
+            .add("url", longUrl)
+            .build()
+
+        val client = OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .build()
+
+        val request = Request.Builder()
+            .url("https://is.gd/create.php")
+            .post(formBody)
+            .build()
+
+        val response = client.newCall(request).execute()
+        val body = response.body?.string()?.trim()
+        safeLogD("CredentialShare", "is.gd response: $body")
+
+        if (response.isSuccessful && !body.isNullOrEmpty() && !body.startsWith("Error:") && body.startsWith("http")) {
+            return@withContext body
+        }
+    } catch (e: Exception) {
+        safeLogD("CredentialShare", "is.gd request error: ${e.message}", e)
+    }
+    return@withContext longUrl
+}
+
+fun shareCredential(context: Context, verificationLink: String) {
     val shareMessage = context.getString(R.string.share_credential_message, verificationLink)
 
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -87,7 +136,10 @@ fun CredentialContent(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
     var showShareDialog by remember { mutableStateOf(false) }
+    var isShortening by remember { mutableStateOf(false) }
+    var activeVerificationLink by remember { mutableStateOf<String?>(null) }
     val claimsToDisplay = disclosedClaims ?: credential.includedClaims
 
     val showIdentity = claimsToDisplay.isEmpty() || claimsToDisplay.any { it.contains("Identity", ignoreCase = true) || it.contains("Name", ignoreCase = true) }
@@ -236,17 +288,39 @@ fun CredentialContent(
         )
 
         Button(
-            onClick = { showShareDialog = true },
+            onClick = {
+                if (!isShortening) {
+                    isShortening = true
+                    coroutineScope.launch {
+                        val longLink = generateVerificationLink(filteredCredential)
+                        val shortened = shortenUrl(longLink)
+                        activeVerificationLink = shortened
+                        isShortening = false
+                        showShareDialog = true
+                    }
+                }
+            },
+            enabled = !isShortening,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.Share, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(text = stringResource(R.string.share_with_lender))
+            if (isShortening) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.shortening_link))
+            } else {
+                Icon(Icons.Default.Share, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.share_with_lender))
+            }
         }
 
         if (showShareDialog) {
-            val verificationLink = remember(filteredCredential) { generateVerificationLink(filteredCredential) }
+            val verificationLink = activeVerificationLink ?: generateVerificationLink(filteredCredential)
             val linkCopiedMsg = stringResource(R.string.link_copied)
             AlertDialog(
                 onDismissRequest = { showShareDialog = false },
@@ -298,7 +372,7 @@ fun CredentialContent(
                     Button(
                         onClick = {
                             showShareDialog = false
-                            shareCredential(context, filteredCredential)
+                            shareCredential(context, verificationLink)
                         },
                         shape = RoundedCornerShape(8.dp)
                     ) {
