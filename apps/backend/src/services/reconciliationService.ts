@@ -1,6 +1,8 @@
 import { ReconciliationResult, PayoutPeriod } from '@onshift/shared-types';
 import { DEMO_RECONCILIATION_SCENARIO_1, DEMO_RECONCILIATION_SCENARIO_2 } from '@onshift/mock-data';
 import { config } from '../config';
+import { Evidence } from '../models';
+import { ApiError } from '../middleware/apiError';
 import { validateAndNormalizeEvidence, CanonicalEvidenceInput } from './evidenceAdapter';
 
 export async function runReconciliation(
@@ -10,6 +12,24 @@ export async function runReconciliation(
   scenarioMode: string = 'SCENARIO_1',
   evidences?: any[]
 ): Promise<ReconciliationResult> {
+  if (evidenceIds && evidenceIds.length > 0) {
+    try {
+      const forbiddenDoc = await Evidence.findOne({
+        id: { $in: evidenceIds },
+        workerId: { $ne: workerId },
+      }).lean();
+      if (forbiddenDoc) {
+        throw new ApiError(
+          403,
+          'FORBIDDEN_EVIDENCE_ACCESS',
+          `Evidence ID ${forbiddenDoc.id} belongs to worker ${forbiddenDoc.workerId}, not authenticated worker ${workerId}.`
+        );
+      }
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+    }
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -52,4 +72,3 @@ export async function runReconciliation(
 
   return result;
 }
-

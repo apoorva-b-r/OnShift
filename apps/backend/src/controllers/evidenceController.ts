@@ -10,19 +10,30 @@ import {
 
 /**
  * GET /evidence/worker/:workerId
- * Returns persisted evidence sorted by capturedAt. If DB unreachable or no records
- * and the worker is the demo worker, fall back to mock data with a top‑level
- * "source": "MOCK_FALLBACK" field.
+ * Returns persisted evidence sorted by capturedAt for the authenticated worker.
  */
 export const getEvidenceByWorker = async (req: Request, res: Response) => {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
+    throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker identity required.');
+  }
+
   const { workerId } = req.params;
+  if (workerId !== authWorkerId) {
+    throw new ApiError(
+      403,
+      'FORBIDDEN',
+      `Authenticated identity (${authWorkerId}) cannot access evidence for worker (${workerId}).`
+    );
+  }
+
   try {
-    const docs = await Evidence.find({ workerId }).sort({ capturedAt: 1 }).lean();
+    const docs = await Evidence.find({ workerId: authWorkerId }).sort({ capturedAt: 1 }).lean();
     if (docs && docs.length) {
       return res.json(docs);
     }
-    // No persisted evidence
-    if (workerId === 'OS-DEMO-001') {
+    // No persisted evidence fallback for demo worker
+    if (authWorkerId === 'OS-DEMO-001') {
       return res.json({
         source: 'MOCK_FALLBACK',
         evidence: [
@@ -35,8 +46,7 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
     }
     return res.json([]);
   } catch (err) {
-    // DB error – treat like unreachable
-    if (workerId === 'OS-DEMO-001') {
+    if (authWorkerId === 'OS-DEMO-001') {
       return res.json({
         source: 'MOCK_FALLBACK',
         evidence: [
@@ -54,9 +64,22 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
 
 /**
  * POST /evidence
- * Validates required fields, generates an id if missing, persists the document.
+ * Validates required fields, generates an id if missing, persists evidence strictly owned by req.user.workerId.
  */
 export const createEvidence = async (req: Request, res: Response) => {
+  const authWorkerId = req.user?.workerId;
+  if (!authWorkerId) {
+    throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker identity required.');
+  }
+
+  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
+    throw new ApiError(
+      403,
+      'WORKER_ID_MISMATCH',
+      `Authenticated identity (${authWorkerId}) does not match request workerId (${req.body.workerId}).`
+    );
+  }
+
   const {
     source,
     type,
@@ -73,6 +96,7 @@ export const createEvidence = async (req: Request, res: Response) => {
 
   const evidenceDoc = {
     ...rest,
+    workerId: authWorkerId,
     source,
     type,
     platform,
@@ -94,4 +118,3 @@ export const createEvidence = async (req: Request, res: Response) => {
     throw new ApiError(500, 'DATABASE_ERROR', 'Failed to save evidence.');
   }
 };
-
