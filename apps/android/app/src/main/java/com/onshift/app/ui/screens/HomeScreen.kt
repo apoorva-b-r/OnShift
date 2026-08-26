@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.onshift.app.R
+import com.onshift.app.notifications.NotificationAccessBanner
 import com.onshift.app.data.model.*
 import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.*
@@ -87,6 +88,8 @@ fun HomeScreenContent(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        NotificationAccessBanner(selectedPlatforms = userPrefs.selectedPlatforms)
+
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 text = stringResource(R.string.welcome_worker, worker.id),

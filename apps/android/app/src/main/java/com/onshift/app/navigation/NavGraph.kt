@@ -23,6 +23,7 @@ import com.onshift.app.data.model.ReconciliationResult
 import com.onshift.app.data.model.ReconciliationStatus
 import com.onshift.app.ui.screens.*
 import com.onshift.app.ui.viewmodel.GovernmentSchemesViewModel
+import com.onshift.app.notifications.NotificationAccessOnboardingScreen
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
@@ -42,6 +43,7 @@ sealed class Screen(val route: String) {
     object SignIn : Screen("sign_in")
     object PhoneOtp : Screen("phone_otp")
     object PlatformSelection : Screen("platform_selection")
+    object NotificationAccess : Screen("notification_access")
     object IdentityOnboarding : Screen("identity_onboarding")
 }
 
@@ -73,7 +75,7 @@ fun AppNavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Onboarding Sequence: Language -> SignUp -> SignIn -> PhoneOtp -> Identity -> Platform Selection -> Home
+        // Onboarding Sequence: Language -> SignUp -> SignIn -> PhoneOtp -> Identity -> Platform Selection -> Notification access -> Home
         composable(Screen.LanguageSelection.route) {
             LanguageSelectionScreen(
                 onLanguageSelected = { lang ->
@@ -277,6 +279,16 @@ fun AppNavGraph(
                 onPlatformsSelected = { platforms ->
                     coroutineScope.launch {
                         repository.updateSelectedPlatforms(platforms)
+                        navController.navigate(Screen.NotificationAccess.route)
+                    }
+                }
+            )
+        }
+        composable(Screen.NotificationAccess.route) {
+            NotificationAccessOnboardingScreen(
+                selectedPlatforms = userPreferences.selectedPlatforms,
+                onContinue = {
+                    coroutineScope.launch {
                         repository.setOnboardingCompleted(true)
                         repository.setLoggedIn(true)
                         navController.navigate(Screen.Home.route) {

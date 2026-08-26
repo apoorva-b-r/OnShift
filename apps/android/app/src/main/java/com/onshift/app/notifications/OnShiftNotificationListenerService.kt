@@ -3,9 +3,13 @@ package com.onshift.app.notifications
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import com.onshift.app.BuildConfig
+import com.onshift.app.OnShiftApp
+import com.onshift.app.data.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class OnShiftNotificationListenerService : NotificationListenerService() {
 
@@ -15,26 +19,32 @@ class OnShiftNotificationListenerService : NotificationListenerService() {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
 
-        val packageName = sbn.packageName ?: ""
+        val packageName = sbn.packageName
         val extras = sbn.notification.extras
         val title = extras.getString("android.title") ?: ""
         val text = extras.getCharSequence("android.text")?.toString() ?: ""
         val notificationId = "${sbn.id}-${sbn.postTime}"
 
-        val content = "$title $text"
-        val parser = PlatformRegistry.getParserForPackage(packageName, content)
-
         scope.launch {
-            val evidence = parser.parse(
-                title = title,
-                body = text,
-                notificationId = notificationId,
-                workerId = "OS-DEMO-001"
-            )
-
-            if (evidence != null) {
-                Log.d("OnShiftNotification", "Successfully parsed notification evidence record")
+            val preferences = UserPreferencesRepository(applicationContext).userPreferencesFlow.first()
+            if (packageName !in PlatformRegistry.allowedPackages(preferences.selectedPlatforms)) {
+                debugLog(packageName, accepted = false)
+                return@launch
             }
+
+            val ingestion = NotificationEvidenceIngestion((application as OnShiftApp).evidenceRepository)
+            val accepted = ingestion.ingest(
+                NotificationInput(packageName, title, text, notificationId),
+                preferences.workerId
+            )
+            debugLog(packageName, accepted)
+        }
+    }
+
+    private fun debugLog(packageName: String, accepted: Boolean) {
+        if (BuildConfig.DEBUG) {
+            // Do not log raw notification text or amounts. The encrypted vault is the only raw-data store.
+            Log.d("OnShiftNotification", "package=$packageName status=${if (accepted) "accepted" else "discarded"}")
         }
     }
 }
