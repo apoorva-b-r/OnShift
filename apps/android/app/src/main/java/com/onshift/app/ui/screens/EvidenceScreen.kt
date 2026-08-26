@@ -103,7 +103,14 @@ fun EvidenceScreen(
                 isScanning = true
                 coroutineScope.launch {
                     try {
+                        val mimeType = context.contentResolver.getType(uri) ?: "application/pdf"
+                        android.util.Log.d("OnShiftDocument", "Document selected; mimeType=$mimeType")
+
                         val parseResult = TesseractOcrScanner.scanAndParseDocument(context, uri)
+                        val textLength = parseResult.text.length
+                        val mode = if (parseResult.text.isNotBlank()) "OCR" else "DIRECT_TEXT"
+                        android.util.Log.d("OnShiftDocument", "Extraction mode=$mode; textLength=$textLength")
+
                         val platformName = if (parseResult.evidence?.platform != null && parseResult.evidence.platform != PlatformType.UNKNOWN) {
                             parseResult.evidence.platform.name
                         } else {
@@ -111,18 +118,26 @@ fun EvidenceScreen(
                         }
                         val amountVal = parseResult.evidence?.amount ?: 1450.0
 
-                        repository.createAndSaveEvidence(
+                        val record = repository.createAndSaveEvidence(
                             source = "DECLARED",
                             platform = platformName,
                             amount = amountVal
                         )
                         refreshList()
+
+                        val created = record.id.isNotBlank()
+                        val syncStatus = record.syncStatus
+                        val hashesPresent = record.integrityHash.isNotBlank() && record.previousHash.isNotBlank()
+                        android.util.Log.d("OnShiftDocument", "Evidence created=$created; syncStatus=$syncStatus")
+                        android.util.Log.d("OnShiftDocument", "Hash-chain fields present=$hashesPresent")
+
                         Toast.makeText(
                             context,
                             "Parsed ₹$amountVal ($platformName) via OCR",
                             Toast.LENGTH_LONG
                         ).show()
                     } catch (e: Exception) {
+                        android.util.Log.e("OnShiftDocument", "Error processing document: ${e.localizedMessage}")
                         Toast.makeText(context, "OCR Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                     } finally {
                         isScanning = false
