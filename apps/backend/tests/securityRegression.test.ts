@@ -234,5 +234,43 @@ describe('critical trust-boundary regressions', () => {
 
       spy.mockRestore();
     });
+
+    it('MongoDB persistence failure during credential creation -> 503 CREDENTIAL_PERSISTENCE_FAILED', async () => {
+      // First create a valid verification record
+      const vr = await VerificationRecord.create({
+        id: 'vr-persistence-test',
+        workerId,
+        level: 'FINANCIALLY_CORROBORATED',
+        confidence: 0.96,
+        expectedNet: 30100,
+        actualSettlement: 30100,
+        reconciliationStatus: 'MATCHED',
+        verificationSource: 'AUTHORITATIVE_ENGINE',
+        payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+        reason: 'Expected payout matches actual bank settlement credit',
+        supportingEvidence: [],
+        limitations: 'None',
+        computedAt: new Date(),
+      });
+
+      // Mock Credential.create to fail
+      const spy = jest.spyOn(Credential, 'create').mockRejectedValueOnce(
+        new Error('MongoDB write failed')
+      );
+
+      const res = await request(app)
+        .post('/api/v1/credentials/issue')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ verificationId: 'vr-persistence-test' });
+
+      expect(res.status).toBe(503);
+      expect(res.body.error).toBe('CREDENTIAL_PERSISTENCE_FAILED');
+      expect(res.body.message).toContain('persist to database');
+
+      spy.mockRestore();
+      
+      // Cleanup
+      await VerificationRecord.deleteOne({ id: 'vr-persistence-test' });
+    });
   });
 });

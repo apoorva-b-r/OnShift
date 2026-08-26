@@ -88,6 +88,7 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
 
   const credential = issueCredential(targetWorkerId, authoritativeClaims);
 
+  // Persist credential to MongoDB - this must succeed before returning success
   try {
     await Credential.create({
       credentialType: credential.type || 'OnShiftIncomeCredential',
@@ -102,7 +103,8 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
       signature: credential.signature,
     });
   } catch (err) {
-    console.warn('Failed to persist credential document to database.');
+    console.error('Failed to persist credential document to database:', err);
+    throw new ApiError(503, 'CREDENTIAL_PERSISTENCE_FAILED', 'Credential was signed but failed to persist to database. Please retry the request.');
   }
 
   const responseCredential = {

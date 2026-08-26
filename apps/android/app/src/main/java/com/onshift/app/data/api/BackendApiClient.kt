@@ -426,7 +426,7 @@ object BackendApiClient {
         return list
     }
 
-    private fun makeSyncRequest(
+    fun makeSyncRequest(
         endpoint: String,
         method: String,
         body: JsonObject? = null

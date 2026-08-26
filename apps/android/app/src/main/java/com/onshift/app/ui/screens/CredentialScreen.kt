@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder
 import com.onshift.app.R
 import com.onshift.app.data.model.Credential
 import com.onshift.app.data.model.MockData
+import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.Primary
 import com.onshift.app.ui.theme.StatusReconciled
@@ -111,7 +112,7 @@ fun shareCredential(context: Context, verificationLink: String) {
 
 @Composable
 fun CredentialScreen(
-    credential: Credential = MockData.mockCredential,
+    credential: Credential? = null,
     disclosedClaims: List<String>? = null,
     onBackToClaims: () -> Unit = {},
     uiState: UiState<Credential>? = null
@@ -123,17 +124,24 @@ fun CredentialScreen(
             is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.empty_credential))
             is UiState.Success -> CredentialContent(onBackToClaims, uiState.data, disclosedClaims)
         }
-    } else {
+    } else if (credential != null) {
         CredentialContent(onBackToClaims, credential, disclosedClaims)
+    } else {
+        UiStateEmptyView(message = stringResource(R.string.empty_credential))
     }
 }
 
 @Composable
 fun CredentialContent(
     onBackToClaims: () -> Unit,
-    credential: Credential,
+    credential: Credential?,
     disclosedClaims: List<String>? = null
 ) {
+    if (credential == null) {
+        UiStateEmptyView(message = stringResource(R.string.empty_credential))
+        return
+    }
+
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
@@ -195,10 +203,13 @@ fun CredentialContent(
                         fontWeight = FontWeight.Bold,
                         color = Primary
                     )
-                    CredentialStatusBadge(
-                        text = "VERIFIED",
-                        containerColor = StatusReconciled
-                    )
+                    // Only show VERIFIED badge if we have a valid verification level from backend
+                    if (credential.verificationLevel != null && credential.verifiedIncome != null && credential.verifiedIncome!! > 0) {
+                        CredentialStatusBadge(
+                            text = "VERIFIED",
+                            containerColor = StatusReconciled
+                        )
+                    }
                 }
 
                 Divider()
@@ -236,15 +247,17 @@ fun CredentialContent(
                 }
 
                 if (showIncome) {
-                    val incomeVal = credential.verifiedIncome?.toInt() ?: 30100
-                    Text(
-                        text = stringResource(R.string.verified_income, "₹$incomeVal"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    val incomeVal = credential.verifiedIncome?.toInt() ?: 0
+                    if (incomeVal > 0) {
+                        Text(
+                            text = stringResource(R.string.verified_income, "₹$incomeVal"),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                if (showReconciliation) {
+                if (showReconciliation && credential.verificationLevel == VerificationLevel.FINANCIALLY_CORROBORATED) {
                     Text(
                         text = stringResource(R.string.status_matched_label),
                         style = MaterialTheme.typography.bodyMedium,
@@ -437,5 +450,13 @@ fun CredentialScreenPreviewEmpty() {
 @Preview(showBackground = true, name = "CredentialScreen Populated")
 @Composable
 fun CredentialScreenPreviewPopulated() {
-    CredentialScreen(uiState = UiState.Success(MockData.mockCredential))
+    val sampleCredential = Credential(
+        workerId = "OS-DEMO-001",
+        period = "August 2026",
+        verifiedIncome = 30100.0,
+        verificationLevel = VerificationLevel.FINANCIALLY_CORROBORATED,
+        signaturePreview = "0x7d...a1b",
+        includedClaims = listOf("Name", "Verified Income", "Period")
+    )
+    CredentialScreen(uiState = UiState.Success(sampleCredential))
 }

@@ -14,6 +14,7 @@ import {
   handleDigiLockerCallback,
 } from '../controllers/identityController';
 import { sendOtpHandler, verifyOtpHandler } from '../controllers/otpController';
+import { setIdentityVerified } from '../controllers/adminController';
 import { asyncHandler } from '../middleware/apiError';
 import { authenticateWorker, requireRole } from '../middleware/authMiddleware';
 import mockAaRoutes from './mockAaRoutes';
@@ -96,5 +97,8 @@ router.post('/consent/fetch-data', workerAuth, asyncHandler(fetchFinancialData))
 
 // Mock Account Aggregator UI & Verification Routes
 router.use('/mock-aa', mockAaRoutes);
+
+// Admin Routes (Demo/Testing Only)
+router.post('/admin/set-identity-verified', requireDemoAuth, asyncHandler(setIdentityVerified));
 
 export default router;
