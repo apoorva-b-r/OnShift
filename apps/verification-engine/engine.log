@@ -15,3 +15,5 @@ INFO:     127.0.0.1:59178 - "POST /verification/level HTTP/1.1" 200 OK
 INFO:     127.0.0.1:59180 - "POST /reconciliation/run HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58083 - "POST /verification/level HTTP/1.1" 200 OK
 INFO:     127.0.0.1:58084 - "POST /reconciliation/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58524 - "POST /verification/level HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58525 - "POST /reconciliation/run HTTP/1.1" 200 OK
