@@ -22,9 +22,9 @@ class UberParser : NotificationParser {
         val amount = amountMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: return null
 
         // 3. Extract Reference
-        val refRegex = Regex("""(?:Trip\s*(?:#|ID:?)?\s*|UBER-?|Ref:\s*)([A-Z0-9]+)""", RegexOption.IGNORE_CASE)
+        val refRegex = Regex("""(?:Trip\s*(?:#|ID:?)?\s*|Ref:\s*)([A-Z0-9\-]+)""", RegexOption.IGNORE_CASE)
         val refMatch = refRegex.find(content)
-        val reference = refMatch?.groupValues?.get(1) ?: "UBR-${UUID.randomUUID().toString().take(6).uppercase()}"
+        val reference = refMatch?.groupValues?.get(1)?.trimEnd('-') ?: "UBR-${UUID.randomUUID().toString().take(6).uppercase()}"
 
         return NormalizedEvidence(
             id = "obs-uber-${UUID.randomUUID().toString().take(8)}",

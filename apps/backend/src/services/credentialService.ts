@@ -6,6 +6,7 @@ import {
 } from '@onshift/credential-schema';
 import { CredentialClaim } from '@onshift/shared-types';
 import { config } from '../config';
+import { ApiError } from '../middleware/apiError';
 
 /**
  * Issue a signed OnShiftIncomeCredential using Ed25519.
@@ -15,6 +16,9 @@ import { config } from '../config';
  * Android client must accept either alias.
  */
 export function issueCredential(workerId: string, claims: CredentialClaim): OnShiftIncomeCredential {
+  if (!config.ed25519PrivateKeyHex) {
+    throw new ApiError(503, 'CREDENTIAL_SIGNING_UNAVAILABLE', 'Credential signing is not configured.');
+  }
   return signCredential(
     workerId,
     claims,
@@ -29,5 +33,8 @@ export function issueCredential(workerId: string, claims: CredentialClaim): OnSh
  * Accepts OnShiftIncomeCredential or any object with signature fields.
  */
 export function verifyCredential(credential: OnShiftIncomeCredential | any): CredentialVerificationResult {
-  return verifyCredentialSignature(credential as any);
+  return verifyCredentialSignature(credential as any, {
+    issuer: config.trustedIssuer,
+    publicKeyHex: config.trustedIssuerPublicKeyHex,
+  });
 }

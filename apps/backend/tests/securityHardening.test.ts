@@ -7,6 +7,13 @@ import { generateWorkerToken } from '../src/middleware/authMiddleware';
 import { Evidence, VerificationRecord, Credential, IdentityVerification, ConsentRequest } from '../src/models';
 import { config } from '../src/config';
 
+const GENESIS_HASH = 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000';
+
+function computeEvidenceHash(id: string, workerId: string, source: string, platform: string, amount: number, timestamp: string, previousHash: string = GENESIS_HASH): string {
+  const payload = `${id}|${workerId}|${source}|${platform}|${amount}|${timestamp}|${previousHash}`;
+  return crypto.createHash('sha256').update(payload, 'utf8').digest('hex');
+}
+
 function createCustomJwt(headerObj: object, payloadObj: object, secret: string = config.jwtSecret): string {
   const encHeader = Buffer.from(JSON.stringify(headerObj)).toString('base64url');
   const encPayload = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
@@ -21,7 +28,10 @@ function createCustomJwt(headerObj: object, payloadObj: object, secret: string =
 describe('P0 Authentication & Authorization Hardening Test Suite', () => {
   let mongoServer: MongoMemoryServer;
 
+  jest.setTimeout(30000);
+
   beforeAll(async () => {
+    (config as any).demoMode = true;
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
@@ -30,6 +40,7 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
   });
 
   afterAll(async () => {
+    (config as any).demoMode = true;
     await mongoose.disconnect();
     await mongoServer.stop();
   });
@@ -102,11 +113,10 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     const res = await request(app)
       .get('/api/v1/evidence/worker/OS-WORKER-1')
       .set('Authorization', `Bearer ${token}`);
-    // Role is normalised to WORKER; auth passes (result may be 200 or 404/403 based on data state)
     expect(res.status).not.toBe(401);
   });
 
-  // 7. alg: none JWT -> 401
+  // 7. Unsigned alg:none JWT -> 401
   it('7. Unsigned alg:none JWT returns 401 INVALID_TOKEN', async () => {
     const token = createCustomJwt(
       { alg: 'none', typ: 'JWT' },
@@ -119,7 +129,7 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     expect(res.body.error).toBe('INVALID_TOKEN');
   });
 
-  // 8. Unapproved JWT algorithm -> 401
+  // 8. Unapproved algorithm (RS256) -> 401
   it('8. Unapproved algorithm (RS256) header returns 401 INVALID_TOKEN', async () => {
     const token = createCustomJwt(
       { alg: 'RS256', typ: 'JWT' },
@@ -183,24 +193,30 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
 
   // 13. Omitted worker ID is derived from JWT where supported
   it('13. Omitted workerId in body is automatically derived from JWT sub', async () => {
-    const tokenA = generateWorkerToken('OS-WORKER-DERIVED');
+    const workerId = 'OS-WORKER-DERIVED';
+    const tokenA = generateWorkerToken(workerId);
+    const evId = 'ev-derived-13';
+    const ts = new Date().toISOString();
+    const hash = computeEvidenceHash(evId, workerId, 'OBSERVED', 'Zomato', 500, ts);
+
     const res = await request(app)
       .post('/api/v1/evidence')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
+        id: evId,
         source: 'OBSERVED',
         type: 'ORDER_COMPLETED',
         platform: 'Zomato',
         amount: 500,
         currency: 'INR',
         reference: 'REF-DERIVED-001',
-        timestamp: new Date().toISOString(),
-        capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
-        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+        timestamp: ts,
+        capturedAt: ts,
+        previousHash: GENESIS_HASH,
+        integrityHash: hash,
       });
     expect(res.status).toBe(201);
-    expect(res.body.workerId).toBe('OS-WORKER-DERIVED');
+    expect(res.body.workerId).toBe(workerId);
   });
 
   // 14. Worker A cannot retrieve Worker B evidence
@@ -215,7 +231,7 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
       currency: 'INR',
       reference: 'REF-B',
       timestamp: new Date().toISOString(),
-      previousHash: 'GENESIS',
+      previousHash: GENESIS_HASH,
       integrityHash: 'HASH',
       capturedAt: new Date().toISOString(),
     });
@@ -247,7 +263,7 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     expect(res.body.error).toBe('FORBIDDEN_CONSENT_ACCESS');
   });
 
-  // 16. Worker A cannot reconcile, verify, submit evidence, sync, or issue credentials for Worker B
+  // 16. Worker A cannot issue credential using Worker B verification record
   it('16. Worker A cannot issue credential using Worker B verification record', async () => {
     const vrB = await VerificationRecord.create({
       id: 'vr-worker-b-001',
@@ -259,6 +275,8 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
       supportingEvidence: [],
       limitations: 'None',
       evidenceIds: [],
+      engineSource: 'PYTHON_VERIFICATION_ENGINE',
+      verificationSource: 'AUTHORITATIVE_ENGINE',
       computedAt: new Date().toISOString(),
     });
 
@@ -281,28 +299,34 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
 
   // 17. Evidence created using Worker A JWT persists with workerId=Worker A
   it('17. Evidence created with Worker A JWT persists with workerId=OS-WORKER-A', async () => {
-    const tokenA = generateWorkerToken('OS-WORKER-A');
+    const workerId = 'OS-WORKER-A';
+    const tokenA = generateWorkerToken(workerId);
+    const evId = 'ev-per-17';
+    const ts = new Date().toISOString();
+    const hash = computeEvidenceHash(evId, workerId, 'OBSERVED', 'Zomato', 300, ts);
+
     const res = await request(app)
       .post('/api/v1/evidence')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
-        workerId: 'OS-WORKER-A',
+        id: evId,
+        workerId,
         source: 'OBSERVED',
         type: 'ORDER_COMPLETED',
         platform: 'Zomato',
         amount: 300,
         currency: 'INR',
         reference: 'REF-A-PER',
-        timestamp: new Date().toISOString(),
-        capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS',
-        integrityHash: 'HASH-A-PER',
+        timestamp: ts,
+        capturedAt: ts,
+        previousHash: GENESIS_HASH,
+        integrityHash: hash,
       });
 
     expect(res.status).toBe(201);
     const dbDoc = await Evidence.findOne({ reference: 'REF-A-PER' });
     expect(dbDoc).not.toBeNull();
-    expect(dbDoc!.workerId).toBe('OS-WORKER-A');
+    expect(dbDoc!.workerId).toBe(workerId);
   });
 
   // 18. Credentials persist with worker ID derived from JWT sub
@@ -327,6 +351,8 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
       supportingEvidence: [],
       limitations: 'None',
       evidenceIds: [],
+      engineSource: 'PYTHON_VERIFICATION_ENGINE',
+      verificationSource: 'AUTHORITATIVE_ENGINE',
       computedAt: new Date().toISOString(),
     });
 
@@ -367,21 +393,26 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     const tokenA = generateWorkerToken(workerA);
     const tokenB = generateWorkerToken(workerB);
 
+    const evId = 'ev-demo-20';
+    const ts = '2026-08-07T12:00:00Z';
+    const hash = computeEvidenceHash(evId, workerA, 'FINANCIAL', 'HDFC Bank', 30100, ts);
+
     // 1. Worker A submits evidence -> persists with workerId=workerA
     const evRes = await request(app)
       .post('/api/v1/evidence')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({
+        id: evId,
         source: 'FINANCIAL',
         type: 'AA_BANK_SETTLEMENT',
         platform: 'HDFC Bank',
         amount: 30100,
         currency: 'INR',
         reference: 'TXN-DEMO-A',
-        timestamp: '2026-08-07T12:00:00Z',
+        timestamp: ts,
         capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS',
-        integrityHash: 'HASH-DEMO-A',
+        previousHash: GENESIS_HASH,
+        integrityHash: hash,
       });
     expect(evRes.status).toBe(201);
     expect(evRes.body.workerId).toBe(workerA);
@@ -406,13 +437,15 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     expect(verRes.status).toBe(200);
     expect(verRes.body.workerId).toBe(workerA);
 
-    // 3. Credential issued for Worker A (after verifying identity)
+    // 3. Credential issued for Worker A (after verifying identity and promoting record to authoritative)
     await IdentityVerification.create({
       workerId: workerA,
       provider: 'SETU_DIGILOCKER',
       status: 'VERIFIED',
       verifiedAt: new Date(),
     });
+
+    await VerificationRecord.updateOne({ id: verRes.body.id }, { $set: { verificationSource: 'AUTHORITATIVE_ENGINE' } });
 
     const credRes = await request(app)
       .post('/api/v1/credentials/issue')
@@ -432,7 +465,26 @@ describe('P0 Authentication & Authorization Hardening Test Suite', () => {
     expect(mismatchRes.status).toBe(403);
     expect(mismatchRes.body.error).toBe('WORKER_ID_MISMATCH');
 
-    // 5. Worker B JWT + request workerId=workerB -> allowed
+    // 5. Worker B JWT + request workerId=workerB -> allowed (after submitting Worker B evidence)
+    const evIdB = 'ev-demo-20-b';
+    const hashB = computeEvidenceHash(evIdB, workerB, 'FINANCIAL', 'HDFC Bank', 30100, ts);
+    await request(app)
+      .post('/api/v1/evidence')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({
+        id: evIdB,
+        source: 'FINANCIAL',
+        type: 'AA_BANK_SETTLEMENT',
+        platform: 'HDFC Bank',
+        amount: 30100,
+        currency: 'INR',
+        reference: 'TXN-DEMO-B',
+        timestamp: ts,
+        capturedAt: new Date().toISOString(),
+        previousHash: GENESIS_HASH,
+        integrityHash: hashB,
+      });
+
     const workerBRes = await request(app)
       .post('/api/v1/verification/run')
       .set('Authorization', `Bearer ${tokenB}`)

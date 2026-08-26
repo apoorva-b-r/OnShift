@@ -180,24 +180,19 @@ describe('Request validation and error responses', () => {
     );
   });
 
-  it('rejects credential issuance with an invalid verification level', async () => {
+  it('rejects credential issuance when verificationId is missing', async () => {
     const token = generateWorkerToken('OS-TEST-VALIDATION');
     const res = await request(app)
       .post('/api/v1/credentials/issue')
       .set('Authorization', `Bearer ${token}`)
       .send({
         workerId: 'OS-TEST-VALIDATION',
-        disclosedClaims: {
-          verifiedIncome: 30100,
-          period: '01 Aug to 07 Aug 2026',
-          verificationLevel: 'UNVERIFIED',
-        },
       });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('VALIDATION_ERROR');
     expect(res.body.details).toEqual(
-      expect.arrayContaining([expect.objectContaining({ field: 'disclosedClaims.verificationLevel' })])
+      expect.arrayContaining([expect.objectContaining({ field: 'verificationId' })])
     );
   });
 
@@ -311,14 +306,16 @@ describe('Verification fallback (engine unreachable)', () => {
   it('VerificationRecord is persisted with engineSource MOCK_FALLBACK', async () => {
     const persistTestWorkerId = `OS-PERSIST-${Date.now()}`;
     const token = generateWorkerToken(persistTestWorkerId);
-    await request(app)
-      .post('/api/v1/verification/level')
+    const res = await request(app)
+      .post('/api/v1/verification/run')
       .set('Authorization', `Bearer ${token}`)
       .send({
         workerId: persistTestWorkerId,
         payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
         evidenceIds: ['ev-decl-001', 'ev-obs-zomato-001'],
       });
+
+    expect(res.status).toBe(200);
 
     const record = await VerificationRecord.findOne({ workerId: persistTestWorkerId }).lean();
     expect(record).not.toBeNull();
@@ -379,16 +376,28 @@ describe('Credentials', () => {
       status: 'VERIFIED',
       verifiedAt: new Date(),
     });
+    const vr = await VerificationRecord.create({
+      id: `vr-issue-${Date.now()}`,
+      workerId: issueWorkerId,
+      payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+      level: 'FINANCIALLY_CORROBORATED',
+      confidence: 0.96,
+      reason: 'Matched',
+      supportingEvidence: [],
+      limitations: 'None',
+      evidenceIds: [],
+      expectedNet: 30100,
+      engineSource: 'PYTHON_VERIFICATION_ENGINE',
+      verificationSource: 'AUTHORITATIVE_ENGINE',
+      computedAt: new Date().toISOString(),
+    });
+
     const res = await request(app)
       .post('/api/v1/credentials/issue')
       .set('Authorization', `Bearer ${token}`)
       .send({
         workerId: issueWorkerId,
-        disclosedClaims: {
-          verifiedIncome: 30100,
-          period: '01 Aug to 07 Aug 2026',
-          verificationLevel: 'FINANCIALLY_CORROBORATED',
-        },
+        verificationId: vr.id,
       });
 
     expect(res.status).toBe(201);

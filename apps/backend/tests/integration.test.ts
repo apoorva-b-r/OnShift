@@ -218,8 +218,10 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
     expect(createWorkerRes.status).toBe(201);
     expect(createWorkerRes.body.id).toBe(e2eWorkerId);
 
-    // 2. POST /evidence
     const evidenceId = `ev-e2e-${Date.now()}`;
+    const e2eTs = '2026-08-07T12:00:00Z';
+    const e2ePrev = 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000';
+    const e2eHash = require('crypto').createHash('sha256').update(`${evidenceId}|${e2eWorkerId}|FINANCIAL|HDFC Bank|30100|${e2eTs}|${e2ePrev}`).digest('hex');
     const createEvidenceRes = await request(app)
       .post('/api/v1/evidence')
       .set('Authorization', `Bearer ${e2eToken}`)
@@ -232,10 +234,10 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
         amount: 30100,
         currency: 'INR',
         reference: 'TXN-E2E-001',
-        timestamp: '2026-08-07T12:00:00Z',
+        timestamp: e2eTs,
         capturedAt: new Date().toISOString(),
-        previousHash: 'GENESIS_0000000000000000000000000000000000000000000000000000000000000000',
-        integrityHash: 'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8',
+        previousHash: e2ePrev,
+        integrityHash: e2eHash,
       });
     expect(createEvidenceRes.status).toBe(201);
     expect(createEvidenceRes.body.id).toBe(evidenceId);
@@ -261,9 +263,9 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
     expect(reconRes.status).toBe(200);
     expect(reconRes.body.status).toBeDefined();
 
-    // 5. POST /verification/level
+    // 5. POST /verification/run (persists VerificationRecord; replaces /level which doesn't persist)
     const verRes = await request(app)
-      .post('/api/v1/verification/level')
+      .post('/api/v1/verification/run')
       .set('Authorization', `Bearer ${e2eToken}`)
       .send({
         workerId: e2eWorkerId,
@@ -273,6 +275,7 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
     expect(verRes.status).toBe(200);
     expect(verRes.body.level).toBeDefined();
     expect(typeof verRes.body.confidence).toBe('number');
+    const runVerificationId = verRes.body.id;
 
     // 6. Direct VerificationRecord query
     const verRecord = await VerificationRecord.findOne({ workerId: e2eWorkerId }).lean();
@@ -291,11 +294,7 @@ describe('End-to-End Worker Journey & Fallback Consistency', () => {
       .set('Authorization', `Bearer ${e2eToken}`)
       .send({
         workerId: e2eWorkerId,
-        disclosedClaims: {
-          verifiedIncome: 30100,
-          period: '01 Aug to 07 Aug 2026',
-          verificationLevel: verRes.body.level,
-        },
+        verificationId: runVerificationId,
       });
     expect(issueRes.status).toBe(201);
     expect(issueRes.body.credential).toBeDefined();

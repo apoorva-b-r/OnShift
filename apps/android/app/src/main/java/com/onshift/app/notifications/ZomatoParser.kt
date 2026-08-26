@@ -21,18 +21,11 @@ class ZomatoParser : NotificationParser {
         val amountMatch = amountRegex.find(content)
         val amount = amountMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: return null
 
-        // 3. Extract Reference (#ZMT4821, Ref: TXN9912, Order ID: ZMT4821, ZMT4821)
-        val refRegex = Regex("""(?:#|ID:\s*|Ref:\s*|TXN-?|(?:ZMT-?))([A-Z0-9]+)""", RegexOption.IGNORE_CASE)
+        // 3. Extract Reference (#ZMT4821, Ref: TXN9912, Order ID: ZMT4821, ZMT-8841)
+        val refRegex = Regex("""(?:#|ID:\s*|Ref:\s*|TXN-?)(?:ZMT-?)?([A-Z0-9\-]+)""", RegexOption.IGNORE_CASE)
         val refMatch = refRegex.find(content)
         val reference = when {
-            refMatch != null -> {
-                val fullMatch = refMatch.value.trim()
-                if (fullMatch.startsWith("#") || fullMatch.startsWith("Ref:", ignoreCase = true) || fullMatch.startsWith("ID:", ignoreCase = true)) {
-                    refMatch.groupValues[1]
-                } else {
-                    fullMatch
-                }
-            }
+            refMatch != null -> refMatch.groupValues[1].trimEnd('-')
             else -> "ZMT-${UUID.randomUUID().toString().take(6).uppercase()}"
         }
 

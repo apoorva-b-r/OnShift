@@ -3,6 +3,7 @@ import { issueCredential, verifyCredential } from '../services/credentialService
 import { Credential, VerificationRecord } from '../models';
 import { ApiError } from '../middleware/apiError';
 import { requireIdentityVerification } from '../services/identityGate';
+import { config } from '../config';
 
 export const handleIssueCredential = async (req: Request, res: Response) => {
   const authWorkerId = req.user?.workerId;
@@ -25,69 +26,45 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
   await requireIdentityVerification(targetWorkerId);
 
   const { verificationId } = req.body;
+  if (!verificationId) {
+    throw new ApiError(400, 'VERIFICATION_ID_REQUIRED', 'verificationId is required for credential issuance.');
+  }
+
   let record: any = null;
 
-  if (verificationId) {
-    try {
-      record = await VerificationRecord.findOne({ id: verificationId, workerId: targetWorkerId }).lean();
-    } catch (_) { }
+  try {
+    record = await VerificationRecord.findOne({ id: verificationId, workerId: targetWorkerId }).lean();
+  } catch (_) {
+    throw new ApiError(503, 'CREDENTIAL_DATABASE_UNAVAILABLE', 'Credential verification data is temporarily unavailable.');
+  }
 
-    if (!record) {
-      let otherWorkerRecord: any = null;
-      try {
-        otherWorkerRecord = await VerificationRecord.findOne({ id: verificationId }).lean();
-      } catch (_) {}
-      if (otherWorkerRecord && otherWorkerRecord.workerId !== targetWorkerId) {
-        throw new ApiError(
-          403,
-          'FORBIDDEN_WORKER_MISMATCH',
-          `Verification record ${verificationId} belongs to worker ${otherWorkerRecord.workerId}, not authenticated worker ${targetWorkerId}.`
-        );
-      }
-      throw new ApiError(404, 'VERIFICATION_NOT_FOUND', `Verification record ${verificationId} was not found.`);
+  if (!record) {
+    const otherWorkerRecord = await VerificationRecord.findOne({ id: verificationId }).lean();
+    if (otherWorkerRecord && otherWorkerRecord.workerId !== targetWorkerId) {
+      throw new ApiError(403, 'FORBIDDEN_WORKER_MISMATCH', `Verification record ${verificationId} belongs to another worker.`);
     }
+    throw new ApiError(404, 'VERIFICATION_NOT_FOUND', `Verification record ${verificationId} was not found.`);
+  }
 
-    // Idempotency check: If credential was already issued for this verificationId, return existing
-    try {
-      const existingCred = await Credential.findOne({ verificationId, workerId: targetWorkerId }).lean();
-      if (existingCred) {
-        const credentialObj = {
-          type: existingCred.type || (existingCred as any).credentialType || 'OnShiftIncomeCredential',
-          workerId: existingCred.workerId,
-          issuer: existingCred.issuer,
-          issuedAt: existingCred.issuedAt,
-          validUntil: existingCred.validUntil,
-          claims: existingCred.claims,
-          signature: existingCred.signature,
-          publicKeyHex: existingCred.publicKeyHex || existingCred.issuerPublicKey,
-          verificationId: existingCred.verificationId,
-        };
-        return res.status(200).json({ credential: credentialObj });
-      }
-    } catch (_) { }
-  } else {
-    // Legacy / fallback: Look up latest VerificationRecord for worker
-    try {
-      record = await VerificationRecord.findOne({ workerId: targetWorkerId }).sort({ computedAt: -1 }).lean();
-    } catch (_) { }
+  if (record.verificationSource !== 'AUTHORITATIVE_ENGINE' && !config.demoMode) {
+    throw new ApiError(409, 'NON_AUTHORITATIVE_VERIFICATION', 'Demo or non-authoritative verification records cannot issue credentials.');
+  }
 
-    if (!record) {
-      if (req.body?.disclosedClaims) {
-        record = {
-          id: `vr-legacy-${Date.now().toString(36)}`,
-          workerId: targetWorkerId,
-          payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
-          level: req.body.disclosedClaims.verificationLevel || 'FINANCIALLY_CORROBORATED',
-          expectedNet: req.body.disclosedClaims.verifiedIncome ?? 30100,
-        };
-      } else {
-        throw new ApiError(
-          422,
-          'INELIGIBLE_FOR_CREDENTIAL',
-          `No valid verification record found for worker ${targetWorkerId}. Run verification first.`
-        );
-      }
-    }
+  // Idempotency check: If credential was already issued for this verificationId, return existing
+  const existingCred = await Credential.findOne({ verificationId, workerId: targetWorkerId }).lean();
+  if (existingCred) {
+    const credentialObj = {
+      type: existingCred.type || (existingCred as any).credentialType || 'OnShiftIncomeCredential',
+      workerId: existingCred.workerId,
+      issuer: existingCred.issuer,
+      issuedAt: existingCred.issuedAt,
+      validUntil: existingCred.validUntil,
+      claims: existingCred.claims,
+      signature: existingCred.signature,
+      publicKeyHex: existingCred.publicKeyHex || existingCred.issuerPublicKey,
+      verificationId: existingCred.verificationId,
+    };
+    return res.status(200).json({ credential: credentialObj });
   }
 
   // Authoritative server-side claims derived strictly from VerificationRecord

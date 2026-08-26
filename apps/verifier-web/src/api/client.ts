@@ -100,6 +100,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Worker Auth & Identity
+  async login(workerId: string) {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workerId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          setStoredAuth(workerId, data.token);
+          return { workerId, token: data.token };
+        }
+      }
+    } catch (_) {}
+    const token = generateDevToken(workerId);
+    setStoredAuth(workerId, token);
+    return { workerId, token };
+  },
+
   setWorkerSession(workerId: string) {
     const token = generateDevToken(workerId);
     setStoredAuth(workerId, token);
@@ -108,6 +128,32 @@ export const api = {
 
   async getWorker(workerId: string) {
     return request<any>(`/workers/${encodeURIComponent(workerId)}`);
+  },
+
+  // Account Aggregator Consent
+  async requestConsent(fiTypes: string[] = ['DEPOSIT']) {
+    return request<{
+      consentId: string;
+      workerId: string;
+      fiTypes: string[];
+      status: string;
+      consentUrl: string;
+      authorizationUrl?: string;
+      isMock: boolean;
+    }>('/consent/request', {
+      method: 'POST',
+      body: JSON.stringify({ fiTypes }),
+    });
+  },
+
+  async getConsentStatus(consentId: string) {
+    return request<{
+      consentId: string;
+      workerId: string;
+      status: string;
+      consentUrl?: string;
+      isMock: boolean;
+    }>(`/consent/status/${encodeURIComponent(consentId)}`);
   },
 
   async createWorker(workerData: { id: string; name: string; email?: string; phone?: string; platformRole?: string }) {

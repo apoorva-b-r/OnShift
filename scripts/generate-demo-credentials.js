@@ -4,7 +4,6 @@
  */
 
 const {
-  generateEd25519KeyPair,
   signCredential,
 } = require('../packages/credential-schema/dist/index.js');
 
@@ -16,11 +15,13 @@ async function generateDemoCredentials() {
   console.log('ONSHIFT DEMO CREDENTIAL GENERATOR');
   console.log('==================================================\n');
 
-  // Generate keypair for demo issuer
-  const keyPair = generateEd25519KeyPair();
-  console.log('[KeyPair] Generated Ed25519 keypair for OnShift Proof Authority');
-  console.log(`  Public Key:  ${keyPair.publicKeyHex.slice(0, 32)}...`);
-  console.log(`  Private Key: ${keyPair.privateKeyHex.slice(0, 32)}...\n`);
+  const privateKeyHex = process.env.ED25519_PRIVATE_KEY_HEX;
+  const publicKeyHex = process.env.ED25519_PUBLIC_KEY_HEX;
+  if (!privateKeyHex || !publicKeyHex) {
+    throw new Error('Set ED25519_PRIVATE_KEY_HEX and ED25519_PUBLIC_KEY_HEX before generating credentials.');
+  }
+  console.log('[KeyPair] Using the configured OnShift Proof Authority key');
+  console.log(`  Public Key:  ${publicKeyHex.slice(0, 32)}...\n`);
 
   // Generate canonical valid credential
   const validCredential = signCredential(
@@ -30,8 +31,8 @@ async function generateDemoCredentials() {
       period: '01 Aug to 07 Aug 2026',
       verificationLevel: 'FINANCIALLY_CORROBORATED',
     },
-    keyPair.privateKeyHex,
-    keyPair.publicKeyHex,
+    privateKeyHex,
+    publicKeyHex,
     'OnShift Proof Authority'
   );
 

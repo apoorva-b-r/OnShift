@@ -1,4 +1,4 @@
-﻿import request from 'supertest';
+import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../src/index';
@@ -113,6 +113,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
           workerId,
           verificationLevel: 'FINANCIALLY_CORROBORATED', // Client attempt to dictate level
           payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: ['ev-decl-001'],
         });
 
       expect(res.status).toBe(200);
@@ -132,6 +133,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         .send({
           workerId,
           payoutPeriod: { startDate: '2026-08-01', endDate: '2026-08-07' },
+          evidenceIds: ['ev-decl-001'],
         });
 
       expect(res.status).toBe(200);
@@ -187,6 +189,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         limitations: 'None',
         evidenceIds: [],
         engineSource: 'MOCK_TEST',
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 
@@ -225,6 +228,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
         evidenceIds: [],
         expectedNet: 30100,
         engineSource: 'MOCK_TEST',
+        verificationSource: 'AUTHORITATIVE_ENGINE',
         computedAt: new Date().toISOString(),
       });
 

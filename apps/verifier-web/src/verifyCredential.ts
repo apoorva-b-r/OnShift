@@ -4,6 +4,9 @@ const SPKI_HEADER = new Uint8Array([
   0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00,
 ]);
 
+const TRUSTED_ISSUER = import.meta.env.VITE_ONSHIFT_ISSUER || 'OnShift Proof Authority';
+const TRUSTED_ISSUER_PUBLIC_KEY = import.meta.env.VITE_ONSHIFT_ISSUER_PUBLIC_KEY || '';
+
 const CLAIM_LABELS: Record<string, string> = {
   verifiedIncome: 'Verified Income',
   period: 'Payout Period',
@@ -111,6 +114,7 @@ export function normalizeCredential(input: unknown): {
     typeof issuedAt !== 'string' ||
     typeof signature !== 'string' ||
     typeof publicKeyHex !== 'string' ||
+    typeof validUntil !== 'string' ||
     !claims ||
     typeof claims !== 'object'
   ) {
@@ -122,7 +126,7 @@ export function normalizeCredential(input: unknown): {
     workerId,
     issuer,
     issuedAt,
-    validUntil: typeof validUntil === 'string' ? validUntil : undefined,
+    validUntil,
     claims,
     signature,
     publicKeyHex: publicKeyHex as string,
@@ -148,7 +152,7 @@ export { formatClaimValue };
 
 /**
  * Independently verify any OnShift income credential using Ed25519 (Web Crypto).
- * Trust is anchored to the public key embedded in the credential itself.
+ * Trust is anchored to build-time configured issuer metadata, never credential input.
  */
 export async function verifyCredentialInBrowser(input: unknown): Promise<CredentialVerificationResult> {
   const credential = normalizeCredential(input);
@@ -161,9 +165,31 @@ export async function verifyCredentialInBrowser(input: unknown): Promise<Credent
     };
   }
 
+  if (credential.issuer !== TRUSTED_ISSUER) {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuerVerified: false,
+      issuer: credential.issuer,
+      workerId: credential.workerId,
+      message: 'Credential issuer does not match the trusted OnShift issuer.',
+    };
+  }
+
+  if (!TRUSTED_ISSUER_PUBLIC_KEY || credential.publicKeyHex.toLowerCase() !== TRUSTED_ISSUER_PUBLIC_KEY.toLowerCase()) {
+    return {
+      valid: false,
+      signatureVerified: false,
+      issuerVerified: false,
+      issuer: credential.issuer,
+      workerId: credential.workerId,
+      message: 'Credential public key does not match the trusted OnShift issuer key.',
+    };
+  }
+
   try {
     const signatureBytes = hexToBytes(credential.signature);
-    const publicKeyDer = toSpkiPublicKey(credential.publicKeyHex);
+    const publicKeyDer = toSpkiPublicKey(TRUSTED_ISSUER_PUBLIC_KEY);
     const payloadString = serializeCredentialPayload(
       credential.type,
       credential.workerId,

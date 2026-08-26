@@ -20,11 +20,15 @@ export const config = {
   verificationEngineUrl: process.env.VERIFICATION_ENGINE_URL || 'http://localhost:8000',
   issuerName: process.env.ISSUER_NAME || 'OnShift Proof Authority',
   ed25519PrivateKeyHex:
-    process.env.ED25519_PRIVATE_KEY_HEX ||
-    '9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60',
+    process.env.ED25519_PRIVATE_KEY_HEX || '',
   ed25519PublicKeyHex:
     process.env.ED25519_PUBLIC_KEY_HEX ||
     'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
+  trustedIssuer: process.env.ISSUER_NAME || 'OnShift Proof Authority',
+  trustedIssuerPublicKeyHex:
+    process.env.ED25519_PUBLIC_KEY_HEX ||
+    'd75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a',
+  demoMode: process.env.ONSHIFT_DEMO_MODE === 'true' && process.env.NODE_ENV !== 'production',
   jwtSecret: process.env.JWT_SECRET || 'onshift_default_jwt_secret_key_2026_dev_demo_only',
   setuDigiLockerBaseUrl: process.env.SETU_DIGILOCKER_BASE_URL || 'https://dg-sandbox.setu.co',
   setuDigiLockerClientId: process.env.SETU_DIGILOCKER_CLIENT_ID || '',
