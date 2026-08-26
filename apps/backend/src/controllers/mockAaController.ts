@@ -90,10 +90,11 @@ export const approveConsent = async (req: Request, res: Response) => {
     // ignore — best effort
   }
 
-  // If called from standalone demo page, redirect back to it
+  // If called from standalone demo page, redirect back to it.
+  // Relative redirect resolves against the requesting browser's host, so this
+  // works from a physical phone (where absolute localhost would point at the phone).
   if (fromDemo) {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:4000';
-    return res.redirect(`${baseUrl}/api/v1/mock-aa/demo?approved=${consentId}`);
+    return res.redirect(`/api/v1/mock-aa/demo?approved=${consentId}`);
   }
 
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';

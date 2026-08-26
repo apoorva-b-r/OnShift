@@ -32,8 +32,23 @@ fun AccountAggregatorScreen(
     accountAggregatorViewModel: AccountAggregatorViewModel = viewModel()
 ) {
     val state by accountAggregatorViewModel.uiState.collectAsState()
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+
     LaunchedEffect(Unit) {
         if (state is AAUiState.Idle) accountAggregatorViewModel.startConsentFlow("OS-DEMO-001", listOf("DEPOSIT", "TRANSACTIONS"))
+    }
+
+    LaunchedEffect(state) {
+        if (state is AAUiState.AwaitingApproval) {
+            val url = (state as AAUiState.AwaitingApproval).redirectUrl
+            if (url.isNotBlank() && (url.startsWith("http://") || url.startsWith("https://"))) {
+                try {
+                    uriHandler.openUri(url)
+                } catch (_: Exception) {
+                    // Fallback handled safely if browser intent is not available
+                }
+            }
+        }
     }
     Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("Financial verification", style = MaterialTheme.typography.headlineSmall)
@@ -44,9 +59,22 @@ fun AccountAggregatorScreen(
                     Text(if (state is AAUiState.RequestingConsent) "Requesting consent" else "Loading financial data")
                 }
             is AAUiState.AwaitingApproval -> {
-                Text("Waiting for approval. Tap here once approved.")
-                Text(current.redirectUrl)
-                Button(onClick = { accountAggregatorViewModel.retry() }) { Text("Check again") }
+                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                Text("Waiting for consent approval.")
+                Text(current.redirectUrl, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        try { uriHandler.openUri(current.redirectUrl) } catch (_: Exception) {}
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Open Authorization Page")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = { accountAggregatorViewModel.retry() }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Check again after approval")
+                }
             }
             is AAUiState.Error -> {
                 Card(modifier = Modifier.fillMaxWidth()) { Text(current.message, modifier = Modifier.padding(16.dp)) }

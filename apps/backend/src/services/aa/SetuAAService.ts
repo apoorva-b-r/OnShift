@@ -3,7 +3,8 @@ import { AAService } from './AAService';
 export class SetuAAService implements AAService {
   async createConsentRequest(
     _workerId: string,
-    _fiTypes: string[]
+    _fiTypes: string[],
+    _baseUrlOverride?: string
   ): Promise<{ consentId: string; status: string; consentUrl: string }> {
     throw new Error('SetuAAService.createConsentRequest is not implemented yet.');
   }

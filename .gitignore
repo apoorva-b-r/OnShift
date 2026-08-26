@@ -19,6 +19,9 @@ app/build/
 .env.*
 !.env.example
 !.env*.example
+local.properties
+local.properties.*
+!local.properties.example
 *.pem
 *.key
 
@@ -36,6 +39,7 @@ prisma/dev.db
 # Memory Dumps & Temporary Files
 *.hprof
 *.bak
+*.log
 .tmp/
 *.tmp/
 hs_err_pid*.log
