@@ -36,8 +36,14 @@ if (process.env.NODE_ENV !== 'test') {
     } catch (err: any) {
       console.warn(`[OnShift Backend] Local MongoDB not reachable (${err.message}). Starting in-memory MongoDB...`);
       try {
+        const fs = require('fs');
+        const path = require('path');
+        const memDbPath = path.resolve(process.cwd(), '.tmp', 'mongo-mem');
+        fs.mkdirSync(memDbPath, { recursive: true });
         const { MongoMemoryServer } = require('mongodb-memory-server');
-        const memoryServer = await MongoMemoryServer.create();
+        const memoryServer = await MongoMemoryServer.create({
+          instance: { dbPath: memDbPath }
+        });
         const memoryUri = memoryServer.getUri();
         await mongoose.connect(memoryUri);
         console.log(`[OnShift Backend] In-memory MongoDB connected at ${memoryUri}`);
