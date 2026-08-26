@@ -25,7 +25,7 @@ data class VerifyOtpResponse(
 )
 
 object BackendApiClient {
-    private var baseUrl: String = "http://localhost:4000/api/v1"
+    private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
