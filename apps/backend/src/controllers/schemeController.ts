@@ -43,9 +43,9 @@ export interface SchemeRecommendationResult {
   explanationSource: 'NEMOTRON_ULTRA_3' | 'DETERMINISTIC_FALLBACK';
 }
 
-const SCHEMES: CatalogueScheme[] = (schemeCatalogue.schemes as CatalogueScheme[]) || [];
+export const SCHEMES: CatalogueScheme[] = (schemeCatalogue.schemes as CatalogueScheme[]) || [];
 
-function checkEligibility(
+export function checkEligibility(
   scheme: CatalogueScheme,
   profile: { monthlyIncome: number; workerCategory: string; location: string; age?: number }
 ): boolean {
@@ -150,9 +150,11 @@ export const recommendSchemes = async (req: Request, res: Response) => {
   let recommendations: SchemeRecommendationResult[] = [];
   let usedSource: 'NEMOTRON_ULTRA_3' | 'DETERMINISTIC_FALLBACK' = 'DETERMINISTIC_FALLBACK';
 
-  const nemotronApiKey = process.env.NEMOTRON_API_KEY;
+  const openRouterApiKey = process.env.OPENROUTER_API_KEY;
+  const openRouterBaseUrl = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+  const openRouterModel = process.env.OPENROUTER_MODEL || 'nvidia/llama-3.1-nemotron-ultra-253b-v1';
 
-  if (nemotronApiKey) {
+  if (openRouterApiKey && openRouterApiKey !== 'your_openrouter_api_key_here') {
     try {
       const candidateSummary = candidateSchemes.slice(0, 10).map((c) => ({
         id: c.id,
@@ -169,14 +171,16 @@ export const recommendSchemes = async (req: Request, res: Response) => {
         candidateSchemes: candidateSummary,
       });
 
-      const aiResponse = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+      const aiResponse = await fetch(`${openRouterBaseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${nemotronApiKey}`,
+          Authorization: `Bearer ${openRouterApiKey}`,
+          'HTTP-Referer': 'https://onshift.app',
+          'X-Title': 'OnShift Nemotron Ultra',
         },
         body: JSON.stringify({
-          model: 'nvidia/nemotron-mini-4b-instruct',
+          model: openRouterModel,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
