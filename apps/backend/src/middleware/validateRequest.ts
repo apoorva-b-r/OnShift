@@ -53,7 +53,7 @@ function validatePayoutRequest(body: unknown): ValidationDetail[] {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
+  optionalString(data, 'workerId', details);
   if (!Array.isArray(data.evidenceIds) || data.evidenceIds.length === 0 || !data.evidenceIds.every((id) => typeof id === 'string' && id.trim())) {
     details.push({ field: 'evidenceIds', issue: 'Must contain at least one non-empty evidence ID.' });
   }
@@ -89,7 +89,7 @@ export const validateEvidence: RequestValidator = (body) => {
   const data = requestBody(body, details);
   if (!data) return details;
 
-  requiredString(data, 'workerId', details);
+  optionalString(data, 'workerId', details);
   requiredString(data, 'source', details);
   if (typeof data.source === 'string' && !evidenceSources.has(data.source)) {
     details.push({ field: 'source', issue: 'Must be DECLARED, OBSERVED, or FINANCIAL.' });

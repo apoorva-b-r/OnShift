@@ -13,7 +13,7 @@ import {
   handleDigiLockerCallback,
 } from '../controllers/identityController';
 import { asyncHandler } from '../middleware/apiError';
-import { authenticateWorker } from '../middleware/authMiddleware';
+import { authenticateWorker, requireRole } from '../middleware/authMiddleware';
 import {
   validateConsentRequest,
   validateCredentialIssue,
@@ -28,7 +28,9 @@ import {
 
 const router = Router();
 
-// Health
+const workerAuth = [authenticateWorker, requireRole('WORKER')];
+
+// Health (Public)
 router.get('/health', (_req, res) => {
   res.json({
     status: 'HEALTHY',
@@ -38,36 +40,36 @@ router.get('/health', (_req, res) => {
   });
 });
 
-// Workers
-router.get('/workers/:id', asyncHandler(getWorker));
-router.post('/workers', validateRequest(validateWorker), asyncHandler(createWorker));
+// Workers (Protected)
+router.get('/workers/:id', workerAuth, asyncHandler(getWorker));
+router.post('/workers', workerAuth, validateRequest(validateWorker), asyncHandler(createWorker));
 
 // Identity Verification (Setu DigiLocker)
 router.get('/identity/digilocker/callback', asyncHandler(handleDigiLockerCallback));
-router.post('/identity/digilocker/initiate', authenticateWorker, asyncHandler(initiateDigiLocker));
-router.get('/identity/digilocker/status', authenticateWorker, asyncHandler(getDigiLockerStatus));
-router.post('/identity/digilocker/verify', authenticateWorker, asyncHandler(verifyDigiLocker));
+router.post('/identity/digilocker/initiate', workerAuth, asyncHandler(initiateDigiLocker));
+router.get('/identity/digilocker/status', workerAuth, asyncHandler(getDigiLockerStatus));
+router.post('/identity/digilocker/verify', workerAuth, asyncHandler(verifyDigiLocker));
 
-// Evidence
-router.get('/evidence/worker/:workerId', asyncHandler(getEvidenceByWorker));
-router.post('/evidence', authenticateWorker, validateRequest(validateEvidence), asyncHandler(createEvidence));
+// Evidence (Protected)
+router.get('/evidence/worker/:workerId', workerAuth, asyncHandler(getEvidenceByWorker));
+router.post('/evidence', workerAuth, validateRequest(validateEvidence), asyncHandler(createEvidence));
 
-// Reconciliation & Verification
-router.post('/reconciliation/run', authenticateWorker, validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
-router.post('/verification/level', validateRequest(validateVerification), asyncHandler(getVerificationLevel));
-router.post('/verification/run', authenticateWorker, asyncHandler(runVerification));
+// Reconciliation & Verification (Protected)
+router.post('/reconciliation/run', workerAuth, validateRequest(validateReconciliation), asyncHandler(executeReconciliation));
+router.post('/verification/level', workerAuth, validateRequest(validateVerification), asyncHandler(getVerificationLevel));
+router.post('/verification/run', workerAuth, asyncHandler(runVerification));
 
 // Credentials
-router.post('/credentials/issue', authenticateWorker, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
+router.post('/credentials/issue', workerAuth, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
 router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
 
-// Government Schemes
+// Government Schemes (Public)
 router.get('/schemes', asyncHandler(getSchemes));
 router.post('/schemes/match', validateRequest(validateSchemeMatch), asyncHandler(matchSchemes));
 router.post('/schemes/recommend', asyncHandler(recommendSchemes));
 
-// Account Aggregator Consent
-router.post('/consent/request', validateRequest(validateConsentRequest), asyncHandler(requestConsent));
-router.get('/consent/status/:consentId', asyncHandler(getConsentStatus));
+// Account Aggregator Consent (Protected)
+router.post('/consent/request', workerAuth, validateRequest(validateConsentRequest), asyncHandler(requestConsent));
+router.get('/consent/status/:consentId', workerAuth, asyncHandler(getConsentStatus));
 
 export default router;
