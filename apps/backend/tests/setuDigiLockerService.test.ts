@@ -18,9 +18,16 @@ describe('SetuDigiLockerService Adapter Unit Tests', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    Object.assign(config, originalConfig);
+    // Restore setu-specific fields only (avoids issues with getter-only properties)
+    config.setuDigiLockerBaseUrl = originalConfig.setuDigiLockerBaseUrl;
+    config.setuDigiLockerClientId = originalConfig.setuDigiLockerClientId;
+    config.setuDigiLockerClientSecret = originalConfig.setuDigiLockerClientSecret;
+    config.setuDigiLockerProductInstanceId = originalConfig.setuDigiLockerProductInstanceId;
+    config.setuDigiLockerRedirectUrl = originalConfig.setuDigiLockerRedirectUrl;
+    config.setuDigiLockerMockMode = originalConfig.setuDigiLockerMockMode;
     jest.restoreAllMocks();
   });
+
 
   // =========================================================================
   // A. createRequest

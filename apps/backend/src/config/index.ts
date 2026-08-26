@@ -13,7 +13,6 @@ try {
   // Ignore if unsupported
 }
 
-
 export const config = {
   port: parseInt(process.env.PORT || '4000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -36,4 +35,3 @@ export const config = {
     'http://localhost:4000/api/v1/identity/digilocker/callback',
   setuDigiLockerMockMode: process.env.SETU_DIGILOCKER_MOCK_MODE === 'true',
 };
-

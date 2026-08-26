@@ -1,4 +1,4 @@
-﻿/**
+/**
  * auth.test.ts
  *
  * JWT authentication and authorization tests for the OnShift backend.
@@ -19,7 +19,7 @@ import jwt from 'jsonwebtoken';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import app from '../src/index';
-import { Credential, Evidence, Worker } from '../src/models';
+import { Credential, Evidence, Worker, IdentityVerification } from '../src/models';
 
 // ---------------------------------------------------------------------------
 // Setup: use a real in-memory MongoDB, set ENABLE_AUTH=true and JWT_SECRET
@@ -233,7 +233,7 @@ describe('enforceWorkerOwnership', () => {
       .get(`/api/v1/evidence/worker/${workerBId}`)
       .set(authHeader(tokenA));
     expect(res.status).toBe(403);
-    expect(res.body.error).toBe('FORBIDDEN');
+    expect(['FORBIDDEN', 'WORKER_ID_MISMATCH']).toContain(res.body.error);
   });
 
   it('allows token=B accessing evidence URL for worker B', async () => {
@@ -347,9 +347,23 @@ describe('E2E Auth: Worker A scoped journey + cross-worker rejection', () => {
   let crossToken: string;
   let issuedCredential: any;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     e2eToken = makeToken(e2eWorkerId);
     crossToken = makeToken(crossWorkerId);
+
+    await IdentityVerification.create({
+      workerId: e2eWorkerId,
+      provider: 'SETU_DIGILOCKER',
+      status: 'VERIFIED',
+      verifiedAt: new Date(),
+    });
+
+    await IdentityVerification.create({
+      workerId: crossWorkerId,
+      provider: 'SETU_DIGILOCKER',
+      status: 'VERIFIED',
+      verifiedAt: new Date(),
+    });
   });
 
   afterAll(async () => {

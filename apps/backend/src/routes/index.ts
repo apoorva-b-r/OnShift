@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getWorker, createWorker } from '../controllers/workerController';
+import { login } from '../controllers/authController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel, runVerification } from '../controllers/verificationController';
@@ -25,10 +26,22 @@ import {
   validateVerification,
   validateWorker,
 } from '../middleware/validateRequest';
+import { ApiError } from '../middleware/apiError';
 
 const router = Router();
 
 const workerAuth = [authenticateWorker, requireRole('WORKER')];
+
+// Development/demo token issuance only. Production must use a real identity
+// provider and must not expose an endpoint that accepts a worker ID directly.
+// Check at request time so tests and local development can enable the endpoint
+// without changing the router module's initialisation order.
+const requireDemoAuth: import('express').RequestHandler = (_req, _res, next) => {
+  if (process.env.ENABLE_AUTH !== 'true' || process.env.NODE_ENV === 'production') {
+    return next(new ApiError(404, 'NOT_FOUND', 'Route not found.'));
+  }
+  return next();
+};
 
 // Health (Public)
 router.get('/health', (_req, res) => {
@@ -39,6 +52,8 @@ router.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+router.post('/auth/login', requireDemoAuth, asyncHandler(login));
 
 // Workers (Protected)
 router.get('/workers/:id', workerAuth, asyncHandler(getWorker));

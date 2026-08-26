@@ -22,7 +22,7 @@ export const getEvidenceByWorker = async (req: Request, res: Response) => {
   if (workerId !== authWorkerId) {
     throw new ApiError(
       403,
-      'WORKER_ID_MISMATCH',
+      'FORBIDDEN',
       `Authenticated identity (${authWorkerId}) cannot access evidence for worker (${workerId}).`
     );
   }
