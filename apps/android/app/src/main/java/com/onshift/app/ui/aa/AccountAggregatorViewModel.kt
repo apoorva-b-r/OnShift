@@ -3,6 +3,7 @@ package com.onshift.app.ui.aa
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.onshift.app.data.aa.AAConsentRequest
+import com.onshift.app.data.aa.AAConsentResponse
 import com.onshift.app.data.aa.AccountAggregatorProvider
 import com.onshift.app.data.aa.AccountAggregatorProviderSelection
 import com.onshift.app.data.aa.getAccountAggregatorProvider

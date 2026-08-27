@@ -25,7 +25,7 @@ android {
         val localProps = Properties()
         val localPropsFile = rootProject.file("local.properties")
         if (localPropsFile.exists()) localProps.load(localPropsFile.inputStream())
-        val backendUrl = localProps.getProperty("BACKEND_BASE_URL", "http://10.0.2.2:4000/api/v1")
+        val backendUrl = localProps.getProperty("BACKEND_BASE_URL", "http://127.0.0.1:4000/api/v1")
         buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 

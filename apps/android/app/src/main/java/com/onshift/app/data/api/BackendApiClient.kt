@@ -49,7 +49,7 @@ object BackendApiClient {
     // Default is 10.0.2.2 (Android emulator's alias for the host machine).
     // On physical devices, OnShiftApp.onCreate() overrides this via BuildConfig.BACKEND_BASE_URL
     // which is read from local.properties — set BACKEND_BASE_URL=http://<LAPTOP_LAN_IP>:4000/api/v1
-    private var baseUrl: String = "http://10.0.2.2:4000/api/v1"
+    private var baseUrl: String = "http://127.0.0.1:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
     private val executor = Executors.newSingleThreadExecutor()
