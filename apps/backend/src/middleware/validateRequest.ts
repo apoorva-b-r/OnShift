@@ -18,6 +18,8 @@ const validFiTypes = new Set([
   'EQUITIES',
   'INSURANCE_POLICIES',
   'GSTR1_3B',
+  'TRANSACTIONS',
+  'TRANSACTION',
 ]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

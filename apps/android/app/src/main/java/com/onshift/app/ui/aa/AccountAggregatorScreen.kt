@@ -35,7 +35,7 @@ fun AccountAggregatorScreen(
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     LaunchedEffect(Unit) {
-        if (state is AAUiState.Idle) accountAggregatorViewModel.startConsentFlow("OS-DEMO-001", listOf("DEPOSIT", "TRANSACTIONS"))
+        if (state is AAUiState.Idle) accountAggregatorViewModel.startConsentFlow("OS-DEMO-001", listOf("DEPOSIT"))
     }
 
     LaunchedEffect(state) {

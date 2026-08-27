@@ -36,7 +36,7 @@ class AccountAggregatorViewModel(
     private val _uiState = MutableStateFlow<AAUiState>(AAUiState.Idle)
     val uiState: StateFlow<AAUiState> = _uiState.asStateFlow()
     private var lastCustomerId = "OS-DEMO-001"
-    private var lastFiTypes = listOf("DEPOSIT", "TRANSACTIONS")
+    private var lastFiTypes = listOf("DEPOSIT")
     private var activeConsent: AAConsentResponse? = null
 
     fun startConsentFlow(customerId: String, fiTypes: List<String>) {
