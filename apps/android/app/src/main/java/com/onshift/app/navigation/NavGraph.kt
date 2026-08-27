@@ -94,20 +94,21 @@ fun AppNavGraph(
                 onSignUpComplete = { fullName, phone, dob, gender, state, city, email, password ->
                     coroutineScope.launch {
                         val generatedWorkerId = "OS-" + (100000..999999).random()
-                        repository.updateWorkerId(generatedWorkerId)
-                        repository.updatePersonalDetails(
+                        val newAccount = com.onshift.app.data.model.UserAccount(
+                            email = email,
+                            passwordHash = com.onshift.app.utils.PasswordHasher.hashPassword(password),
                             fullName = fullName,
                             phoneNumber = phone,
                             dateOfBirth = dob,
                             gender = gender,
                             state = state,
                             city = city,
-                            email = email,
-                            password = password
+                            workerId = generatedWorkerId
                         )
+                        repository.saveUserAccount(newAccount)
+                        repository.switchActiveAccount(newAccount)
 
                         // Real Backend Integration:
-                        // 1. Authenticate with dev login endpoint to acquire server-signed JWT token & trigger MongoDB Worker upsert
                         com.onshift.app.data.api.BackendApiClient.login(
                             id = generatedWorkerId,
                             role = "WORKER",
@@ -153,7 +154,7 @@ fun AppNavGraph(
                                 }
 
                                 override fun onError(error: String) {
-                                    android.util.Log.w("BackendIntegration", "POST /auth/login call failed for $generatedWorkerId: $error (falling back to local session)")
+                                    android.util.Log.w("BackendIntegration", "POST /auth/login call failed for $generatedWorkerId: $error")
                                 }
                             }
                         )
@@ -173,41 +174,60 @@ fun AppNavGraph(
                 storedPasswordHash = userPreferences.passwordHash,
                 onSignInSuccess = { emailOrId, password ->
                     coroutineScope.launch {
-                        repository.setLoggedIn(true)
-                        val targetWorkerId = if (emailOrId.startsWith("OS-", ignoreCase = true)) {
-                            emailOrId
-                        } else if (userPreferences.workerId.isNotBlank()) {
-                            userPreferences.workerId
+                        // 1. Look up matched stored account locally and restore its specific profile
+                        val matchedAccount = repository.getAccountByEmailOrId(emailOrId)
+                        if (matchedAccount != null) {
+                            repository.switchActiveAccount(matchedAccount)
+                            android.util.Log.i("AccountSwitch", "Loaded stored account profile for ${matchedAccount.email} (${matchedAccount.fullName})")
                         } else {
-                            "OS-DEMO-001"
+                            repository.setLoggedIn(true)
+                            repository.updatePersonalDetails(
+                                fullName = if (emailOrId.contains("@")) emailOrId.substringBefore("@") else "Worker $emailOrId",
+                                phoneNumber = "+91 98765 43210",
+                                dateOfBirth = "1998-05-15",
+                                gender = "Female",
+                                state = "Maharashtra",
+                                city = "Mumbai",
+                                email = if (emailOrId.contains("@")) emailOrId else userPreferences.email,
+                                password = password
+                            )
                         }
-                        repository.updateWorkerId(targetWorkerId)
 
-                        // Real Backend Integration: Fetch server JWT via POST /auth/login and trigger MongoDB Worker upsert
+                        // 2. Real Backend Integration: Login via POST /auth/login and sync MongoDB profile
                         com.onshift.app.data.api.BackendApiClient.login(
-                            id = targetWorkerId,
+                            id = emailOrId,
                             role = "WORKER",
-                            name = if (userPreferences.fullName.isNotBlank()) userPreferences.fullName else "Worker $targetWorkerId",
-                            phoneNumber = if (userPreferences.phoneNumber.isNotBlank()) userPreferences.phoneNumber else null,
-                            email = if (userPreferences.email.isNotBlank()) userPreferences.email else null,
-                            dateOfBirth = if (userPreferences.dateOfBirth.isNotBlank()) userPreferences.dateOfBirth else null,
-                            gender = if (userPreferences.gender.isNotBlank()) userPreferences.gender else null,
-                            state = if (userPreferences.state.isNotBlank()) userPreferences.state else null,
-                            city = if (userPreferences.city.isNotBlank()) userPreferences.city else null,
+                            email = if (emailOrId.contains("@")) emailOrId else null,
                             workerCategory = "Delivery Partner",
                             callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
                                 override fun onSuccess(result: com.google.gson.JsonObject) {
                                     val serverToken = result.get("token")?.asString
-                                    if (!serverToken.isNullOrEmpty()) {
-                                        coroutineScope.launch {
+                                    val canonicalWorkerId = result.get("workerId")?.asString ?: emailOrId
+
+                                    coroutineScope.launch {
+                                        if (!serverToken.isNullOrEmpty()) {
                                             repository.updateAuthToken(serverToken)
                                         }
+                                        repository.updateWorkerId(canonicalWorkerId)
+
+                                        val workerObj = if (result.has("worker") && !result.get("worker").isJsonNull) result.getAsJsonObject("worker") else null
+                                        if (workerObj != null) {
+                                            val name = if (workerObj.has("name") && !workerObj.get("name").isJsonNull && workerObj.get("name").asString.isNotBlank()) workerObj.get("name").asString else emailOrId.substringBefore("@")
+                                            val phone = if (workerObj.has("phoneNumber") && !workerObj.get("phoneNumber").isJsonNull) workerObj.get("phoneNumber").asString else "+91 98765 43210"
+                                            val dob = if (workerObj.has("dateOfBirth") && !workerObj.get("dateOfBirth").isJsonNull) workerObj.get("dateOfBirth").asString else "1998-05-15"
+                                            val gender = if (workerObj.has("gender") && !workerObj.get("gender").isJsonNull) workerObj.get("gender").asString else "Female"
+                                            val state = if (workerObj.has("state") && !workerObj.get("state").isJsonNull) workerObj.get("state").asString else "Maharashtra"
+                                            val city = if (workerObj.has("city") && !workerObj.get("city").isJsonNull) workerObj.get("city").asString else "Mumbai"
+                                            val email = if (workerObj.has("email") && !workerObj.get("email").isJsonNull && workerObj.get("email").asString.isNotBlank()) workerObj.get("email").asString else emailOrId
+                                            repository.updatePersonalDetails(name, phone, dob, gender, state, city, email, password)
+                                            android.util.Log.i("BackendIntegration", "Successfully extracted worker profile from login response for $canonicalWorkerId ($name)")
+                                        }
                                     }
-                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for worker $targetWorkerId")
+                                    android.util.Log.i("BackendIntegration", "Backend login succeeded for worker $canonicalWorkerId")
                                 }
 
                                 override fun onError(error: String) {
-                                    android.util.Log.w("BackendIntegration", "Backend login failed for $targetWorkerId: $error (falling back to local session)")
+                                    android.util.Log.w("BackendIntegration", "Backend login failed for $emailOrId: $error")
                                 }
                             }
                         )

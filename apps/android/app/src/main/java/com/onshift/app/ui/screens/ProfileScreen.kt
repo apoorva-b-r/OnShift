@@ -41,6 +41,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private fun getNonEmptyJsonString(json: com.google.gson.JsonObject, key: String): String? {
+    return try {
+        val elem = json.get(key)
+        if (elem != null && !elem.isJsonNull) {
+            val str = elem.asString
+            if (str.isNotBlank()) str else null
+        } else null
+    } catch (_: Exception) { null }
+}
+
 @Composable
 fun ProfileScreen(
     onNavigateToIdentity: () -> Unit = {},
@@ -83,6 +93,33 @@ fun ProfileScreen(
         val selectedPlatforms = userPreferences.selectedPlatforms
         val lastBackedUpAt = userPreferences.lastBackedUpAt
 
+        // Fetch latest profile from MongoDB Atlas on screen launch
+        LaunchedEffect(userPreferences.workerId) {
+            val targetId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-SADHANA-001"
+            com.onshift.app.data.api.BackendApiClient.getWorker(
+                id = targetId,
+                callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                    override fun onSuccess(result: com.google.gson.JsonObject) {
+                        coroutineScope.launch {
+                            val name = getNonEmptyJsonString(result, "name") ?: userPreferences.fullName
+                            val phone = getNonEmptyJsonString(result, "phoneNumber") ?: userPreferences.phoneNumber
+                            val dob = getNonEmptyJsonString(result, "dateOfBirth") ?: userPreferences.dateOfBirth
+                            val gender = getNonEmptyJsonString(result, "gender") ?: userPreferences.gender
+                            val state = getNonEmptyJsonString(result, "state") ?: userPreferences.state
+                            val city = getNonEmptyJsonString(result, "city") ?: userPreferences.city
+                            val email = getNonEmptyJsonString(result, "email") ?: userPreferences.email
+                            repository.updatePersonalDetails(name, phone, dob, gender, state, city, email)
+                            Log.d("ProfileScreen", "Fetched worker profile from MongoDB for worker $targetId: $name ($email)")
+                        }
+                    }
+
+                    override fun onError(error: String) {
+                        Log.w("ProfileScreen", "Could not fetch worker profile from MongoDB for $targetId: $error (using local profile)")
+                    }
+                }
+            )
+        }
+
         ProfileContent(
             privacyRecord = privacyRecord,
             userPreferences = userPreferences,
@@ -92,8 +129,28 @@ fun ProfileScreen(
             onNavigateToIdentity = onNavigateToIdentity,
             onUpdatePersonalDetails = { name, phone, dob, gender, state, city ->
                 coroutineScope.launch {
-                    // No backend worker-update endpoint currently exists (confirmed via investigation), this is a local-only save until one is added.
-                    repository.updatePersonalDetails(name, phone, dob, gender, state, city)
+                    repository.updatePersonalDetails(name, phone, dob, gender, state, city, userPreferences.email)
+                    val targetId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-SADHANA-001"
+                    // Sync updated profile to MongoDB Atlas via POST /workers
+                    com.onshift.app.data.api.BackendApiClient.createWorker(
+                        id = targetId,
+                        name = name,
+                        phoneNumber = phone,
+                        email = userPreferences.email,
+                        dateOfBirth = dob,
+                        gender = gender,
+                        state = state,
+                        city = city,
+                        callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                            override fun onSuccess(result: com.google.gson.JsonObject) {
+                                Log.i("ProfileScreen", "Successfully synced updated profile to MongoDB for worker $targetId")
+                            }
+
+                            override fun onError(error: String) {
+                                Log.w("ProfileScreen", "Failed to sync profile update to MongoDB: $error")
+                            }
+                        }
+                    )
                 }
             },
             onUpdateLanguage = { newLang ->

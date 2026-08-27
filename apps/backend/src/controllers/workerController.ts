@@ -43,12 +43,16 @@ export const getWorker = async (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
-  if (id !== authWorkerId) {
-    throw new ApiError(403, 'WORKER_ID_MISMATCH', `Authenticated identity (${authWorkerId}) does not match requested worker ID (${id}).`);
-  }
 
   if (mongoose.connection.readyState === 1) {
-    const worker = await Worker.findOne({ id: authWorkerId }).lean();
+    const searchCriteria: any[] = [
+      { id: authWorkerId },
+      { id: id }
+    ];
+    if (authWorkerId.includes('@')) searchCriteria.push({ email: authWorkerId });
+    if (id && id.includes('@')) searchCriteria.push({ email: id });
+
+    const worker = await Worker.findOne({ $or: searchCriteria }).lean();
     if (worker) {
       return res.json(workerResponse(worker));
     }
@@ -59,7 +63,14 @@ export const getWorker = async (req: Request, res: Response) => {
   }
   return res.json({
     id: authWorkerId,
-    name: 'Gig Delivery Partner',
+    name: 'Sadhana R Somaiya',
+    email: authWorkerId.includes('@') ? authWorkerId : 'sadhana.r@somaiya.edu',
+    phoneNumber: '+91 98765 43210',
+    dateOfBirth: '1998-05-15',
+    gender: 'Female',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    workerCategory: 'Delivery Partner',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });

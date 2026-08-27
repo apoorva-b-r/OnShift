@@ -26,7 +26,7 @@ fun SignInScreen(
     onSignInSuccess: (emailOrId: String, password: String) -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
-    var emailOrId by remember { mutableStateOf(if (initialEmail.isNotBlank()) initialEmail else "vikram.malhotra@example.com") }
+    var emailOrId by remember { mutableStateOf(if (initialEmail.isNotBlank()) initialEmail else "sadhana.r@somaiya.edu") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()

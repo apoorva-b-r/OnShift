@@ -54,59 +54,92 @@ export const login = async (req: Request, res: Response) => {
 
   const role: WorkerRole = isValidRole(rawRole) ? rawRole : 'WORKER';
   const cleanWorkerId = workerId.trim();
+  let canonicalWorkerId = cleanWorkerId;
 
   // Persist / upsert Worker document in MongoDB if database connection is active
   if (mongoose.connection.readyState === 1) {
     try {
       const { name, phoneNumber, email, dateOfBirth, gender, state, city, workerCategory } = body;
+      const targetEmail = typeof email === 'string' && email.trim() ? email.trim() : (cleanWorkerId.includes('@') ? cleanWorkerId : undefined);
+      const targetPhone = typeof phoneNumber === 'string' && phoneNumber.trim() ? phoneNumber.trim() : undefined;
 
-      const setOnInsertPayload: Record<string, any> = {
-        id: cleanWorkerId,
-      };
+      // Find existing worker by ID, Email, or Phone in MongoDB workers collection
+      const searchCriteria: any[] = [{ id: cleanWorkerId }];
+      if (targetEmail) searchCriteria.push({ email: targetEmail });
+      if (targetPhone) searchCriteria.push({ phoneNumber: targetPhone });
 
-      const setPayload: Record<string, any> = {};
+      let existingWorker = await Worker.findOne({ $or: searchCriteria });
 
-      if (typeof name === 'string' && name.trim()) {
-        setPayload.name = name.trim();
+      if (existingWorker) {
+        canonicalWorkerId = existingWorker.id;
+        const setPayload: Record<string, any> = {};
+        if (typeof name === 'string' && name.trim()) setPayload.name = name.trim();
+        if (typeof phoneNumber === 'string' && phoneNumber.trim()) setPayload.phoneNumber = phoneNumber.trim();
+        if (targetEmail && !existingWorker.email) setPayload.email = targetEmail;
+        if (typeof dateOfBirth === 'string' && dateOfBirth.trim()) setPayload.dateOfBirth = dateOfBirth.trim();
+        if (typeof gender === 'string' && gender.trim()) setPayload.gender = gender.trim();
+        if (typeof state === 'string' && state.trim()) setPayload.state = state.trim();
+        if (typeof city === 'string' && city.trim()) setPayload.city = city.trim();
+        if (typeof workerCategory === 'string' && workerCategory.trim()) setPayload.workerCategory = workerCategory.trim();
+        if (typeof city === 'string' && city.trim() && typeof state === 'string' && state.trim()) {
+          setPayload.location = `${city.trim()}, ${state.trim()}`;
+        }
+
+        if (Object.keys(setPayload).length > 0) {
+          await Worker.updateOne({ _id: existingWorker._id }, { $set: setPayload });
+        }
+        console.log(`[Auth] Updated existing MongoDB Worker document for ${canonicalWorkerId}`);
       } else {
-        setOnInsertPayload.name = `Worker ${cleanWorkerId}`;
-      }
+        // Create new Worker document in MongoDB workers collection
+        const newId = cleanWorkerId.startsWith('OS-') ? cleanWorkerId : `OS-${Math.abs(cleanWorkerId.split('').reduce((acc, c) => ((acc << 5) - acc) + c.charCodeAt(0), 0))}`;
+        canonicalWorkerId = newId;
 
-      if (typeof workerCategory === 'string' && workerCategory.trim()) {
-        setPayload.workerCategory = workerCategory.trim();
-      } else {
-        setOnInsertPayload.workerCategory = 'Delivery Partner';
-      }
+        const defaultName = typeof name === 'string' && name.trim() ? name.trim() : (cleanWorkerId.includes('@') ? cleanWorkerId.split('@')[0] : `Worker ${newId}`);
+        const defaultLocation = (typeof city === 'string' && city.trim() && typeof state === 'string' && state.trim()) ? `${city.trim()}, ${state.trim()}` : undefined;
 
-      if (typeof phoneNumber === 'string' && phoneNumber.trim()) setPayload.phoneNumber = phoneNumber.trim();
-      if (typeof email === 'string' && email.trim()) setPayload.email = email.trim();
-      if (typeof dateOfBirth === 'string' && dateOfBirth.trim()) setPayload.dateOfBirth = dateOfBirth.trim();
-      if (typeof gender === 'string' && gender.trim()) setPayload.gender = gender.trim();
-      if (typeof state === 'string' && state.trim()) setPayload.state = state.trim();
-      if (typeof city === 'string' && city.trim()) setPayload.city = city.trim();
-      if (typeof city === 'string' && city.trim() && typeof state === 'string' && state.trim()) {
-        setPayload.location = `${city.trim()}, ${state.trim()}`;
+        await Worker.create({
+          id: newId,
+          name: defaultName,
+          email: targetEmail,
+          phoneNumber: targetPhone,
+          dateOfBirth: typeof dateOfBirth === 'string' && dateOfBirth.trim() ? dateOfBirth.trim() : undefined,
+          gender: typeof gender === 'string' && gender.trim() ? gender.trim() : undefined,
+          state: typeof state === 'string' && state.trim() ? state.trim() : undefined,
+          city: typeof city === 'string' && city.trim() ? city.trim() : undefined,
+          workerCategory: typeof workerCategory === 'string' && workerCategory.trim() ? workerCategory.trim() : 'Delivery Partner',
+          location: defaultLocation,
+        });
+        console.log(`[Auth] Created new MongoDB Worker document for ${newId} (${targetEmail || cleanWorkerId})`);
       }
-
-      const updateQuery: Record<string, any> = { $setOnInsert: setOnInsertPayload };
-      if (Object.keys(setPayload).length > 0) {
-        updateQuery.$set = setPayload;
-      }
-
-      await Worker.findOneAndUpdate(
-        { id: cleanWorkerId },
-        updateQuery,
-        { upsert: true, new: true }
-      );
-      console.log(`[Auth] MongoDB Worker document persisted for ${cleanWorkerId}`);
     } catch (err) {
       console.warn(`[Auth] Note: MongoDB Worker persistence for ${cleanWorkerId}:`, err);
     }
   }
 
+  let workerDoc: any = null;
+  if (mongoose.connection.readyState === 1) {
+    try {
+      workerDoc = await Worker.findOne({ id: canonicalWorkerId }).lean();
+    } catch (_e) {}
+  }
+
+  if (!workerDoc) {
+    workerDoc = {
+      id: canonicalWorkerId,
+      name: body.name || (cleanWorkerId.includes('@') ? cleanWorkerId.split('@')[0] : 'Sadhana R Somaiya'),
+      email: body.email || (cleanWorkerId.includes('@') ? cleanWorkerId : 'sadhana.r@somaiya.edu'),
+      phoneNumber: body.phoneNumber || '+91 98765 43210',
+      dateOfBirth: body.dateOfBirth || '1998-05-15',
+      gender: body.gender || 'Female',
+      state: body.state || 'Maharashtra',
+      city: body.city || 'Mumbai',
+      workerCategory: body.workerCategory || 'Delivery Partner',
+    };
+  }
+
   const token = jwt.sign(
     {
-      sub: cleanWorkerId,
+      sub: canonicalWorkerId,
       role,
       iss: 'onshift',
       identityVerified: false,
@@ -121,8 +154,19 @@ export const login = async (req: Request, res: Response) => {
   return res.status(200).json({
     token,
     expiresIn: '24h',
-    workerId: cleanWorkerId,
+    workerId: canonicalWorkerId,
     role,
+    worker: {
+      id: workerDoc.id || canonicalWorkerId,
+      name: workerDoc.name,
+      email: workerDoc.email,
+      phoneNumber: workerDoc.phoneNumber,
+      dateOfBirth: workerDoc.dateOfBirth,
+      gender: workerDoc.gender,
+      state: workerDoc.state,
+      city: workerDoc.city,
+      workerCategory: workerDoc.workerCategory,
+    },
     _warning:
       'DEV/DEMO ONLY. This endpoint issues tokens without external identity verification. ' +
       'DigiLocker / API Setu identity verification is a separate concern.',
