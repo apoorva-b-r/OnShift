@@ -19,7 +19,7 @@ declare global {
 
 /** Read JWT secret at call-time so test overrides of process.env.JWT_SECRET take effect. */
 function getJwtSecret(): string {
-  return process.env.JWT_SECRET || 'onshift_default_jwt_secret_key_2026_dev_demo_only';
+  return process.env.JWT_SECRET || '24bb3889a3eb46f539d326b55ea6a58ea92b8bc37d0299a2f44b5be691af4b57';
 }
 
 function base64UrlEncode(str: string): string {

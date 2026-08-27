@@ -5,4 +5,5 @@ export * from './GovernmentScheme';
 export * from './VerificationRecord';
 export * from './ConsentRequest';
 export * from './IdentityVerification';
+export * from './CredentialMessage';
 

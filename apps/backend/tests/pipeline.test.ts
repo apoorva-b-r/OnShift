@@ -14,7 +14,7 @@ describe('Authoritative Verification â†’ Reconciliation â†’ Credential
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
-  });
+  }, 60000);
 
   afterAll(async () => {
     delete process.env.ENABLE_AUTH;

@@ -4,7 +4,7 @@ import { login } from '../controllers/authController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel, runVerification } from '../controllers/verificationController';
-import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
+import { handleIssueCredential, handleVerifyCredential, handleVerifyCredentialById, handleGetCredentialMessages } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus, fetchFinancialData } from '../controllers/consentController';
 import {
@@ -84,6 +84,8 @@ router.post('/verification/run', workerAuth, asyncHandler(runVerification));
 // Credentials
 router.post('/credentials/issue', workerAuth, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
 router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
+router.get('/credentials/verify/:credentialId', asyncHandler(handleVerifyCredentialById));
+router.get('/credentials/messages/:workerId', workerAuth, asyncHandler(handleGetCredentialMessages));
 
 // Government Schemes (Public)
 router.get('/schemes', asyncHandler(getSchemes));

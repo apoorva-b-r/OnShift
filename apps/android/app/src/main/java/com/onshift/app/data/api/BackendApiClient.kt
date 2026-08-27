@@ -353,12 +353,14 @@ object BackendApiClient {
     }
 
     fun issueCredential(
-        verificationId: String,
+        verificationId: String = "",
         id: String = workerId,
         callback: ApiCallback<JsonObject>
     ) {
         val payload = JsonObject()
-        payload.addProperty("verificationId", verificationId)
+        if (verificationId.isNotBlank()) {
+            payload.addProperty("verificationId", verificationId)
+        }
         payload.addProperty("workerId", id)
 
         makeRequest("/credentials/issue", "POST", payload, callback)
