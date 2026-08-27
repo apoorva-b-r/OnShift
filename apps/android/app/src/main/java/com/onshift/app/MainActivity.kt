@@ -13,18 +13,27 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.onshift.app.data.UserPreferencesRepository
 import com.onshift.app.navigation.AppNavGraph
 import com.onshift.app.navigation.Screen
+import com.onshift.app.notifications.NotificationPermissionHelper
+import com.onshift.app.ui.components.CompulsoryNotificationPermissionDialog
 import com.onshift.app.ui.components.CustomBottomNavigation
 import com.onshift.app.ui.theme.OnShiftTheme
 
@@ -37,6 +46,32 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val context = LocalContext.current
+                    val lifecycleOwner = LocalLifecycleOwner.current
+                    var hasNotificationPermission by remember {
+                        mutableStateOf(NotificationPermissionHelper.isNotificationListenerGranted(context))
+                    }
+
+                    DisposableEffect(lifecycleOwner) {
+                        val observer = LifecycleEventObserver { _, event ->
+                            if (event == Lifecycle.Event.ON_RESUME || event == Lifecycle.Event.ON_START) {
+                                hasNotificationPermission = NotificationPermissionHelper.isNotificationListenerGranted(context)
+                            }
+                        }
+                        lifecycleOwner.lifecycle.addObserver(observer)
+                        onDispose {
+                            lifecycleOwner.lifecycle.removeObserver(observer)
+                        }
+                    }
+
+                    if (!hasNotificationPermission) {
+                        CompulsoryNotificationPermissionDialog(
+                            onEnableClicked = {
+                                NotificationPermissionHelper.openNotificationListenerSettings(context)
+                            }
+                        )
+                    }
+
                     val userPreferencesRepository = remember { UserPreferencesRepository(applicationContext) }
                     val userPreferencesState by userPreferencesRepository.userPreferencesFlow.collectAsState(initial = null)
 
