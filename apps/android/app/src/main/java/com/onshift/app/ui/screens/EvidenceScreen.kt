@@ -77,8 +77,9 @@ fun EvidenceScreen(
                              record.source.contains("UPLOAD", ignoreCase = true) ||
                              record.source.contains("SLIP", ignoreCase = true)
             val isPlatformSelected = selectedPlatforms.isEmpty() || selectedPlatforms.any { p -> p.equals(record.platform, ignoreCase = true) }
+            val isObserved = record.source.equals("OBSERVED", ignoreCase = true)
 
-            isBankAA || isDeclared || isPlatformSelected
+            isBankAA || isDeclared || isPlatformSelected || isObserved
         }
     }
 
@@ -122,6 +123,7 @@ fun EvidenceScreen(
                         val amountVal = parseResult.evidence?.amount ?: 1450.0
 
                         val record = repository.createAndSaveEvidence(
+                            workerId = currentWorkerId,
                             source = "DECLARED",
                             platform = platformName,
                             amount = amountVal
@@ -155,14 +157,27 @@ fun EvidenceScreen(
             isIntegrityValid = integrityResult.valid,
             integrityReason = integrityResult.reason,
             onSimulatePush = {
-                val samplePlatforms = listOf("Zomato", "Swiggy", "Blinkit")
-                val sampleAmounts = listOf(245.0, 312.5, 180.0, 450.0, 620.0)
+                val availablePlatforms = if (selectedPlatforms.isNotEmpty()) selectedPlatforms.toList() else listOf("Zomato", "Swiggy", "Blinkit", "Zepto", "Uber")
+                val chosenPlatform = availablePlatforms.random()
+                val randomAmount = listOf(145.0, 220.0, 315.5, 420.0, 580.0, 650.0).random()
+                val orderId = (1000..9999).random()
+
                 repository.createAndSaveEvidence(
+                    workerId = currentWorkerId,
                     source = "OBSERVED",
-                    platform = samplePlatforms.random(),
-                    amount = sampleAmounts.random()
+                    platform = chosenPlatform,
+                    eventType = "ORDER_COMPLETED",
+                    amount = randomAmount,
+                    reference = "ORD-$orderId",
+                    rawMetadata = """{"title":"$chosenPlatform Partner","text":"Order #$orderId delivered successfully. Earnings: ₹$randomAmount"}"""
                 )
                 refreshList()
+
+                Toast.makeText(
+                    context,
+                    "Captured push: ₹$randomAmount from $chosenPlatform",
+                    Toast.LENGTH_SHORT
+                ).show()
             },
             onPickDocument = {
                 pickDocumentLauncher.launch(arrayOf("image/*", "application/pdf"))
