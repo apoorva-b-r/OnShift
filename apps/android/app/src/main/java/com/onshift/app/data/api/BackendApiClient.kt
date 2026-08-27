@@ -46,9 +46,7 @@ data class VerifyDigiLockerResponse(
 )
 
 object BackendApiClient {
-    // Default is 10.0.2.2 (Android emulator's alias for the host machine).
-    // On physical devices, OnShiftApp.onCreate() overrides this via BuildConfig.BACKEND_BASE_URL
-    // which is read from local.properties — set BACKEND_BASE_URL=http://<LAPTOP_LAN_IP>:4000/api/v1
+    // Default is 127.0.0.1 (ADB reverse tunnel for physical devices).
     private var baseUrl: String = "http://127.0.0.1:4000/api/v1"
     private var authToken: String? = null
     private var workerId: String = "OS-DEMO-001"
@@ -183,11 +181,30 @@ object BackendApiClient {
     fun login(
         id: String = workerId,
         role: String = "WORKER",
+        name: String? = null,
+        phoneNumber: String? = null,
+        email: String? = null,
+        dateOfBirth: String? = null,
+        gender: String? = null,
+        state: String? = null,
+        city: String? = null,
+        workerCategory: String? = null,
         callback: ApiCallback<JsonObject>
     ) {
+        this.workerId = id
+        this.authToken = createJwtToken(id)
+
         val payload = JsonObject()
         payload.addProperty("workerId", id)
         payload.addProperty("role", role)
+        if (!name.isNullOrBlank()) payload.addProperty("name", name)
+        if (!phoneNumber.isNullOrBlank()) payload.addProperty("phoneNumber", phoneNumber)
+        if (!email.isNullOrBlank()) payload.addProperty("email", email)
+        if (!dateOfBirth.isNullOrBlank()) payload.addProperty("dateOfBirth", dateOfBirth)
+        if (!gender.isNullOrBlank()) payload.addProperty("gender", gender)
+        if (!state.isNullOrBlank()) payload.addProperty("state", state)
+        if (!city.isNullOrBlank()) payload.addProperty("city", city)
+        if (!workerCategory.isNullOrBlank()) payload.addProperty("workerCategory", workerCategory)
         makeRequest("/auth/login", "POST", payload, object : ApiCallback<JsonObject> {
             override fun onSuccess(result: JsonObject) {
                 val token = result.get("token")?.asString
@@ -208,15 +225,35 @@ object BackendApiClient {
         name: String,
         category: String = "Gig Worker",
         location: String = "",
+        phoneNumber: String? = null,
+        email: String? = null,
+        dateOfBirth: String? = null,
+        gender: String? = null,
+        state: String? = null,
+        city: String? = null,
         callback: ApiCallback<JsonObject>
     ) {
+        this.workerId = id
         val payload = JsonObject()
         payload.addProperty("id", id)
         payload.addProperty("name", name)
         payload.addProperty("workerCategory", category)
         payload.addProperty("location", location)
+        if (!phoneNumber.isNullOrBlank()) payload.addProperty("phoneNumber", phoneNumber)
+        if (!email.isNullOrBlank()) payload.addProperty("email", email)
+        if (!dateOfBirth.isNullOrBlank()) payload.addProperty("dateOfBirth", dateOfBirth)
+        if (!gender.isNullOrBlank()) payload.addProperty("gender", gender)
+        if (!state.isNullOrBlank()) payload.addProperty("state", state)
+        if (!city.isNullOrBlank()) payload.addProperty("city", city)
 
         makeRequest("/workers", "POST", payload, callback)
+    }
+
+    fun getWorker(
+        id: String = workerId,
+        callback: ApiCallback<JsonObject>
+    ) {
+        makeRequest("/workers/$id", "GET", null, callback)
     }
 
     interface ApiCallback<T> {
@@ -231,53 +268,62 @@ object BackendApiClient {
         callback: ApiCallback<JsonObject>
     ) {
         executor.execute {
-            var conn: HttpURLConnection? = null
-            try {
-                val url = URL("$baseUrl$endpoint")
-                conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = method
-                conn.connectTimeout = 5000
-                conn.readTimeout = 5000
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Accept", "application/json")
+            val candidateBases = listOf(baseUrl, "http://127.0.0.1:4000/api/v1", "http://10.0.2.2:4000/api/v1", "http://192.168.29.41:4000/api/v1").distinct()
+            var lastException: Exception? = null
 
-                val token = authToken ?: createJwtToken(workerId)
-                conn.setRequestProperty("Authorization", "Bearer $token")
-                conn.setRequestProperty("x-worker-id", workerId)
+            for (base in candidateBases) {
+                var conn: HttpURLConnection? = null
+                try {
+                    val url = URL("$base$endpoint")
+                    conn = url.openConnection() as HttpURLConnection
+                    conn.requestMethod = method
+                    conn.connectTimeout = 3000
+                    conn.readTimeout = 5000
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Accept", "application/json")
 
-                if (body != null && (method == "POST" || method == "PUT")) {
-                    conn.doOutput = true
-                    val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
-                    writer.write(body.toString())
-                    writer.flush()
-                    writer.close()
-                }
+                    val token = authToken ?: createJwtToken(workerId)
+                    conn.setRequestProperty("Authorization", "Bearer $token")
+                    conn.setRequestProperty("x-worker-id", workerId)
 
-                val responseCode = conn.responseCode
-                val stream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
-                val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
-                val responseStr = reader.use { it.readText() }
-
-                if (responseCode in 200..299) {
-                    val element = JsonParser.parseString(responseStr)
-                    val jsonObj = if (element.isJsonObject) {
-                        element.asJsonObject
-                    } else {
-                        val wrapper = JsonObject()
-                        wrapper.add("data", element)
-                        wrapper
+                    if (body != null && (method == "POST" || method == "PUT")) {
+                        conn.doOutput = true
+                        val writer = OutputStreamWriter(conn.outputStream, "UTF-8")
+                        writer.write(body.toString())
+                        writer.flush()
+                        writer.close()
                     }
-                    callback.onSuccess(jsonObj)
-                } else {
-                    val errObj = try { JsonParser.parseString(responseStr).asJsonObject } catch (_: Exception) { null }
-                    val message = errObj?.get("message")?.asString ?: "HTTP Error $responseCode"
-                    callback.onError(message)
+
+                    val responseCode = conn.responseCode
+                    val stream = if (responseCode in 200..299) conn.inputStream else conn.errorStream
+                    val reader = BufferedReader(InputStreamReader(stream, "UTF-8"))
+                    val responseStr = reader.use { it.readText() }
+
+                    this.baseUrl = base
+                    if (responseCode in 200..299) {
+                        val element = JsonParser.parseString(responseStr)
+                        val jsonObj = if (element.isJsonObject) {
+                            element.asJsonObject
+                        } else {
+                            val wrapper = JsonObject()
+                            wrapper.add("data", element)
+                            wrapper
+                        }
+                        callback.onSuccess(jsonObj)
+                    } else {
+                        val errObj = try { JsonParser.parseString(responseStr).asJsonObject } catch (_: Exception) { null }
+                        val message = errObj?.get("message")?.asString ?: "HTTP Error $responseCode"
+                        callback.onError(message)
+                    }
+                    return@execute
+                } catch (e: Exception) {
+                    lastException = e
+                } finally {
+                    conn?.disconnect()
                 }
-            } catch (e: Exception) {
-                callback.onError("Network error: ${e.message}")
-            } finally {
-                conn?.disconnect()
             }
+
+            callback.onError("Network error: ${lastException?.message ?: "Unable to connect to backend server"}")
         }
     }
 

@@ -30,6 +30,7 @@ class UserPreferencesRepository(private val context: Context) {
         val IS_IDENTITY_VERIFIED = booleanPreferencesKey("is_identity_verified")
         val PASSWORD_HASH = stringPreferencesKey("password_hash")
         val WORKER_ID = stringPreferencesKey("worker_id")
+        val AUTH_TOKEN = stringPreferencesKey("auth_token")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data
@@ -57,6 +58,7 @@ class UserPreferencesRepository(private val context: Context) {
             val isIdentityVerified = preferences[PreferencesKeys.IS_IDENTITY_VERIFIED] ?: false
             val passwordHash = preferences[PreferencesKeys.PASSWORD_HASH] ?: ""
             val workerId = preferences[PreferencesKeys.WORKER_ID] ?: "OS-DEMO-001"
+            val authToken = preferences[PreferencesKeys.AUTH_TOKEN] ?: ""
             UserPreferences(
                 language = language,
                 selectedPlatforms = selectedPlatforms,
@@ -73,7 +75,8 @@ class UserPreferencesRepository(private val context: Context) {
                 isPhoneVerified = isPhoneVerified,
                 isIdentityVerified = isIdentityVerified,
                 passwordHash = passwordHash,
-                workerId = workerId
+                workerId = workerId,
+                authToken = authToken
             )
         }
 
@@ -116,6 +119,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun updateWorkerId(workerId: String) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.WORKER_ID] = workerId
+        }
+    }
+
+    suspend fun updateAuthToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.AUTH_TOKEN] = token
         }
     }
 

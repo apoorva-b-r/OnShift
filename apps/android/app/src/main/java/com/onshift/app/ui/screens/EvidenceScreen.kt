@@ -44,25 +44,29 @@ import java.util.Locale
 fun EvidenceScreen(
     uiState: UiState<List<EvidenceRecord>>? = null
 ) {
-    val repository = remember {
-        try {
-            LocalEncryptedEvidenceRepository.instance
-        } catch (_: Exception) {
-            LocalEncryptedEvidenceRepository(null)
-        }
-    }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val userPrefsRepo = remember { com.onshift.app.data.UserPreferencesRepository(context.applicationContext) }
     val userPrefs by userPrefsRepo.userPreferencesFlow.collectAsState(initial = com.onshift.app.data.model.UserPreferences())
     val selectedPlatforms = userPrefs.selectedPlatforms
+    val currentWorkerId = if (userPrefs.email.isNotBlank()) userPrefs.email else "sadhana.r@somaiya.edu"
 
-    var evidenceList by remember { mutableStateOf(repository.getAllEvidence()) }
+    val repository = remember(currentWorkerId) {
+        val repo = try {
+            LocalEncryptedEvidenceRepository.createInstance(context.applicationContext)
+        } catch (_: Exception) {
+            LocalEncryptedEvidenceRepository.instance
+        }
+        com.onshift.app.data.vault.MockEvidenceVaultSeeder.seedIfNecessary(context.applicationContext, repo, currentWorkerId)
+        repo
+    }
+
+    var evidenceList by remember(currentWorkerId) { mutableStateOf(repository.getEvidenceForWorker(currentWorkerId)) }
     var integrityResult by remember { mutableStateOf(repository.verifyIntegrity()) }
     var isScanning by remember { mutableStateOf(false) }
 
     fun refreshList() {
-        evidenceList = repository.getAllEvidence()
+        evidenceList = repository.getEvidenceForWorker(currentWorkerId)
         integrityResult = repository.verifyIntegrity()
     }
 

@@ -14,9 +14,11 @@
 
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { ApiError } from '../middleware/apiError';
 import type { WorkerRole } from '../middleware/authMiddleware';
 import { config } from '../config';
+import { Worker } from '../models/Worker';
 
 const VALID_ROLES: WorkerRole[] = ['WORKER', 'VERIFIER', 'ADMIN'];
 
@@ -43,17 +45,68 @@ export const login = async (req: Request, res: Response) => {
     throw new ApiError(500, 'INTERNAL_SERVER_ERROR', 'Authentication service unavailable.');
   }
 
-  const { workerId, role: rawRole } = req.body;
+  const body = req.body || {};
+  const { workerId, role: rawRole } = body;
 
   if (typeof workerId !== 'string' || !workerId.trim()) {
     throw new ApiError(400, 'VALIDATION_ERROR', 'workerId is required and must be a non-empty string.');
   }
 
   const role: WorkerRole = isValidRole(rawRole) ? rawRole : 'WORKER';
+  const cleanWorkerId = workerId.trim();
+
+  // Persist / upsert Worker document in MongoDB if database connection is active
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const { name, phoneNumber, email, dateOfBirth, gender, state, city, workerCategory } = body;
+
+      const setOnInsertPayload: Record<string, any> = {
+        id: cleanWorkerId,
+      };
+
+      const setPayload: Record<string, any> = {};
+
+      if (typeof name === 'string' && name.trim()) {
+        setPayload.name = name.trim();
+      } else {
+        setOnInsertPayload.name = `Worker ${cleanWorkerId}`;
+      }
+
+      if (typeof workerCategory === 'string' && workerCategory.trim()) {
+        setPayload.workerCategory = workerCategory.trim();
+      } else {
+        setOnInsertPayload.workerCategory = 'Delivery Partner';
+      }
+
+      if (typeof phoneNumber === 'string' && phoneNumber.trim()) setPayload.phoneNumber = phoneNumber.trim();
+      if (typeof email === 'string' && email.trim()) setPayload.email = email.trim();
+      if (typeof dateOfBirth === 'string' && dateOfBirth.trim()) setPayload.dateOfBirth = dateOfBirth.trim();
+      if (typeof gender === 'string' && gender.trim()) setPayload.gender = gender.trim();
+      if (typeof state === 'string' && state.trim()) setPayload.state = state.trim();
+      if (typeof city === 'string' && city.trim()) setPayload.city = city.trim();
+      if (typeof city === 'string' && city.trim() && typeof state === 'string' && state.trim()) {
+        setPayload.location = `${city.trim()}, ${state.trim()}`;
+      }
+
+      const updateQuery: Record<string, any> = { $setOnInsert: setOnInsertPayload };
+      if (Object.keys(setPayload).length > 0) {
+        updateQuery.$set = setPayload;
+      }
+
+      await Worker.findOneAndUpdate(
+        { id: cleanWorkerId },
+        updateQuery,
+        { upsert: true, new: true }
+      );
+      console.log(`[Auth] MongoDB Worker document persisted for ${cleanWorkerId}`);
+    } catch (err) {
+      console.warn(`[Auth] Note: MongoDB Worker persistence for ${cleanWorkerId}:`, err);
+    }
+  }
 
   const token = jwt.sign(
     {
-      sub: workerId.trim(),
+      sub: cleanWorkerId,
       role,
       iss: 'onshift',
       identityVerified: false,
@@ -68,7 +121,7 @@ export const login = async (req: Request, res: Response) => {
   return res.status(200).json({
     token,
     expiresIn: '24h',
-    workerId: workerId.trim(),
+    workerId: cleanWorkerId,
     role,
     _warning:
       'DEV/DEMO ONLY. This endpoint issues tokens without external identity verification. ' +

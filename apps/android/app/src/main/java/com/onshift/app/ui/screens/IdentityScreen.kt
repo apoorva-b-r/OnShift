@@ -1,5 +1,7 @@
 package com.onshift.app.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -9,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +26,7 @@ import com.onshift.app.ui.theme.*
 sealed interface VerificationState {
     object Initial : VerificationState
     object Loading : VerificationState
+    data class PendingAuth(val authorizationUrl: String, val requestId: String) : VerificationState
     object Success : VerificationState
     data class Error(val message: String) : VerificationState
 }
@@ -37,31 +41,53 @@ fun IdentityScreen(
     onSkip: () -> Unit = {},
     onCompleteOnboarding: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     var state by remember(isIdentityVerified) {
         mutableStateOf<VerificationState>(
             if (isIdentityVerified) VerificationState.Success else VerificationState.Initial
         )
     }
 
+    fun openBrowser(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            state = VerificationState.Error("Could not open browser: ${e.message}")
+        }
+    }
+
+    val completeVerification: () -> Unit = {
+        state = VerificationState.Loading
+        BackendApiClient.verifyDigiLocker(object : BackendApiClient.ApiCallback<VerifyDigiLockerResponse> {
+            override fun onSuccess(verifyRes: VerifyDigiLockerResponse) {
+                if (verifyRes.identityVerified || verifyRes.status == "VERIFIED") {
+                    state = VerificationState.Success
+                    onVerifySuccess()
+                } else {
+                    state = VerificationState.Error("DigiLocker verification status: ${verifyRes.status}")
+                }
+            }
+
+            override fun onError(error: String) {
+                state = VerificationState.Error(error)
+            }
+        })
+    }
+
     val startVerification: () -> Unit = {
         state = VerificationState.Loading
         BackendApiClient.initiateDigiLocker(object : BackendApiClient.ApiCallback<InitiateDigiLockerResponse> {
             override fun onSuccess(initRes: InitiateDigiLockerResponse) {
-                // Initiate succeeded; now call verifyDigiLocker to complete verification session
-                BackendApiClient.verifyDigiLocker(object : BackendApiClient.ApiCallback<VerifyDigiLockerResponse> {
-                    override fun onSuccess(verifyRes: VerifyDigiLockerResponse) {
-                        if (verifyRes.identityVerified || verifyRes.status == "VERIFIED") {
-                            state = VerificationState.Success
-                            onVerifySuccess()
-                        } else {
-                            state = VerificationState.Error("DigiLocker verification status: ${verifyRes.status}")
-                        }
-                    }
-
-                    override fun onError(error: String) {
-                        state = VerificationState.Error(error)
-                    }
-                })
+                val url = initRes.authorizationUrl
+                val reqId = initRes.requestId
+                if (!url.isNullOrBlank()) {
+                    openBrowser(url)
+                    state = VerificationState.PendingAuth(authorizationUrl = url, requestId = reqId)
+                } else {
+                    state = VerificationState.Error("Setu authorization URL was empty")
+                }
             }
 
             override fun onError(error: String) {
@@ -128,6 +154,78 @@ fun IdentityScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
                                 modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+
+                        TextButton(
+                            onClick = onSkip,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Skip for now",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = TextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            is VerificationState.PendingAuth -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "DigiLocker Authorization Opened",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Primary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Text(
+                            text = "Please complete authorization in your browser window, then tap below to finish verification.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+
+                        Button(
+                            onClick = completeVerification,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Primary,
+                                contentColor = OnSurface
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Complete & Verify Identity",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { openBrowser(currentState.authorizationUrl) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Re-open Authorization Page",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
                             )
                         }
 
@@ -320,4 +418,5 @@ fun IdentityScreen(
         }
     }
 }
+
 
