@@ -865,13 +865,89 @@ body {
 [data-theme="dark"] {
   --bg-primary: #0B1120;
   --bg-card: #1E293B;
-  --border-color: rgba(255, 255, 255, 0.15);
+  --border-color: rgba(255, 255, 255, 0.12);
   --primary-blue: #38BDF8;
   --secondary-lavender: #312E81;
   --text-main: #F8FAFC;
   --text-muted: #94A3B8;
   --accent-emerald: #10B981;
   --accent-rose: #F43F5E;
+}
+
+[data-theme="dark"] .navbar {
+  background: #0F172A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .nav-tab-btn {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .nav-tab-btn:hover {
+  color: #F8FAFC;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+[data-theme="dark"] .nav-tab-btn.active {
+  background: #0284C7;
+  color: #FFFFFF !important;
+  border-color: #0284C7;
+  box-shadow: 0 2px 12px rgba(2, 132, 199, 0.4);
+}
+
+[data-theme="dark"] .portal-badge {
+  background: rgba(99, 102, 241, 0.2);
+  color: #C7D2FE;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="dark"] .eyebrow {
+  background: rgba(99, 102, 241, 0.2);
+  color: #C7D2FE;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="dark"] .hero {
+  background: #0B1120;
+}
+
+[data-theme="dark"] .hero h1 {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .hero-subtitle {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .stats-ribbon {
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .stat-number {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #94A3B8;
+}
+
+[data-theme="dark"] .stat-divider {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .studio-section {
+  background: #0B1120;
+}
+
+[data-theme="dark"] .section-header h2 {
+  color: #F8FAFC;
+}
+
+[data-theme="dark"] .section-header p {
+  color: #94A3B8;
 }
 
 [data-theme="dark"] .upload-box {
@@ -922,10 +998,6 @@ body {
 
 [data-theme="dark"] .title-fail {
   color: #FB7185;
-}
-
-[data-theme="dark"] .hero {
-  background: var(--bg-primary);
 }
 
 [data-theme="dark"] .c-val.income-highlight {
