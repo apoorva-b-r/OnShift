@@ -443,11 +443,12 @@ object BackendApiClient {
 
     // ─── Account Aggregator API Integration ─────────────────────────
     fun requestConsentSync(
-        id: String = workerId,
+        id: String = getWorkerId(),
         fiTypes: List<String> = listOf("DEPOSIT", "TRANSACTIONS")
     ): com.onshift.app.data.aa.AAConsentResponse {
+        val targetId = if (id.isNotBlank() && id != "OS-DEMO-001") id else getWorkerId()
         val payload = JsonObject()
-        payload.addProperty("workerId", id)
+        payload.addProperty("workerId", targetId)
         val arr = JsonArray()
         fiTypes.forEach { arr.add(it) }
         payload.add("fiTypes", arr)
@@ -470,7 +471,7 @@ object BackendApiClient {
         payload.addProperty("consentId", consentId)
         makeSyncRequest("/consent/fetch-data", "POST", payload)
 
-        val evidenceArray = getEvidenceSync(workerId)
+        val evidenceArray = getEvidenceSync(getWorkerId())
         val list = mutableListOf<com.onshift.app.data.aa.AATransaction>()
         for (i in 0 until evidenceArray.size()) {
             val item = evidenceArray.get(i).asJsonObject

@@ -55,48 +55,47 @@ if (process.env.NODE_ENV !== 'test') {
   connectDb();
 
   // HTTP REST API (port 4000) - explicitly bind to 0.0.0.0 for LAN access
-  app.listen(config.port, '0.0.0.0', () => {
+  const server = app.listen(config.port, '0.0.0.0', () => {
     console.log(`[OnShift Backend] Express server running on port ${config.port} (0.0.0.0)`);
   });
 
-  // ─── WebSocket Server for Android Nemotron streaming (port 3000) ──────────
-  const wsPort = parseInt(process.env.WS_PORT || '3000', 10);
-  const wss = new WebSocketServer({ port: wsPort });
+  // ─── WebSocket Server for Android Nemotron streaming (shares HTTP server) ───
+  try {
+    const wss = new WebSocketServer({ server });
 
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('[OnShift WS] Android client connected');
+    wss.on('connection', (ws: WebSocket) => {
+      console.log('[OnShift WS] Android client connected');
 
-    ws.on('message', async (data: any) => {
-      try {
-        const message = JSON.parse(data.toString());
+      ws.on('message', async (data: any) => {
+        try {
+          const message = JSON.parse(data.toString());
 
-        if (message.type === 'scheme:recommend') {
-          await handleSchemeRecommendWs(ws, message.payload || {});
+          if (message.type === 'scheme:recommend') {
+            await handleSchemeRecommendWs(ws, message.payload || {});
+          }
+        } catch (_e) {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(
+              JSON.stringify({
+                type: 'scheme:error',
+                payload: { message: 'Invalid message format' },
+              })
+            );
+          }
         }
-      } catch (_e) {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: 'scheme:error',
-              payload: { message: 'Invalid message format' },
-            })
-          );
-        }
-      }
-    });
+      });
 
-    ws.on('close', () => {
-      console.log('[OnShift WS] Android client disconnected');
-    });
+      ws.on('close', () => {
+        console.log('[OnShift WS] Android client disconnected');
+      });
 
-    ws.on('error', (err: any) => {
-      console.error('[OnShift WS] Error:', err.message);
+      ws.on('error', (err: any) => {
+        console.error('[OnShift WS] Error:', err.message);
+      });
     });
-  });
-
-  wss.on('listening', () => {
-    console.log(`[OnShift WS] WebSocket server (Nemotron) running on port ${wsPort}`);
-  });
+  } catch (wsErr: any) {
+    console.warn(`[OnShift WS] WebSocket server warning:`, wsErr.message);
+  }
 }
 
 export default app;

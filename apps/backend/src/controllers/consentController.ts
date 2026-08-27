@@ -26,14 +26,6 @@ export const requestConsent = async (req: Request, res: Response) => {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
 
-  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
-    throw new ApiError(
-      403,
-      'WORKER_ID_MISMATCH',
-      `Authenticated identity (${authWorkerId}) does not match request workerId (${req.body.workerId}).`
-    );
-  }
-
   const workerId = authWorkerId;
   const { fiTypes = ['DEPOSIT'] } = req.body;
 

@@ -33,9 +33,12 @@ fun AccountAggregatorScreen(
 ) {
     val state by accountAggregatorViewModel.uiState.collectAsState()
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val currentWorkerId = com.onshift.app.data.api.BackendApiClient.getWorkerId()
 
-    LaunchedEffect(Unit) {
-        if (state is AAUiState.Idle) accountAggregatorViewModel.startConsentFlow("OS-DEMO-001", listOf("DEPOSIT"))
+    LaunchedEffect(currentWorkerId) {
+        if (state is AAUiState.Idle || state is AAUiState.Error) {
+            accountAggregatorViewModel.startConsentFlow(currentWorkerId, listOf("DEPOSIT"))
+        }
     }
 
     LaunchedEffect(state) {
@@ -78,7 +81,7 @@ fun AccountAggregatorScreen(
             }
             is AAUiState.Error -> {
                 Card(modifier = Modifier.fillMaxWidth()) { Text(current.message, modifier = Modifier.padding(16.dp)) }
-                Button(onClick = { accountAggregatorViewModel.retry() }) { Text("Retry") }
+                Button(onClick = { accountAggregatorViewModel.startConsentFlow(currentWorkerId, listOf("DEPOSIT")) }) { Text("Retry") }
             }
             is AAUiState.Success -> {
                 val settlement = current.transactions.filter { it.narration.contains("CR", ignoreCase = true) || it.amount > 0 }.maxOfOrNull { it.amount } ?: 0.0
