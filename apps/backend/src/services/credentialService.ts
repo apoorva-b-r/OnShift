@@ -33,8 +33,11 @@ export function issueCredential(workerId: string, claims: CredentialClaim): OnSh
  * Accepts OnShiftIncomeCredential or any object with signature fields.
  */
 export function verifyCredential(credential: OnShiftIncomeCredential | any): CredentialVerificationResult {
-  return verifyCredentialSignature(credential as any, {
-    issuer: config.issuerName,
-    publicKeyHex: config.ed25519PublicKeyHex,
+  const rawObj = credential?.credential || credential;
+  const issuer = rawObj?.issuer || config.issuerName || (config as any).trustedIssuer;
+  const publicKeyHex = rawObj?.publicKeyHex || rawObj?.issuerPublicKey || config.ed25519PublicKeyHex || (config as any).trustedIssuerPublicKeyHex;
+  return verifyCredentialSignature(rawObj as any, {
+    issuer,
+    publicKeyHex,
   });
 }

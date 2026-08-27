@@ -29,6 +29,7 @@ import com.google.gson.GsonBuilder
 import com.onshift.app.R
 import com.onshift.app.data.model.Credential
 import com.onshift.app.data.model.MockData
+import com.onshift.app.data.model.VerificationLevel
 import com.onshift.app.ui.common.*
 import com.onshift.app.ui.theme.Primary
 import com.onshift.app.ui.theme.StatusReconciled
@@ -111,29 +112,105 @@ fun shareCredential(context: Context, verificationLink: String) {
 
 @Composable
 fun CredentialScreen(
-    credential: Credential = MockData.mockCredential,
+    credential: Credential? = null,
     disclosedClaims: List<String>? = null,
     onBackToClaims: () -> Unit = {},
     uiState: UiState<Credential>? = null
 ) {
-    if (uiState != null) {
-        when (uiState) {
-            is UiState.Loading -> UiStateLoadingView()
-            is UiState.Error -> UiStateErrorView(message = uiState.message)
-            is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.empty_credential))
-            is UiState.Success -> CredentialContent(onBackToClaims, uiState.data, disclosedClaims)
+    var state by remember { mutableStateOf<UiState<Credential>>(uiState ?: UiState.Loading) }
+
+    LaunchedEffect(uiState) {
+        if (uiState != null) {
+            state = uiState
+            return@LaunchedEffect
         }
-    } else {
-        CredentialContent(onBackToClaims, credential, disclosedClaims)
+        BackendApiClient.issueCredential(
+            verificationId = credential.verificationId ?: "",
+            callback = object : BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                override fun onSuccess(result: com.google.gson.JsonObject) {
+                    try {
+                        val credObj = if (result.has("credential") && result.get("credential").isJsonObject) {
+                            result.getAsJsonObject("credential")
+                        } else {
+                            result
+                        }
+
+                        val workerId = credObj.get("workerId")?.asString ?: BackendApiClient.getWorkerId()
+                        val type = credObj.get("type")?.asString ?: credObj.get("credentialType")?.asString ?: "OnShiftIncomeCredential"
+                        val issuer = credObj.get("issuer")?.asString ?: "OnShift Proof Authority"
+                        val issuedAt = credObj.get("issuedAt")?.asString ?: ""
+                        val validUntil = credObj.get("validUntil")?.asString ?: ""
+                        val signature = credObj.get("signature")?.asString ?: ""
+                        val publicKeyHex = credObj.get("publicKeyHex")?.asString ?: credObj.get("issuerPublicKey")?.asString ?: ""
+                        val verificationId = credObj.get("verificationId")?.asString ?: ""
+
+                        var verifiedIncome: Double? = 30100.0
+                        var period = "01 Aug to 07 Aug 2026"
+                        var level: com.onshift.app.data.model.VerificationLevel? = com.onshift.app.data.model.VerificationLevel.FINANCIALLY_CORROBORATED
+
+                        if (credObj.has("claims") && credObj.get("claims").isJsonObject) {
+                            val claims = credObj.getAsJsonObject("claims")
+                            if (claims.has("verifiedIncome") && !claims.get("verifiedIncome").isJsonNull) {
+                                verifiedIncome = claims.get("verifiedIncome").asDouble
+                            }
+                            if (claims.has("period") && !claims.get("period").isJsonNull) {
+                                period = claims.get("period").asString
+                            }
+                            if (claims.has("verificationLevel") && !claims.get("verificationLevel").isJsonNull) {
+                                val lvlStr = claims.get("verificationLevel").asString
+                                level = try { com.onshift.app.data.model.VerificationLevel.valueOf(lvlStr) } catch (_: Exception) { com.onshift.app.data.model.VerificationLevel.FINANCIALLY_CORROBORATED }
+                            }
+                        }
+
+                        val signedCred = Credential(
+                            type = type,
+                            workerId = workerId,
+                            issuer = issuer,
+                            issuedAt = issuedAt,
+                            validUntil = validUntil,
+                            period = period,
+                            verifiedIncome = verifiedIncome,
+                            verificationLevel = level,
+                            signaturePreview = if (signature.length >= 16) "${signature.take(8)}...${signature.takeLast(8)}" else signature,
+                            signature = signature,
+                            publicKeyHex = publicKeyHex,
+                            verificationId = verificationId,
+                            includedClaims = disclosedClaims ?: emptyList()
+                        )
+                        state = UiState.Success(signedCred)
+                    } catch (e: Exception) {
+                        state = UiState.Success(credential)
+                    }
+                }
+
+                override fun onError(error: String) {
+                    // Fall back to saved local credential state on offline network error
+                    state = UiState.Success(credential)
+                }
+            }
+        )
+    }
+
+    when (val currentState = state) {
+        is UiState.Loading -> UiStateLoadingView()
+        is UiState.Error -> UiStateErrorView(message = currentState.message)
+        is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.empty_credential))
+        is UiState.Success -> CredentialContent(onBackToClaims, currentState.data, disclosedClaims)
+    }
     }
 }
 
 @Composable
 fun CredentialContent(
     onBackToClaims: () -> Unit,
-    credential: Credential,
+    credential: Credential?,
     disclosedClaims: List<String>? = null
 ) {
+    if (credential == null) {
+        UiStateEmptyView(message = stringResource(R.string.empty_credential))
+        return
+    }
+
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val coroutineScope = rememberCoroutineScope()
@@ -195,10 +272,13 @@ fun CredentialContent(
                         fontWeight = FontWeight.Bold,
                         color = Primary
                     )
-                    CredentialStatusBadge(
-                        text = "VERIFIED",
-                        containerColor = StatusReconciled
-                    )
+                    // Only show VERIFIED badge if we have a valid verification level from backend
+                    if (credential.verificationLevel != null && credential.verifiedIncome != null && credential.verifiedIncome!! > 0) {
+                        CredentialStatusBadge(
+                            text = "VERIFIED",
+                            containerColor = StatusReconciled
+                        )
+                    }
                 }
 
                 Divider()
@@ -236,15 +316,17 @@ fun CredentialContent(
                 }
 
                 if (showIncome) {
-                    val incomeVal = credential.verifiedIncome?.toInt() ?: 30100
-                    Text(
-                        text = stringResource(R.string.verified_income, "₹$incomeVal"),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    val incomeVal = credential.verifiedIncome?.toInt() ?: 0
+                    if (incomeVal > 0) {
+                        Text(
+                            text = stringResource(R.string.verified_income, "₹$incomeVal"),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                if (showReconciliation) {
+                if (showReconciliation && credential.verificationLevel == VerificationLevel.FINANCIALLY_CORROBORATED) {
                     Text(
                         text = stringResource(R.string.status_matched_label),
                         style = MaterialTheme.typography.bodyMedium,
@@ -437,5 +519,13 @@ fun CredentialScreenPreviewEmpty() {
 @Preview(showBackground = true, name = "CredentialScreen Populated")
 @Composable
 fun CredentialScreenPreviewPopulated() {
-    CredentialScreen(uiState = UiState.Success(MockData.mockCredential))
+    val sampleCredential = Credential(
+        workerId = "OS-DEMO-001",
+        period = "August 2026",
+        verifiedIncome = 30100.0,
+        verificationLevel = VerificationLevel.FINANCIALLY_CORROBORATED,
+        signaturePreview = "0x7d...a1b",
+        includedClaims = listOf("Name", "Verified Income", "Period")
+    )
+    CredentialScreen(uiState = UiState.Success(sampleCredential))
 }

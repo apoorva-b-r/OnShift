@@ -4,7 +4,7 @@ import { login } from '../controllers/authController';
 import { getEvidenceByWorker, createEvidence } from '../controllers/evidenceController';
 import { executeReconciliation } from '../controllers/reconciliationController';
 import { getVerificationLevel, runVerification } from '../controllers/verificationController';
-import { handleIssueCredential, handleVerifyCredential } from '../controllers/credentialController';
+import { handleIssueCredential, handleVerifyCredential, handleVerifyCredentialById, handleGetCredentialMessages } from '../controllers/credentialController';
 import { getSchemes, matchSchemes, recommendSchemes } from '../controllers/schemeController';
 import { requestConsent, getConsentStatus, fetchFinancialData } from '../controllers/consentController';
 import {
@@ -14,6 +14,7 @@ import {
   handleDigiLockerCallback,
 } from '../controllers/identityController';
 import { sendOtpHandler, verifyOtpHandler } from '../controllers/otpController';
+import { setIdentityVerified } from '../controllers/adminController';
 import { asyncHandler } from '../middleware/apiError';
 import { authenticateWorker, requireRole } from '../middleware/authMiddleware';
 import mockAaRoutes from './mockAaRoutes';
@@ -83,6 +84,8 @@ router.post('/verification/run', workerAuth, asyncHandler(runVerification));
 // Credentials
 router.post('/credentials/issue', workerAuth, validateRequest(validateCredentialIssue), asyncHandler(handleIssueCredential));
 router.post('/credentials/verify', validateRequest(validateCredentialVerify), asyncHandler(handleVerifyCredential));
+router.get('/credentials/verify/:credentialId', asyncHandler(handleVerifyCredentialById));
+router.get('/credentials/messages/:workerId', workerAuth, asyncHandler(handleGetCredentialMessages));
 
 // Government Schemes (Public)
 router.get('/schemes', asyncHandler(getSchemes));
@@ -96,5 +99,8 @@ router.post('/consent/fetch-data', workerAuth, asyncHandler(fetchFinancialData))
 
 // Mock Account Aggregator UI & Verification Routes
 router.use('/mock-aa', mockAaRoutes);
+
+// Admin Routes (Demo/Testing Only)
+router.post('/admin/set-identity-verified', requireDemoAuth, asyncHandler(setIdentityVerified));
 
 export default router;

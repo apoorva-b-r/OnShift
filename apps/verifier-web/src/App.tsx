@@ -187,7 +187,42 @@ export default function App() {
   };
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const credentialIdParam = urlParams.get('credentialId');
     const dataParam = urlParams.get('data');
+
+    if (credentialIdParam) {
+      setLoading(true);
+      setHasAttemptedVerification(true);
+      setUploadedFileName(`Credential ID: ${credentialIdParam}`);
+      
+      const backendBaseUrl = import.meta.env.VITE_BACKEND_API_URL || 'http://127.0.0.1:4000/api/v1';
+      fetch(`${backendBaseUrl}/credentials/verify/${encodeURIComponent(credentialIdParam)}`)
+        .then((res) => {
+          if (!res.ok) {
+            return res.json().then((errData) => ({
+              valid: false,
+              signatureVerified: false,
+              credentialId: credentialIdParam,
+              message: errData.message || `HTTP ${res.status}: Credential not found or invalid.`,
+            }));
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setResult(data);
+          setLastVerifiedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        })
+        .catch((err) => {
+          setResult({
+            valid: false,
+            signatureVerified: false,
+            message: `Network error reaching OnShift verification service: ${err.message}`,
+          });
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
     if (dataParam) {
       try {
         const normalizedBase64 = dataParam.replace(/-/g, '+').replace(/_/g, '/');

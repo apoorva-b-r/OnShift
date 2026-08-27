@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 import type { CredentialClaim } from '@onshift/shared-types';
 
 export interface CredentialDocument extends Document {
+  credentialId?: string;
   type: string;
   credentialType?: string;
   issuer: string;
@@ -9,6 +10,7 @@ export interface CredentialDocument extends Document {
   publicKeyHex?: string;
   workerId: string;
   verificationId?: string;
+  status?: string;
   issuedAt: string;
   validUntil: string;
   claims: CredentialClaim;
@@ -17,6 +19,13 @@ export interface CredentialDocument extends Document {
 
 const CredentialSchema = new Schema<CredentialDocument>(
   {
+    credentialId: {
+      type: String,
+      required: false,
+      index: true,
+      unique: true,
+      sparse: true,
+    },
     type: {
       type: String,
       required: true,
@@ -48,6 +57,12 @@ const CredentialSchema = new Schema<CredentialDocument>(
       type: String,
       required: false,
       index: true,
+    },
+    status: {
+      type: String,
+      required: false,
+      default: 'ACTIVE',
+      enum: ['ACTIVE', 'REVOKED', 'EXPIRED'],
     },
     issuedAt: {
       type: String,

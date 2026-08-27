@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import { issueCredential, verifyCredential } from '../services/credentialService';
+import {
+  generateAndSendCredentialMessage,
+  getCredentialMessagesForWorker,
+} from '../services/credentialMessageService';
 import { Credential, VerificationRecord } from '../models';
 import { ApiError } from '../middleware/apiError';
 import { requireIdentityVerification } from '../services/identityGate';
@@ -25,7 +29,14 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
   // Server-side Identity Gate: Worker identity MUST be VERIFIED in MongoDB via DigiLocker
   await requireIdentityVerification(targetWorkerId);
 
-  const { verificationId } = req.body;
+  let verificationId = req.body?.verificationId;
+  if (!verificationId) {
+    const latestRecord = await VerificationRecord.findOne({ workerId: targetWorkerId }).sort({ computedAt: -1 }).lean();
+    if (latestRecord) {
+      verificationId = latestRecord.id;
+    }
+  }
+
   if (!verificationId) {
     throw new ApiError(400, 'VERIFICATION_ID_REQUIRED', 'verificationId is required for credential issuance.');
   }
@@ -63,8 +74,10 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
       signature: existingCred.signature,
       publicKeyHex: existingCred.publicKeyHex || existingCred.issuerPublicKey,
       verificationId: existingCred.verificationId,
+      credentialId: existingCred.credentialId,
     };
-    return res.status(200).json({ credential: credentialObj });
+    const messagePayload = await generateAndSendCredentialMessage(existingCred);
+    return res.status(200).json({ credential: credentialObj, message: messagePayload });
   }
 
   // Authoritative server-side claims derived strictly from VerificationRecord
@@ -88,8 +101,10 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
 
   const credential = issueCredential(targetWorkerId, authoritativeClaims);
 
+  // Persist credential to MongoDB - this must succeed before returning success
+  let createdDoc: any = null;
   try {
-    await Credential.create({
+    createdDoc = await Credential.create({
       credentialType: credential.type || 'OnShiftIncomeCredential',
       issuer: credential.issuer,
       issuerPublicKey: credential.publicKeyHex || '',
@@ -102,7 +117,8 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
       signature: credential.signature,
     });
   } catch (err) {
-    console.warn('Failed to persist credential document to database.');
+    console.error('Failed to persist credential document to database:', err);
+    throw new ApiError(503, 'CREDENTIAL_PERSISTENCE_FAILED', 'Credential was signed but failed to persist to database. Please retry the request.');
   }
 
   const responseCredential = {
@@ -110,11 +126,108 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     verificationId: record.id,
   };
 
-  return res.status(201).json({ credential: responseCredential });
+  const messagePayload = await generateAndSendCredentialMessage(createdDoc ? createdDoc.toObject() : responseCredential);
+
+  return res.status(201).json({ credential: responseCredential, message: messagePayload });
 };
 
 export const handleVerifyCredential = async (req: Request, res: Response) => {
   const credential = req.body;
   const result = verifyCredential(credential);
   return res.json(result);
+};
+
+export const handleVerifyCredentialById = async (req: Request, res: Response) => {
+  const { credentialId } = req.params;
+  if (!credentialId || typeof credentialId !== 'string' || !credentialId.trim()) {
+    throw new ApiError(400, 'INVALID_CREDENTIAL_ID', 'Credential ID is required.');
+  }
+
+  const cleanId = credentialId.trim();
+  console.log(`[VERIFY] Received credential ID: ${cleanId}`);
+
+  // Query MongoDB Atlas by credentialId, verificationId, or id
+  const credDoc = await Credential.findOne({
+    $or: [{ credentialId: cleanId }, { verificationId: cleanId }, { id: cleanId }],
+  }).lean();
+
+  if (!credDoc) {
+    console.log(`[VERIFY] Credential ID ${cleanId} not found in MongoDB.`);
+    throw new ApiError(404, 'CREDENTIAL_NOT_FOUND', `Credential ${cleanId} was not found.`);
+  }
+
+  console.log(`[VERIFY] MongoDB lookup successful for workerId=${credDoc.workerId}`);
+
+  const status = credDoc.status || 'ACTIVE';
+  if (status !== 'ACTIVE') {
+    console.log(`[VERIFY] Credential status is ${status} (not ACTIVE). RESULT = INVALID`);
+    return res.status(200).json({
+      valid: false,
+      credentialId: cleanId,
+      status,
+      workerId: credDoc.workerId,
+      credentialType: credDoc.credentialType || credDoc.type || 'Delivery Partner Work Credential',
+      issuer: credDoc.issuer,
+      message: `Credential status is ${status}.`,
+    });
+  }
+
+  // Construct credential object for cryptographic signature verification
+  const credentialObj = {
+    type: credDoc.type || credDoc.credentialType || 'OnShiftIncomeCredential',
+    workerId: credDoc.workerId,
+    issuer: credDoc.issuer,
+    issuedAt: credDoc.issuedAt,
+    validUntil: credDoc.validUntil,
+    claims: credDoc.claims,
+    signature: credDoc.signature,
+    publicKeyHex: credDoc.publicKeyHex || credDoc.issuerPublicKey,
+  };
+
+  const verificationResult = verifyCredential(credentialObj);
+  console.log(`[VERIFY] Signature verification result: valid=${verificationResult.valid}`);
+
+  if (!verificationResult.valid) {
+    console.log(`[VERIFY] RESULT = INVALID (tampered signature)`);
+    return res.status(200).json({
+      valid: false,
+      credentialId: cleanId,
+      status: 'INVALID_SIGNATURE',
+      workerId: credDoc.workerId,
+      credentialType: credDoc.credentialType || credDoc.type || 'Delivery Partner Work Credential',
+      issuer: credDoc.issuer,
+      message: verificationResult.message || 'Signature verification failed.',
+    });
+  }
+
+  console.log(`[VERIFY] Credential status ACTIVE`);
+  console.log(`[VERIFY] RESULT = VERIFIED`);
+  return res.status(200).json({
+    valid: true,
+    credentialId: cleanId,
+    status: 'ACTIVE',
+    workerId: credDoc.workerId,
+    credentialType: credDoc.credentialType || credDoc.type || 'Delivery Partner Work Credential',
+    issuer: credDoc.issuer,
+    issuedAt: credDoc.issuedAt,
+    validUntil: credDoc.validUntil,
+    claims: credDoc.claims,
+    message: 'Credential signature is authentic and verified.',
+  });
+};
+
+export const handleGetCredentialMessages = async (req: Request, res: Response) => {
+  const authWorkerId = req.user?.workerId;
+  const targetWorkerId = req.params.workerId || authWorkerId;
+
+  if (!targetWorkerId) {
+    throw new ApiError(401, 'UNAUTHORIZED', 'Worker ID is required.');
+  }
+
+  if (authWorkerId && authWorkerId !== targetWorkerId) {
+    throw new ApiError(403, 'FORBIDDEN_WORKER_MISMATCH', 'Cannot access messages belonging to another worker.');
+  }
+
+  const messages = await getCredentialMessagesForWorker(targetWorkerId);
+  return res.json({ messages });
 };
