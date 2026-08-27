@@ -140,10 +140,11 @@ export class SetuDigiLockerService {
    */
   private static getMockResponse<T>(endpoint: string, method: string): T {
     if (endpoint === '/api/digilocker' && method === 'POST') {
+      const reqId = 'mock_req_' + Date.now();
       return {
-        id: 'mock_req_12345',
+        id: reqId,
         status: 'unauthenticated',
-        url: 'https://dg-sandbox.setu.co/mock/auth/12345',
+        url: `http://127.0.0.1:4000/api/v1/identity/digilocker/mock-auth?id=${reqId}`,
         validUpto: new Date(Date.now() + 3600000).toISOString(),
       } as unknown as T;
     }

@@ -12,6 +12,7 @@ import {
   getDigiLockerStatus,
   verifyDigiLocker,
   handleDigiLockerCallback,
+  renderMockDigiLockerAuth,
 } from '../controllers/identityController';
 import { sendOtpHandler, verifyOtpHandler } from '../controllers/otpController';
 import { setIdentityVerified } from '../controllers/adminController';
@@ -68,6 +69,7 @@ router.post('/workers', workerAuth, validateRequest(validateWorker), asyncHandle
 
 // Identity Verification (Setu DigiLocker)
 router.get('/identity/digilocker/callback', asyncHandler(handleDigiLockerCallback));
+router.get('/identity/digilocker/mock-auth', asyncHandler(renderMockDigiLockerAuth));
 router.post('/identity/digilocker/initiate', workerAuth, asyncHandler(initiateDigiLocker));
 router.get('/identity/digilocker/status', workerAuth, asyncHandler(getDigiLockerStatus));
 router.post('/identity/digilocker/verify', workerAuth, asyncHandler(verifyDigiLocker));
