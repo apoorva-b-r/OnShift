@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.gson.GsonBuilder
 import com.onshift.app.R
+import com.onshift.app.data.api.BackendApiClient
 import com.onshift.app.data.model.Credential
 import com.onshift.app.data.model.MockData
 import com.onshift.app.data.model.VerificationLevel
@@ -117,15 +118,16 @@ fun CredentialScreen(
     onBackToClaims: () -> Unit = {},
     uiState: UiState<Credential>? = null
 ) {
-    var state by remember { mutableStateOf<UiState<Credential>>(uiState ?: UiState.Loading) }
+    var state by remember { mutableStateOf<UiState<Credential>>(uiState ?: if (credential != null) UiState.Success(credential) else UiState.Loading) }
 
     LaunchedEffect(uiState) {
         if (uiState != null) {
             state = uiState
             return@LaunchedEffect
         }
+        val targetVerificationId = credential?.verificationId ?: ""
         BackendApiClient.issueCredential(
-            verificationId = credential.verificationId ?: "",
+            verificationId = targetVerificationId,
             callback = object : BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
                 override fun onSuccess(result: com.google.gson.JsonObject) {
                     try {
@@ -179,13 +181,13 @@ fun CredentialScreen(
                         )
                         state = UiState.Success(signedCred)
                     } catch (e: Exception) {
-                        state = UiState.Success(credential)
+                        if (credential != null) state = UiState.Success(credential) else state = UiState.Error(e.message ?: "Failed to issue credential")
                     }
                 }
 
                 override fun onError(error: String) {
                     // Fall back to saved local credential state on offline network error
-                    state = UiState.Success(credential)
+                    if (credential != null) state = UiState.Success(credential) else state = UiState.Error(error)
                 }
             }
         )
@@ -196,7 +198,6 @@ fun CredentialScreen(
         is UiState.Error -> UiStateErrorView(message = currentState.message)
         is UiState.Empty -> UiStateEmptyView(message = stringResource(R.string.empty_credential))
         is UiState.Success -> CredentialContent(onBackToClaims, currentState.data, disclosedClaims)
-    }
     }
 }
 
