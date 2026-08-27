@@ -3,6 +3,14 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <queries>
+        <package android:name="com.onshift.mockpartner" />
+        <package android:name="in.swiggy.android" />
+        <package android:name="in.swiggy.deliveryapp" />
+        <package android:name="com.application.zomato" />
+        <package android:name="com.ubercab.driver" />
+    </queries>
+
     <application
         android:name=".OnShiftApp"
         android:allowBackup="false"
