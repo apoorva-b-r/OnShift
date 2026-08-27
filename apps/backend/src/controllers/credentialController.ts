@@ -15,15 +15,6 @@ export const handleIssueCredential = async (req: Request, res: Response) => {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
 
-  // Enforce body workerId match if explicitly passed by client
-  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
-    throw new ApiError(
-      403,
-      'WORKER_ID_MISMATCH',
-      `Authenticated worker identity (${authWorkerId}) does not match requested workerId (${req.body.workerId}).`
-    );
-  }
-
   const targetWorkerId = authWorkerId;
 
   // Server-side Identity Gate: Worker identity MUST be VERIFIED in MongoDB via DigiLocker

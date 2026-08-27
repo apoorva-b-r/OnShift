@@ -51,7 +51,7 @@ fun EvidenceScreen(
     val selectedPlatforms = userPrefs.selectedPlatforms
     val currentWorkerId = if (userPrefs.email.isNotBlank()) userPrefs.email else "sadhana.r@somaiya.edu"
 
-    val repository = remember(currentWorkerId) {
+    val repository = remember {
         val repo = try {
             LocalEncryptedEvidenceRepository.createInstance(context.applicationContext)
         } catch (_: Exception) {
@@ -61,17 +61,16 @@ fun EvidenceScreen(
         repo
     }
 
-    var evidenceList by remember(currentWorkerId) { mutableStateOf(repository.getEvidenceForWorker(currentWorkerId)) }
-    var integrityResult by remember { mutableStateOf(repository.verifyIntegrity()) }
+    val liveEvidenceList by repository.recordsFlow.collectAsState(initial = repository.getAllEvidence())
+    var integrityResult by remember(liveEvidenceList) { mutableStateOf(repository.verifyIntegrity()) }
     var isScanning by remember { mutableStateOf(false) }
 
     fun refreshList() {
-        evidenceList = repository.getEvidenceForWorker(currentWorkerId)
         integrityResult = repository.verifyIntegrity()
     }
 
-    val filteredEvidenceList = remember(evidenceList, selectedPlatforms) {
-        evidenceList.filter { record ->
+    val filteredEvidenceList = remember(liveEvidenceList, selectedPlatforms) {
+        liveEvidenceList.filter { record ->
             val isBankAA = record.platform.equals("Bank AA", ignoreCase = true)
             val isDeclared = record.source.equals("DECLARED", ignoreCase = true) ||
                              record.source.equals("TESSERACT_OCR", ignoreCase = true) ||

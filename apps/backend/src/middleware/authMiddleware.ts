@@ -137,10 +137,12 @@ export function verifyWorkerToken(token: string): AuthenticatedUser {
   return { workerId: sub, role };
 }
 
+import { Worker } from '../models/Worker';
+
 /**
  * Express Middleware: Enforces authentication and extracts worker identity strictly from JWT sub.
  */
-export const authenticateWorker: RequestHandler = (req: Request, _res: Response, next: NextFunction) => {
+export const authenticateWorker: RequestHandler = async (req: Request, _res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
@@ -160,6 +162,17 @@ export const authenticateWorker: RequestHandler = (req: Request, _res: Response,
 
     for (const suppliedId of suppliedWorkerIds) {
       if (suppliedId !== undefined && suppliedId !== user.workerId) {
+        // Check if suppliedId is the worker's registered email or alias in MongoDB
+        try {
+          const workerDoc = await Worker.findOne({ $or: [{ id: user.workerId }, { workerId: user.workerId }] }).lean();
+          if (workerDoc && (workerDoc.email === suppliedId || workerDoc.id === suppliedId || (workerDoc as any).workerId === suppliedId)) {
+            if (req.body?.workerId) req.body.workerId = user.workerId;
+            continue;
+          }
+        } catch (_) {
+          // If DB check fails, fallback to strict mismatch check
+        }
+
         return next(
           new ApiError(
             403,

@@ -79,7 +79,22 @@ object BackendApiClient {
         this.authToken = token
     }
 
-    fun getWorkerId(): String = workerId
+    fun getWorkerId(): String {
+        if (!authToken.isNullOrBlank()) {
+            try {
+                val parts = authToken!!.split(".")
+                if (parts.size >= 2) {
+                    val payloadJson = String(android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE or android.util.Base64.NO_PADDING or android.util.Base64.NO_WRAP))
+                    val obj = com.google.gson.JsonParser.parseString(payloadJson).asJsonObject
+                    val sub = obj.get("workerId")?.asString ?: obj.get("sub")?.asString
+                    if (!sub.isNullOrBlank()) {
+                        return sub
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return workerId
+    }
 
     fun initiateDigiLocker(
         callback: ApiCallback<InitiateDigiLockerResponse>

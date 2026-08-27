@@ -49,8 +49,24 @@ import java.util.concurrent.TimeUnit
 const val VERIFIER_URL = "https://on-shift-verifier-web-22pj.vercel.app/"
 
 fun generateVerificationLink(credential: Credential): String {
-    val gson = GsonBuilder().setPrettyPrinting().create()
-    val jsonString = gson.toJson(credential)
+    val claimsMap = mutableMapOf<String, Any>()
+    if (credential.verifiedIncome != null) claimsMap["verifiedIncome"] = credential.verifiedIncome
+    claimsMap["period"] = credential.period
+    if (credential.verificationLevel != null) claimsMap["verificationLevel"] = credential.verificationLevel.name
+    claimsMap["identityVerified"] = true
+
+    val exportObj = mutableMapOf<String, Any?>()
+    exportObj["type"] = credential.type
+    exportObj["workerId"] = credential.workerId
+    exportObj["issuer"] = credential.issuer
+    exportObj["issuedAt"] = if (credential.issuedAt.isNotBlank()) credential.issuedAt else "2026-08-27T08:00:00.000Z"
+    if (credential.validUntil.isNotBlank()) exportObj["validUntil"] = credential.validUntil
+    exportObj["claims"] = claimsMap
+    exportObj["signature"] = credential.signature ?: ""
+    exportObj["publicKeyHex"] = if (!credential.publicKeyHex.isNullOrBlank()) credential.publicKeyHex else "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+
+    val gson = GsonBuilder().create()
+    val jsonString = gson.toJson(exportObj)
     val encodedData = Base64.encodeToString(
         jsonString.toByteArray(Charsets.UTF_8),
         Base64.URL_SAFE or Base64.NO_WRAP

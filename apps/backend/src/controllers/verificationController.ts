@@ -8,19 +8,17 @@ export const runVerification = async (req: Request, res: Response) => {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
 
-  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
-    throw new ApiError(
-      403,
-      'WORKER_ID_MISMATCH',
-      `Authenticated identity (${authWorkerId}) does not match requested workerId (${req.body.workerId}).`
-    );
-  }
-
+  const targetWorkerId = authWorkerId;
   const payoutPeriod = req.body?.payoutPeriod || { startDate: '2026-08-01', endDate: '2026-08-07' };
   const evidenceIds = req.body?.evidenceIds;
 
-  const record = await runAuthoritativeVerificationPipeline(authWorkerId, payoutPeriod, evidenceIds);
-  return res.status(200).json(record);
+  const record = await runAuthoritativeVerificationPipeline(targetWorkerId, payoutPeriod, evidenceIds);
+  const jsonRecord = (record as any).toJSON ? (record as any).toJSON() : record;
+  return res.status(200).json({
+    ...jsonRecord,
+    verificationId: jsonRecord.id || (record as any).id || (record as any)._id?.toString(),
+    id: jsonRecord.id || (record as any).id || (record as any)._id?.toString(),
+  });
 };
 
 export const getVerificationLevel = async (req: Request, res: Response) => {
@@ -29,13 +27,7 @@ export const getVerificationLevel = async (req: Request, res: Response) => {
     throw new ApiError(401, 'UNAUTHORIZED', 'Authenticated worker ID is required.');
   }
 
-  if (req.body?.workerId && req.body.workerId !== authWorkerId) {
-    throw new ApiError(
-      403,
-      'WORKER_ID_MISMATCH',
-      `Authenticated identity (${authWorkerId}) does not match requested workerId (${req.body.workerId}).`
-    );
-  }
+  const targetWorkerId = authWorkerId;
 
   const { payoutPeriod, evidenceIds, evidences } = req.body;
   const result = await calculateVerificationLevel(

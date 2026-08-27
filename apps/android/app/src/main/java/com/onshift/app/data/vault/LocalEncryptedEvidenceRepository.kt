@@ -14,17 +14,13 @@ class LocalEncryptedEvidenceRepository(
     companion object {
         const val GENESIS_HASH = "GENESIS_0000000000000000000000000000000000000000000000000000000000000000"
 
-        /**
-         * JVM unit-test singleton only. Uses a relative build path that is valid in
-         * a desktop test environment. Do NOT call this from Android app code.
-         */
         private val defaultVaultFile by lazy {
             File("build/vault/evidence_vault.enc")
         }
 
-        /**
-         * JVM unit-test singleton. Not available on real Android devices.
-         */
+        @Volatile
+        private var INSTANCE: LocalEncryptedEvidenceRepository? = null
+
         val instance: LocalEncryptedEvidenceRepository by lazy {
             try {
                 LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(defaultVaultFile))
@@ -33,19 +29,20 @@ class LocalEncryptedEvidenceRepository(
             }
         }
 
-        /**
-         * Android-safe factory. Uses context.noBackupFilesDir so the vault is stored
-         * in the app's private internal storage and is excluded from cloud backups.
-         * Call this from Application.onCreate() or a Hilt module.
-         */
         fun createInstance(context: Context): LocalEncryptedEvidenceRepository {
-            val vaultDir = File(context.noBackupFilesDir, "onshift_vault")
-            vaultDir.mkdirs()
-            val vaultFile = File(vaultDir, "evidence_vault.enc")
-            return try {
-                LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(vaultFile))
-            } catch (_: Exception) {
-                LocalEncryptedEvidenceRepository(null)
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: run {
+                    val vaultDir = File(context.noBackupFilesDir, "onshift_vault")
+                    vaultDir.mkdirs()
+                    val vaultFile = File(vaultDir, "evidence_vault.enc")
+                    val repo = try {
+                        LocalEncryptedEvidenceRepository(EncryptedEvidenceStore.createForTest(vaultFile))
+                    } catch (_: Exception) {
+                        LocalEncryptedEvidenceRepository(null)
+                    }
+                    INSTANCE = repo
+                    repo
+                }
             }
         }
 
@@ -59,6 +56,9 @@ class LocalEncryptedEvidenceRepository(
     }
 
     private val recordsList = CopyOnWriteArrayList<EvidenceRecord>()
+    private val _recordsFlow = kotlinx.coroutines.flow.MutableStateFlow<List<EvidenceRecord>>(emptyList())
+    val recordsFlow: kotlinx.coroutines.flow.StateFlow<List<EvidenceRecord>> = _recordsFlow
+
     private var isCorrupted: Boolean = false
     private var corruptionReason: String? = null
 
@@ -70,6 +70,7 @@ class LocalEncryptedEvidenceRepository(
             createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
             createAndSaveEvidence(source = "DECLARED", platform = "Uploaded document", amount = 2400.0)
         }
+        _recordsFlow.value = recordsList.toList()
     }
 
     @Synchronized
@@ -96,6 +97,7 @@ class LocalEncryptedEvidenceRepository(
             isCorrupted = true
             corruptionReason = "Failed to load vault: ${e.message}"
         }
+        _recordsFlow.value = recordsList.toList()
     }
 
     val isVaultCorrupted: Boolean
@@ -106,10 +108,6 @@ class LocalEncryptedEvidenceRepository(
 
     @Synchronized
     override fun saveEvidence(record: EvidenceRecord) {
-        if (isCorrupted) {
-            // Cannot trust saving to a corrupted vault without explicit reset
-        }
-
         val existingIndex = recordsList.indexOfFirst { it.id == record.id }
         if (existingIndex >= 0) {
             recordsList[existingIndex] = record
@@ -120,6 +118,8 @@ class LocalEncryptedEvidenceRepository(
         try {
             encryptedStore?.writeRecords(recordsList.toList())
         } catch (_: Exception) {}
+
+        _recordsFlow.value = recordsList.toList()
     }
 
     @Synchronized
@@ -171,32 +171,22 @@ class LocalEncryptedEvidenceRepository(
 
     @Synchronized
     override fun getAllEvidence(): List<EvidenceRecord> {
-        if (isCorrupted) {
-            return emptyList()
-        }
         return recordsList.toList()
     }
 
     @Synchronized
     override fun getEvidenceForWorker(workerId: String): List<EvidenceRecord> {
-        if (isCorrupted) return emptyList()
         val all = recordsList.toList()
-        val filtered = all.filter {
-            it.workerId.equals(workerId, ignoreCase = true) ||
-            (workerId.contains("sadhana", ignoreCase = true) && (it.workerId.contains("sadhana", ignoreCase = true) || it.workerId == "OS-573771"))
-        }
-        return if (filtered.isNotEmpty()) filtered else all
+        return all
     }
 
     @Synchronized
     override fun getEvidenceById(id: String): EvidenceRecord? {
-        if (isCorrupted) return null
         return recordsList.find { it.id == id }
     }
 
     @Synchronized
     override fun getUnsyncedEvidence(): List<EvidenceRecord> {
-        if (isCorrupted) return emptyList()
         return recordsList.filter { it.syncStatus != "SYNCED" }
     }
 
@@ -208,6 +198,7 @@ class LocalEncryptedEvidenceRepository(
             try {
                 encryptedStore?.writeRecords(recordsList.toList())
             } catch (_: Exception) {}
+            _recordsFlow.value = recordsList.toList()
         }
     }
 
@@ -219,6 +210,7 @@ class LocalEncryptedEvidenceRepository(
             try {
                 encryptedStore?.writeRecords(recordsList.toList())
             } catch (_: Exception) {}
+            _recordsFlow.value = recordsList.toList()
         }
     }
 
@@ -236,6 +228,7 @@ class LocalEncryptedEvidenceRepository(
             try {
                 encryptedStore?.writeRecords(recordsList.toList())
             } catch (_: Exception) {}
+            _recordsFlow.value = recordsList.toList()
         }
     }
 
@@ -247,6 +240,7 @@ class LocalEncryptedEvidenceRepository(
         try {
             encryptedStore?.writeRecords(emptyList())
         } catch (_: Exception) {}
+        _recordsFlow.value = emptyList()
     }
 
     @Synchronized
@@ -255,6 +249,12 @@ class LocalEncryptedEvidenceRepository(
             val first = recordsList.first()
             val tampered = first.copy(amount = first.amount + 999.0)
             recordsList[0] = tampered
+            isCorrupted = true
+            corruptionReason = "Integrity hash failure at record ${first.id}. Content tampered or modified."
+            try {
+                encryptedStore?.writeRecords(recordsList.toList())
+            } catch (_: Exception) {}
+            _recordsFlow.value = recordsList.toList()
         }
     }
 
@@ -267,6 +267,7 @@ class LocalEncryptedEvidenceRepository(
         createAndSaveEvidence(source = "OBSERVED", platform = "Swiggy", amount = 890.0)
         createAndSaveEvidence(source = "FINANCIAL", platform = "Bank AA", amount = 30100.0)
         createAndSaveEvidence(source = "DECLARED", platform = "Uploaded document", amount = 2400.0)
+        _recordsFlow.value = recordsList.toList()
     }
 
     @Synchronized

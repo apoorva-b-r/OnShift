@@ -33,7 +33,22 @@ class OnShiftNotificationListenerService : NotificationListenerService() {
             )
 
             if (evidence != null) {
-                Log.d("OnShiftNotification", "Successfully parsed notification evidence record")
+                Log.d("OnShiftNotification", "Successfully parsed notification evidence: ${evidence.platform} ₹${evidence.amount}")
+                try {
+                    val repo = com.onshift.app.data.vault.LocalEncryptedEvidenceRepository.createInstance(applicationContext)
+                    repo.createAndSaveEvidence(
+                        workerId = evidence.workerId,
+                        source = evidence.source,
+                        platform = evidence.platform,
+                        eventType = evidence.type,
+                        type = evidence.type,
+                        amount = evidence.amount,
+                        reference = evidence.reference,
+                        rawMetadata = "{\"title\":\"${title.replace("\"", "\\\"")}\",\"body\":\"${text.replace("\"", "\\\"")}\"}"
+                    )
+                } catch (e: Exception) {
+                    Log.e("OnShiftNotification", "Error saving parsed evidence", e)
+                }
             }
         }
     }

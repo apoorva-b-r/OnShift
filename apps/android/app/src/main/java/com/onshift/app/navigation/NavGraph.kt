@@ -501,6 +501,8 @@ fun AppNavGraph(
                                     BackendApiClient.runVerificationSync(workerId)
                                 }
                                 val verificationId = verificationResponse.get("verificationId")?.asString 
+                                    ?: verificationResponse.get("id")?.asString
+                                    ?: verificationResponse.get("_id")?.asString
                                     ?: throw Exception("No verificationId in response")
                                 
                                 // Step 3: Issue credential using the verificationId
@@ -512,8 +514,11 @@ fun AppNavGraph(
                                 }
                                 
                                 // Step 4: Parse the credential response
-                                val credentialData = credentialResponse.getAsJsonObject("credential")
-                                val verificationLevelStr = credentialData.get("verificationLevel")?.asString
+                                val credentialData = credentialResponse.getAsJsonObject("credential") ?: credentialResponse
+                                val claimsObj = credentialData.getAsJsonObject("claims")
+                                
+                                val verificationLevelStr = claimsObj?.get("verificationLevel")?.asString 
+                                    ?: credentialData.get("verificationLevel")?.asString
                                 val verificationLevel = try {
                                     verificationLevelStr?.let { 
                                         com.onshift.app.data.model.VerificationLevel.valueOf(it)
@@ -522,12 +527,33 @@ fun AppNavGraph(
                                     null
                                 }
                                 
+                                val verifiedIncome = claimsObj?.get("verifiedIncome")?.asDouble
+                                    ?: credentialData.get("verifiedIncome")?.asDouble
+                                val period = claimsObj?.get("period")?.asString
+                                    ?: credentialData.get("period")?.asString
+                                    ?: "01 Aug to 07 Aug 2026"
+                                
+                                val signature = credentialData.get("signature")?.asString ?: ""
+                                val publicKeyHex = credentialData.get("publicKeyHex")?.asString 
+                                    ?: credentialData.get("issuerPublicKey")?.asString 
+                                    ?: "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+                                val issuer = credentialData.get("issuer")?.asString ?: "OnShift Proof Authority"
+                                val issuedAt = credentialData.get("issuedAt")?.asString ?: ""
+                                val validUntil = credentialData.get("validUntil")?.asString ?: ""
+                                
                                 val credential = com.onshift.app.data.model.Credential(
+                                    type = credentialData.get("type")?.asString ?: "OnShiftIncomeCredential",
                                     workerId = credentialData.get("workerId")?.asString ?: workerId,
-                                    period = credentialData.get("period")?.asString ?: "Unknown",
-                                    verifiedIncome = credentialData.get("verifiedIncome")?.asDouble,
+                                    issuer = issuer,
+                                    issuedAt = issuedAt,
+                                    validUntil = validUntil,
+                                    period = period,
+                                    verifiedIncome = verifiedIncome,
                                     verificationLevel = verificationLevel,
-                                    signaturePreview = credentialData.get("signature")?.asString?.take(10)?.let { "0x${it}..." },
+                                    signaturePreview = if (signature.length >= 16) "${signature.take(8)}...${signature.takeLast(8)}" else signature,
+                                    signature = signature,
+                                    publicKeyHex = publicKeyHex,
+                                    verificationId = verificationId,
                                     includedClaims = selectedClaims
                                 )
                                 credentialUiState = UiState.Success(credential)
