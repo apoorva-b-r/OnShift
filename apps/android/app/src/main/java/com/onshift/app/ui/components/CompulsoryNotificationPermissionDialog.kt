@@ -19,7 +19,8 @@ import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun CompulsoryNotificationPermissionDialog(
-    onEnableClicked: () -> Unit
+    onEnableClicked: () -> Unit,
+    onOpenMockPartnerSettingsClicked: (() -> Unit)? = null
 ) {
     Dialog(
         onDismissRequest = { /* Non-dismissible: compulsory permission */ },
@@ -32,7 +33,7 @@ fun CompulsoryNotificationPermissionDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.82f))
+                .background(Color.Black.copy(alpha = 0.85f))
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -45,7 +46,7 @@ fun CompulsoryNotificationPermissionDialog(
                 Column(
                     modifier = Modifier.padding(28.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -65,7 +66,7 @@ fun CompulsoryNotificationPermissionDialog(
                     }
 
                     Text(
-                        text = "Partner Notification Access Required",
+                        text = "Mock Partner Notifications Required",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center,
@@ -73,13 +74,13 @@ fun CompulsoryNotificationPermissionDialog(
                     )
 
                     Text(
-                        text = "OnShift must observe real-time trip and payout notifications from your gig partner apps (e.g. Swiggy, Zomato, Mock Partner) to corroborate your earnings.\n\nThis permission is mandatory. If notification access is turned off at any point, OnShift cannot verify your work.",
+                        text = "OnShift detected the Mock Partner app on your phone. To continuously corroborate trip payouts and calculate your verified income, notification access is compulsory.\n\nIf notification access is disabled at any point, OnShift will pause until it is re-enabled.",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     Button(
                         onClick = onEnableClicked,
@@ -90,10 +91,24 @@ fun CompulsoryNotificationPermissionDialog(
                         )
                     ) {
                         Text(
-                            text = "Enable Notification Access in Settings",
+                            text = "Grant Notification Access in Settings",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
+                    }
+
+                    if (onOpenMockPartnerSettingsClicked != null) {
+                        OutlinedButton(
+                            onClick = onOpenMockPartnerSettingsClicked,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Open Mock Partner App Settings",
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
