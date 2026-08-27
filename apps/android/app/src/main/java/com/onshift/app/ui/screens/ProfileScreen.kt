@@ -108,7 +108,15 @@ fun ProfileScreen(
                             val state = getNonEmptyJsonString(result, "state") ?: userPreferences.state
                             val city = getNonEmptyJsonString(result, "city") ?: userPreferences.city
                             val email = getNonEmptyJsonString(result, "email") ?: userPreferences.email
-                            repository.updatePersonalDetails(name, phone, dob, gender, state, city, email)
+                            repository.updatePersonalDetails(
+                                fullName = name,
+                                phoneNumber = phone,
+                                dateOfBirth = dob,
+                                gender = gender,
+                                state = state,
+                                city = city,
+                                email = email
+                            )
                             Log.d("ProfileScreen", "Fetched worker profile from MongoDB for worker $targetId: $name ($email)")
                         }
                     }
@@ -129,7 +137,15 @@ fun ProfileScreen(
             onNavigateToIdentity = onNavigateToIdentity,
             onUpdatePersonalDetails = { name, phone, dob, gender, state, city ->
                 coroutineScope.launch {
-                    repository.updatePersonalDetails(name, phone, dob, gender, state, city, userPreferences.email)
+                    repository.updatePersonalDetails(
+                        fullName = name,
+                        phoneNumber = phone,
+                        dateOfBirth = dob,
+                        gender = gender,
+                        state = state,
+                        city = city,
+                        email = userPreferences.email
+                    )
                     val targetId = if (userPreferences.workerId.isNotBlank()) userPreferences.workerId else "OS-SADHANA-001"
                     // Sync updated profile to MongoDB Atlas via POST /workers
                     com.onshift.app.data.api.BackendApiClient.createWorker(

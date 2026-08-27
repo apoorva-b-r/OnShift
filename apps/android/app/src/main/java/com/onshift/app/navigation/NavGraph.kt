@@ -174,11 +174,11 @@ fun AppNavGraph(
                 storedPasswordHash = userPreferences.passwordHash,
                 onSignInSuccess = { emailOrId, password ->
                     coroutineScope.launch {
-                        // 1. Look up matched stored account locally and restore its specific profile
+                        // 1. Look up matched stored account locally as initial fallback
                         val matchedAccount = repository.getAccountByEmailOrId(emailOrId)
                         if (matchedAccount != null) {
                             repository.switchActiveAccount(matchedAccount)
-                            android.util.Log.i("AccountSwitch", "Loaded stored account profile for ${matchedAccount.email} (${matchedAccount.fullName})")
+                            android.util.Log.i("AccountSwitch", "Initially loaded stored account profile for ${matchedAccount.email} (${matchedAccount.fullName})")
                         } else {
                             repository.setLoggedIn(true)
                             repository.updatePersonalDetails(
@@ -193,7 +193,7 @@ fun AppNavGraph(
                             )
                         }
 
-                        // 2. Real Backend Integration: Login via POST /auth/login and sync MongoDB profile
+                        // 2. Real Backend Integration: Login via POST /auth/login to acquire JWT
                         com.onshift.app.data.api.BackendApiClient.login(
                             id = emailOrId,
                             role = "WORKER",
@@ -210,24 +210,57 @@ fun AppNavGraph(
                                         }
                                         repository.updateWorkerId(canonicalWorkerId)
 
-                                        val workerObj = if (result.has("worker") && !result.get("worker").isJsonNull) result.getAsJsonObject("worker") else null
-                                        if (workerObj != null) {
-                                            val name = if (workerObj.has("name") && !workerObj.get("name").isJsonNull && workerObj.get("name").asString.isNotBlank()) workerObj.get("name").asString else emailOrId.substringBefore("@")
-                                            val phone = if (workerObj.has("phoneNumber") && !workerObj.get("phoneNumber").isJsonNull) workerObj.get("phoneNumber").asString else "+91 98765 43210"
-                                            val dob = if (workerObj.has("dateOfBirth") && !workerObj.get("dateOfBirth").isJsonNull) workerObj.get("dateOfBirth").asString else "1998-05-15"
-                                            val gender = if (workerObj.has("gender") && !workerObj.get("gender").isJsonNull) workerObj.get("gender").asString else "Female"
-                                            val state = if (workerObj.has("state") && !workerObj.get("state").isJsonNull) workerObj.get("state").asString else "Maharashtra"
-                                            val city = if (workerObj.has("city") && !workerObj.get("city").isJsonNull) workerObj.get("city").asString else "Mumbai"
-                                            val email = if (workerObj.has("email") && !workerObj.get("email").isJsonNull && workerObj.get("email").asString.isNotBlank()) workerObj.get("email").asString else emailOrId
-                                            repository.updatePersonalDetails(name, phone, dob, gender, state, city, email, password)
-                                            android.util.Log.i("BackendIntegration", "Successfully extracted worker profile from login response for $canonicalWorkerId ($name)")
-                                        }
+                                        // 3. Call GET /api/v1/workers/{workerId} with Bearer token to fetch authoritative profile
+                                        com.onshift.app.data.api.BackendApiClient.getWorker(
+                                            id = canonicalWorkerId,
+                                            callback = object : com.onshift.app.data.api.BackendApiClient.ApiCallback<com.google.gson.JsonObject> {
+                                                override fun onSuccess(workerResult: com.google.gson.JsonObject) {
+                                                    coroutineScope.launch {
+                                                        // Explicitly map response fields by key name from backend JSON
+                                                        val fetchedName = if (workerResult.has("name") && !workerResult.get("name").isJsonNull) workerResult.get("name").asString else null
+                                                        val fetchedPhone = if (workerResult.has("phoneNumber") && !workerResult.get("phoneNumber").isJsonNull) workerResult.get("phoneNumber").asString else null
+                                                        val fetchedDob = if (workerResult.has("dateOfBirth") && !workerResult.get("dateOfBirth").isJsonNull) workerResult.get("dateOfBirth").asString else null
+                                                        val fetchedGender = if (workerResult.has("gender") && !workerResult.get("gender").isJsonNull) workerResult.get("gender").asString else null
+                                                        val fetchedState = if (workerResult.has("state") && !workerResult.get("state").isJsonNull) workerResult.get("state").asString else null
+                                                        val fetchedCity = if (workerResult.has("city") && !workerResult.get("city").isJsonNull) workerResult.get("city").asString else null
+                                                        val fetchedEmail = if (workerResult.has("email") && !workerResult.get("email").isJsonNull) workerResult.get("email").asString else null
+
+                                                        val currentLocal = repository.getAccountByEmailOrId(canonicalWorkerId) ?: matchedAccount
+
+                                                        val finalName = fetchedName?.takeIf { it.isNotBlank() } ?: currentLocal?.fullName ?: emailOrId.substringBefore("@")
+                                                        val finalPhone = fetchedPhone?.takeIf { it.isNotBlank() } ?: currentLocal?.phoneNumber ?: "+91 98765 43210"
+                                                        val finalDob = fetchedDob?.takeIf { it.isNotBlank() } ?: currentLocal?.dateOfBirth ?: "1998-05-15"
+                                                        val finalGender = fetchedGender?.takeIf { it.isNotBlank() } ?: currentLocal?.gender ?: "Female"
+                                                        val finalState = fetchedState?.takeIf { it.isNotBlank() } ?: currentLocal?.state ?: "Maharashtra"
+                                                        val finalCity = fetchedCity?.takeIf { it.isNotBlank() } ?: currentLocal?.city ?: "Mumbai"
+                                                        val finalEmail = fetchedEmail?.takeIf { it.isNotBlank() } ?: currentLocal?.email ?: (if (emailOrId.contains("@")) emailOrId else "sadhana.r@somaiya.edu")
+
+                                                        // Overwrite locally cached DataStore copy for this account with backend source of truth using Kotlin named arguments
+                                                        repository.updatePersonalDetails(
+                                                            fullName = finalName,
+                                                            phoneNumber = finalPhone,
+                                                            dateOfBirth = finalDob,
+                                                            gender = finalGender,
+                                                            state = finalState,
+                                                            city = finalCity,
+                                                            email = finalEmail,
+                                                            password = password
+                                                        )
+                                                        android.util.Log.i("BackendIntegration", "GET /api/v1/workers/$canonicalWorkerId succeeded. Updated DataStore for $canonicalWorkerId ($finalName).")
+                                                    }
+                                                }
+
+                                                override fun onError(error: String) {
+                                                    android.util.Log.w("BackendIntegration", "GET /api/v1/workers/$canonicalWorkerId fetch failed ($error). Falling back to locally cached UserAccount profile as last resort.")
+                                                }
+                                            }
+                                        )
                                     }
                                     android.util.Log.i("BackendIntegration", "Backend login succeeded for worker $canonicalWorkerId")
                                 }
 
                                 override fun onError(error: String) {
-                                    android.util.Log.w("BackendIntegration", "Backend login failed for $emailOrId: $error")
+                                    android.util.Log.w("BackendIntegration", "Backend login failed for $emailOrId: $error. Falling back to locally cached UserAccount profile.")
                                 }
                             }
                         )
